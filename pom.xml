@@ -23,7 +23,7 @@
         <bstats.version>3.0.2</bstats.version>
         <acf.version>0.5.1-SNAPSHOT</acf.version>
         <jetbrains.annotations.version>24.1.0</jetbrains.annotations.version>
-        <formatter.version>2.16.0</formatter.version>
+        <formatter.version>2.23.0</formatter.version>
 
     </properties>
 
