@@ -14,7 +14,7 @@
         <bukkit.main.class>${project.groupId}.${project.artifactId}</bukkit.main.class>
         <java.version>1.8</java.version>
 
-        <maven.shade.version>3.5.2</maven.shade.version>
+        <maven.shade.version>3.5.3</maven.shade.version>
         <maven.jar.version>3.3.0</maven.jar.version>
         <maven.compiler.version>3.12.1</maven.compiler.version>
         <messages.plugin.version>1.2.3</messages.plugin.version>
