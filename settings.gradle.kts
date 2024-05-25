@@ -1,11 +1,14 @@
 rootProject.name = "ChunkSpawnerLimiter"
 
+include(":chunkspawnerlimiter-core")
 include(":chunkspawnerlimiter-spigot")
 
 
 dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
+            library("configurate-core", "org.spongepowered:configurate-core:4.2.0-SNAPSHOT")
+            library("configurate-yaml", "org.spongepowered:configurate-yaml:4.2.0-SNAPSHOT")
             library("spigot-api", "org.spigotmc:spigot-api:1.14.4-R0.1-SNAPSHOT")
             library("bstats", "org.bstats:bstats-bukkit:3.0.2")
             library("acf", "co.aikar:acf-paper:0.5.1-SNAPSHOT")
