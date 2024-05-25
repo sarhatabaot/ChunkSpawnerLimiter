@@ -1,5 +1,8 @@
 rootProject.name = "ChunkSpawnerLimiter"
 
+include(":chunkspawnerlimiter-spigot")
+
+
 dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
