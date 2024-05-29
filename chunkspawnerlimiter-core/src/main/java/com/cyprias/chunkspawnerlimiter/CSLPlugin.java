@@ -1,5 +1,6 @@
 package com.cyprias.chunkspawnerlimiter;
 
+import com.cyprias.chunkspawnerlimiter.configs.impl.BlocksConfig;
 import com.cyprias.chunkspawnerlimiter.configs.impl.CslConfig;
 
 /**

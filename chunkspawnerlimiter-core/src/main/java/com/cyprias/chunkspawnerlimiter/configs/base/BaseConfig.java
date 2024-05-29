@@ -14,5 +14,7 @@ public class BaseConfig extends BaseFile {
         super(fileName, dataFolder, resourcePath);
     }
 
+    pub
+
 
 }
