@@ -27,6 +27,10 @@ public class CslConfig extends ConfigFile<ChunkSpawnerLimiter> {
     private boolean dropItemsFromArmorStands;
     private boolean logArmorStandTickWarning;
 
+    /* Worlds */
+    private List<String> worldsNames;
+    private WorldsMode worldsMode;
+
     /* Messages */
     private String removedEntities;
     private String reloadedConfig;
@@ -48,22 +52,25 @@ public class CslConfig extends ConfigFile<ChunkSpawnerLimiter> {
             throw new NullPointerException("Your properties section is missing! Disabling plugin.");
         }
 
-        this.debugMessages =  propertiesSection.getBoolean("debug-messages", false);
-        this.checkChunkLoad = propertiesSection.getBoolean( "check-chunk-load", false);
-        this.checkChunkUnload = propertiesSection.getBoolean( "check-chunk-unload", false);
-        this.activeInspections = propertiesSection.getBoolean( "active-inspections", true);
-        this.watchCreatureSpawns = propertiesSection.getBoolean( "watch-creature-spawns", true);
-        this.watchVehicleCreate = propertiesSection.getBoolean( "watch-vehicle-create-event", true);
-        this.watchEntitySpawns = propertiesSection.getBoolean( "watch-entity-spawns", true);
+        this.debugMessages = propertiesSection.getBoolean("debug-messages", false);
+        this.checkChunkLoad = propertiesSection.getBoolean("check-chunk-load", false);
+        this.checkChunkUnload = propertiesSection.getBoolean("check-chunk-unload", false);
+        this.activeInspections = propertiesSection.getBoolean("active-inspections", true);
+        this.watchCreatureSpawns = propertiesSection.getBoolean("watch-creature-spawns", true);
+        this.watchVehicleCreate = propertiesSection.getBoolean("watch-vehicle-create-event", true);
+        this.watchEntitySpawns = propertiesSection.getBoolean("watch-entity-spawns", true);
         this.checkSurroundingChunks = propertiesSection.getInt("check-surrounding-chunks", 1);
         this.inspectionFrequency = propertiesSection.getInt("inspection-frequency", 300);
-        this.notifyPlayers = propertiesSection.getBoolean( "notify-players", false);
-        this.preserveNamedEntities = propertiesSection.getBoolean( "preserve-named-entities", true);
-        this.preserveRaidEntities = propertiesSection.getBoolean( "preserve-raid-entities", true);
+        this.notifyPlayers = propertiesSection.getBoolean("notify-players", false);
+        this.preserveNamedEntities = propertiesSection.getBoolean("preserve-named-entities", true);
+        this.preserveRaidEntities = propertiesSection.getBoolean("preserve-raid-entities", true);
         this.ignoreMetadata = propertiesSection.getStringList("ignore-metadata");
-        this.killInsteadOfRemove = propertiesSection.getBoolean( "kill-instead-of-remove", false);
+        this.killInsteadOfRemove = propertiesSection.getBoolean("kill-instead-of-remove", false);
         this.dropItemsFromArmorStands = propertiesSection.getBoolean("drop-items-from-armor-stands", false);
         this.logArmorStandTickWarning = propertiesSection.getBoolean("log-armor-stand-tick-warning", true);
+
+        this.worldsNames = config.getStringList("worlds.worlds");
+        this.worldsMode = initWorldsMode();
 
         String messagesPath = "messages.";
         this.removedEntities = config.getString(messagesPath + "removedEntities");
@@ -112,16 +119,20 @@ public class CslConfig extends ConfigFile<ChunkSpawnerLimiter> {
     }
 
     public List<String> getWorldNames() {
-        return config.getStringList("worlds.worlds");
+        return worldsNames;
     }
 
-    public WorldsMode getWorldsMode() {
+    private WorldsMode initWorldsMode() {
         final String mode = config.getString("worlds.mode", "excluded");
         if (mode == null) {
             return WorldsMode.EXCLUDED;
         }
 
         return WorldsMode.valueOf(mode.toUpperCase());
+    }
+
+    public WorldsMode getWorldsMode() {
+        return worldsMode;
     }
 
 
