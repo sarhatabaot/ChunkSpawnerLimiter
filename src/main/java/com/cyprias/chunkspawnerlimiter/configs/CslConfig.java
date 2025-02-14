@@ -1,12 +1,18 @@
 package com.cyprias.chunkspawnerlimiter.configs;
 
 import com.cyprias.chunkspawnerlimiter.ChunkSpawnerLimiter;
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
+import java.util.*;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class CslConfig extends ConfigFile<ChunkSpawnerLimiter> {
+    private final Logger logger = Logger.getLogger(CslConfig.class.getName());
+    private Map<String, Integer> entityLimits;
+    private Set<String> spawnReasons;
 
     private boolean metrics;
     /* Properties */
@@ -79,30 +85,76 @@ public class CslConfig extends ConfigFile<ChunkSpawnerLimiter> {
         this.maxAmountBlocksTitle = config.getString(messagesPath + "maxAmountBlocksTitle", "&6Cannot place more &4{material}&6.");
         this.maxAmountBlocksSubtitle = config.getString(messagesPath + "maxAmountBlocksSubtitle", "&6Max amount per chunk &2{amount}.");
         this.metrics = config.getBoolean("metrics", true);
+
+        this.entityLimits = loadEntityLimits();
+        this.spawnReasons = loadSpawnReasons();
     }
 
     public boolean metrics() {
         return metrics;
     }
 
+    private Set<String> loadSpawnReasons() {
+        final ConfigurationSection spawnReasonsSection = config.getConfigurationSection("spawn-reasons");
+        if (spawnReasonsSection == null) {
+            logger.warning("Spawn reasons section is missing. Returning an empty set.");
+            return Collections.emptySet();
+        }
+
+        return spawnReasonsSection.getValues(false).entrySet().stream()
+                .filter(entry -> {
+                    if (!(entry.getValue() instanceof Boolean)) {
+                        logger.warning("Spawn reason '" + entry.getKey() + "' has an invalid value (" + entry.getValue() + "). Expected Boolean. Skipping.");
+                        return false;
+                    }
+                    return (Boolean) entry.getValue();
+                })
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+    }
+
+
+    private Map<String, Integer> loadEntityLimits() {
+        final ConfigurationSection entitySection = config.getConfigurationSection("entities");
+        if (entitySection == null) {
+            logger.warning("Entity limits section is missing. Returning an empty map.");
+            return Collections.emptyMap();
+        }
+
+        return entitySection.getValues(false).entrySet().stream()
+                .filter(entry -> {
+                    if (entry.getValue() == null) {
+                        logger.warning("Entity limit for '" + entry.getKey() + "' is null. Skipping.");
+                        return false;
+                    }
+                    if (!(entry.getValue() instanceof Integer)) {
+                        logger.warning("Entity limit for '" + entry.getKey() + "' is not an integer (" + entry.getValue() + "). Skipping.");
+                        return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> (Integer) entry.getValue()));
+    }
+
+
     public int getEntityLimit(String entityType) {
-        return config.getInt("entities." + entityType);
+        return entityLimits.get(entityType);
     }
 
     public boolean isSpawnReason(String reason) {
-        return config.getBoolean("spawn-reasons." + reason);
+        return spawnReasons.contains(reason);
     }
 
     public boolean contains(String property) {
         return config.contains(property);
     }
 
-    public ConfigurationSection getSpawnReasons() {
-        return config.getConfigurationSection("spawn-reasons");
+    public String getFormattedSpawnReasons() {
+        return StringUtils.join(spawnReasons, ", ");
     }
 
-    public ConfigurationSection getEntityLimits() {
-        return config.getConfigurationSection("entities");
+    public String getFormattedEntityLimits() {
+        return entityLimits.toString();
     }
 
     public boolean isWorldAllowed(final String worldName) {

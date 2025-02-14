@@ -70,9 +70,9 @@ public class CslCommand extends BaseCommand {
         ChatUtil.message(sender, "&2&l-- ChunkSpawnerLimiter v%s --", plugin.getDescription().getVersion());
         ChatUtil.message(sender, "&2&l-- Paper? %b, Armor Tick? %b", Util.isPaperServer(), Util.isArmorStandTickDisabled());
         ChatUtil.message(sender, "&2&l-- Reasons to cull on: --");
-        sendConfigurationSection(sender, plugin.getCslConfig().getSpawnReasons());
+        ChatUtil.message(sender, plugin.getCslConfig().getFormattedSpawnReasons());
         ChatUtil.message(sender, "&2&l-- Entity Limits: --");
-        sendConfigurationSection(sender, plugin.getCslConfig().getEntityLimits());
+        ChatUtil.message(sender, plugin.getCslConfig().getFormattedEntityLimits());
     }
 
     @Subcommand(Command.Search.COMMAND)
@@ -103,6 +103,11 @@ public class CslCommand extends BaseCommand {
         }
 
         final Chunk chunk = weakChunk.get();
+        if (chunk == null) {
+            ChatUtil.message(player, "Chunk was unloaded.. somehow");
+            return;
+        }
+
         for (final Entity entity : chunk.getEntities()) {
             if (entity.getType() == entityType) {
                 size++;
@@ -121,19 +126,5 @@ public class CslCommand extends BaseCommand {
     @HelpCommand
     public void onHelp(final CommandHelp help) {
         help.showHelp();
-    }
-
-    /**
-     * This function sends the contents of a given ConfigurationSection to a CommandSender.
-     * It iterates through the key-value pairs of the section and sends each key-value pair
-     * as a formatted message to the sender.
-     *
-     * @param sender  The CommandSender to whom the messages will be sent.
-     * @param section The ConfigurationSection from which the key-value pairs will be retrieved.
-     */
-    private void sendConfigurationSection(final CommandSender sender, final @NotNull ConfigurationSection section) {
-        for (Map.Entry<String, Object> entry : section.getValues(false).entrySet()) {
-            ChatUtil.message(sender, "%s: %s", entry.getKey(), entry.getValue().toString());
-        }
     }
 }
