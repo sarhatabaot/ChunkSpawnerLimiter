@@ -1,6 +1,5 @@
 package com.cyprias.chunkspawnerlimiter.listeners;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,11 +10,8 @@ import com.cyprias.chunkspawnerlimiter.utils.ChatUtil;
 import com.cyprias.chunkspawnerlimiter.messages.Debug;
 import com.cyprias.chunkspawnerlimiter.tasks.InspectTask;
 import com.cyprias.chunkspawnerlimiter.utils.Util;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Raid;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -160,8 +156,13 @@ public class WorldListener implements Listener {
                 return;
             }
 
-            ((Damageable) entity).setHealth(0.0D);
+            //kill the entity
+            killEntity(entity);
         }
+    }
+
+    private static void killEntity(final Entity entity) {
+        ((Damageable) entity).setHealth(0.0D);
     }
 
 
