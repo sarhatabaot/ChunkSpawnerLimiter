@@ -9,12 +9,14 @@ notify:
 # Default values for the chunk checker, since y values can be different depending on the world generated.
 # Leave this alone if you haven't modified your max world height.
 count:
-  min-y: -64
-  max-y: 256
-# You can specify specific worlds to have a different checking range.
-  world_nether:
-    min-y: 0
-    max-y: 128
+  default:
+    min-y: -64
+    max-y: 256
+  # You can specify specific worlds to have a different checking range.
+  worlds:
+    world_nether:
+      min-y: 0
+      max-y: 128
 
 
 
