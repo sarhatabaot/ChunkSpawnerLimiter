@@ -4,7 +4,6 @@ import com.cyprias.chunkspawnerlimiter.ChunkSpawnerLimiter;
 import com.cyprias.chunkspawnerlimiter.configs.ConfigFile;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;

@@ -9,15 +9,14 @@ import com.cyprias.chunkspawnerlimiter.utils.ChatUtil;
 import com.cyprias.chunkspawnerlimiter.utils.Util;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Chunk;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
-import java.util.Map;
 
 @CommandAlias("csl")
 public class CslCommand extends BaseCommand {
@@ -96,7 +95,13 @@ public class CslCommand extends BaseCommand {
     public void onCheck(final @NotNull Player player, final @NotNull EntityType entityType) {
         final int limit = plugin.getCslConfig().getEntityLimit(entityType.name());
         int size = 0;
-        final WeakReference<Chunk> weakChunk = new WeakReference<>(player.getLocation().getWorld().getChunkAt(player.getLocation()));
+        final World playerWorld = player.getLocation().getWorld();
+        if (playerWorld == null) {
+            ChatUtil.message(player, "World is null.. somehow");
+            return;
+        }
+
+        final WeakReference<Chunk> weakChunk = new WeakReference<>(playerWorld.getChunkAt(player.getLocation()));
         if (weakChunk.get() == null) {
             ChatUtil.message(player, "Chunk was unloaded.. somehow");
             return;
