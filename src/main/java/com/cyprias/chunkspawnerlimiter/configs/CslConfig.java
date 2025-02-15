@@ -141,6 +141,10 @@ public class CslConfig extends ConfigFile<ChunkSpawnerLimiter> {
         return entityLimits.get(entityType);
     }
 
+    public boolean hasEntityLimit(String entityTypeOrGroup) {
+        return entityLimits.containsKey(entityTypeOrGroup);
+    }
+
     public boolean isSpawnReason(String reason) {
         return spawnReasons.contains(reason);
     }

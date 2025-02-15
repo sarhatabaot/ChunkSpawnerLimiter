@@ -1,10 +1,7 @@
 package com.cyprias.chunkspawnerlimiter.listeners;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.WeakHashMap;
 
 import com.cyprias.chunkspawnerlimiter.utils.ChatUtil;
 import com.cyprias.chunkspawnerlimiter.messages.Debug;
@@ -78,7 +75,7 @@ public class WorldListener implements Listener {
         }
 
         Entity[] entities = chunk.getEntities();
-        HashMap<String, ArrayList<Entity>> types = addEntitiesByConfig(entities);
+        HashMap<String, ArrayList<Entity>> types = new HashMap<>(addEntitiesByConfig(entities));
         for (Entry<String, ArrayList<Entity>> entry : types.entrySet()) {
             String entityType = entry.getKey();
             int limit = config.getEntityLimit(entityType);
@@ -170,25 +167,25 @@ public class WorldListener implements Listener {
         return entity instanceof Damageable;
     }
 
-    private static @NotNull HashMap<String, ArrayList<Entity>> addEntitiesByConfig(Entity @NotNull [] entities) {
+    private static @NotNull Map<String, ArrayList<Entity>> addEntitiesByConfig(Entity @NotNull [] entities) {
         HashMap<String, ArrayList<Entity>> modifiedTypes = new HashMap<>();
         for (int i = entities.length - 1; i >= 0; i--) {
-            EntityType type = entities[i].getType();
+            final Entity entity = entities[i];
 
-            String entityType = type.name();
-            String entityMobGroup = MobGroupCompare.getMobGroup(entities[i]);
+            String entityType = entity.getType().name();
+            String entityMobGroup = MobGroupCompare.getMobGroup(entity);
 
-            if (config.contains("entities." + entityType)) {
-                modifiedTypes.putIfAbsent(entityType, new ArrayList<>());
-                modifiedTypes.get(entityType).add(entities[i]);
-            }
-
-            if (config.contains("entities." + entityMobGroup)) {
-                modifiedTypes.putIfAbsent(entityMobGroup, new ArrayList<>());
-                modifiedTypes.get(entityMobGroup).add(entities[i]);
-            }
+            addEntityIfHasLimit(modifiedTypes, entityType, entity);
+            addEntityIfHasLimit(modifiedTypes, entityMobGroup, entity);
         }
         return modifiedTypes;
+    }
+
+    private static void addEntityIfHasLimit(Map<String, ArrayList<Entity>> modifiedTypes, String key, Entity entity) {
+        if (config.hasEntityLimit(key)) {
+            modifiedTypes.putIfAbsent(key, new ArrayList<>());
+            modifiedTypes.get(key).add(entity);
+        }
     }
 
 
