@@ -69,19 +69,25 @@ public class WorldListener implements Listener {
      * @param chunk Chunk
      */
     public static void checkChunk(@NotNull Chunk chunk) {
-        if (config.isWorldNotAllowed(chunk.getWorld().getName())) {
-            ChatUtil.debug("World %s is not allowed", chunk.getWorld().getName());
+        String worldName = chunk.getWorld().getName();
+        if (config.isWorldNotAllowed(worldName)) {
+            ChatUtil.debug("World %s is not allowed", worldName);
             return;
         }
 
         Entity[] entities = chunk.getEntities();
-        HashMap<String, ArrayList<Entity>> types = new HashMap<>(addEntitiesByConfig(entities));
-        for (Entry<String, ArrayList<Entity>> entry : types.entrySet()) {
+        Map<String, ArrayList<Entity>> types = addEntitiesByConfig(entities);
+
+        for (Map.Entry<String, ArrayList<Entity>> entry : types.entrySet()) {
             String entityType = entry.getKey();
+            List<Entity> entityList = entry.getValue();
             int limit = config.getEntityLimit(entityType);
-            ChatUtil.debug("Checking entity limit for %s: limit:%d size:%d", entityType, limit, entry.getValue().size());
-            if (entry.getValue().size() > limit) {
-                ChatUtil.debug(Debug.REMOVING_ENTITY_AT, entry.getValue().size() - limit, entityType, chunk.getX(), chunk.getZ());
+            int entityCount = entityList.size();
+
+            ChatUtil.debug("Checking entity limit for %s: limit:%d size:%d", entityType, limit, entityCount);
+
+            if (entityCount > limit) {
+                ChatUtil.debug(Debug.REMOVING_ENTITY_AT, entityCount - limit, entityType, chunk.getX(), chunk.getZ());
                 if (config.isNotifyPlayers()) {
                     notifyPlayers(entry, entities, limit, entityType);
                 }
@@ -91,10 +97,7 @@ public class WorldListener implements Listener {
     }
 
     private static boolean hasCustomName(Entity entity) {
-        if (config.isPreserveNamedEntities()) {
-            return entity.getCustomName() != null;
-        }
-        return false;
+        return config.isPreserveNamedEntities() && entity.getCustomName() != null;
     }
 
     private static boolean hasMetaData(Entity entity) {
@@ -124,9 +127,12 @@ public class WorldListener implements Listener {
     }
 
     private static void removeEntities(@NotNull Entry<String, ArrayList<Entity>> entry, int limit) {
-        for (int i = entry.getValue().size() - 1; i >= limit; i--) {
-            final Entity entity = entry.getValue().get(i);
-            if (hasMetaData(entity) || hasCustomName(entity) || (entity instanceof Player) || isPartOfRaid(entity)) {
+        List<Entity> entities = entry.getValue();
+        for (int i = entities.size() - 1; i >= limit; i--) {
+            final Entity entity = entities.get(i);
+
+            boolean shouldPreserve = hasMetaData(entity) || hasCustomName(entity) || entity instanceof Player || isPartOfRaid(entity);
+            if (shouldPreserve) {
                 continue;
             }
 
@@ -183,19 +189,17 @@ public class WorldListener implements Listener {
 
     private static void addEntityIfHasLimit(Map<String, ArrayList<Entity>> modifiedTypes, String key, Entity entity) {
         if (config.hasEntityLimit(key)) {
-            modifiedTypes.putIfAbsent(key, new ArrayList<>());
-            modifiedTypes.get(key).add(entity);
+            modifiedTypes.computeIfAbsent(key, k -> new ArrayList<>()).add(entity);
         }
     }
 
 
     private static void notifyPlayers(Entry<String, ArrayList<Entity>> entry, Entity @NotNull [] entities, int limit, String entityType) {
-        for (int i = entities.length - 1; i >= 0; i--) {
-            if (entities[i] instanceof Player) {
-                final Player p = (Player) entities[i];
-
-                ChatUtil.message(p, config.getRemovedEntities(), entry.getValue().size() - limit, entityType);
-            }
-        }
+        Arrays.stream(entities)
+                .filter(Player.class::isInstance)
+                .forEach(entity -> {
+                    Player player = (Player) entity;
+                    ChatUtil.message(player, config.getRemovedEntities(), entry.getValue().size() - limit, entityType);
+                });
     }
 }

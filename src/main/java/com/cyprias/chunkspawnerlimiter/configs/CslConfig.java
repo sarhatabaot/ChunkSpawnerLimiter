@@ -149,10 +149,6 @@ public class CslConfig extends ConfigFile<ChunkSpawnerLimiter> {
         return spawnReasons.contains(reason);
     }
 
-    public boolean contains(String property) {
-        return config.contains(property);
-    }
-
     public String getFormattedSpawnReasons() {
         return StringUtils.join(spawnReasons, ", ");
     }

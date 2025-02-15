@@ -60,7 +60,9 @@ public class ChatUtil {
     }
 
     public static void debug(String message, Object... args) {
-        ChatUtil.debug(String.format(message, args));
+        if (config.isDebugMessages()) {
+            plugin.getLogger().info(() -> "DEBUG " + String.format(message, args));
+        }
     }
 
     public static void logAndCheckArmorStandTickWarning() {
