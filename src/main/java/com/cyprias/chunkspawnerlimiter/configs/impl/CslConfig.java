@@ -1,6 +1,7 @@
-package com.cyprias.chunkspawnerlimiter.configs;
+package com.cyprias.chunkspawnerlimiter.configs.impl;
 
 import com.cyprias.chunkspawnerlimiter.ChunkSpawnerLimiter;
+import com.cyprias.chunkspawnerlimiter.configs.ConfigFile;
 import com.cyprias.chunkspawnerlimiter.exceptions.MissingConfigurationException;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.configuration.ConfigurationSection;
