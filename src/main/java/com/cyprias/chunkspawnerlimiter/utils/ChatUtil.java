@@ -1,7 +1,7 @@
 package com.cyprias.chunkspawnerlimiter.utils;
 
 import com.cyprias.chunkspawnerlimiter.ChunkSpawnerLimiter;
-import com.cyprias.chunkspawnerlimiter.configs.CslConfig;
+import com.cyprias.chunkspawnerlimiter.configs.impl.CslConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -34,6 +34,7 @@ public class ChatUtil {
     }
 
     public static void title(@NotNull Player player, final String title, final String subtitle, String material, int amount) {
+
         player.sendTitle(
                 replace(colorize(title), material, amount),
                 replace(colorize(subtitle), material, amount),
@@ -50,6 +51,10 @@ public class ChatUtil {
 
     @Contract("_ -> new")
     public static @NotNull String colorize(String message) {
+        if (message == null) {
+            return "";
+        }
+
         return ChatColor.translateAlternateColorCodes('&', message);
     }
 

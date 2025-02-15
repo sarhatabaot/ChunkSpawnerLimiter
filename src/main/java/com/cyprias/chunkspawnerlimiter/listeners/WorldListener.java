@@ -15,7 +15,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 
-import com.cyprias.chunkspawnerlimiter.configs.CslConfig;
+import com.cyprias.chunkspawnerlimiter.configs.impl.CslConfig;
 import com.cyprias.chunkspawnerlimiter.ChunkSpawnerLimiter;
 import com.cyprias.chunkspawnerlimiter.compare.MobGroupCompare;
 import org.bukkit.inventory.EntityEquipment;
