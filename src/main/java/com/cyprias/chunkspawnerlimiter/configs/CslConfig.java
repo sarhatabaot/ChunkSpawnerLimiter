@@ -1,6 +1,7 @@
 package com.cyprias.chunkspawnerlimiter.configs;
 
 import com.cyprias.chunkspawnerlimiter.ChunkSpawnerLimiter;
+import com.cyprias.chunkspawnerlimiter.exceptions.MissingConfigurationException;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.NotNull;
@@ -55,7 +56,7 @@ public class CslConfig extends ConfigFile<ChunkSpawnerLimiter> {
         final ConfigurationSection propertiesSection = config.getConfigurationSection("properties");
 
         if (propertiesSection == null) {
-            throw new NullPointerException("Your properties section is missing! Disabling plugin.");
+            throw new MissingConfigurationException("Your properties section is missing! Disabling plugin.");
         }
 
         this.debugMessages = propertiesSection.getBoolean("debug-messages", false);
@@ -79,7 +80,7 @@ public class CslConfig extends ConfigFile<ChunkSpawnerLimiter> {
         this.worldsMode = initWorldsMode();
 
         String messagesPath = "messages.";
-        this.removedEntities = config.getString(messagesPath + "removedEntities");
+        this.removedEntities = config.getString(messagesPath + "removedEntities", "&7Removed %s %s in your chunk.");
         this.reloadedConfig = config.getString(messagesPath + "reloadedConfig", "&cReloaded csl config.");
         this.maxAmountBlocks = config.getString(messagesPath + "maxAmountBlocks", "&6Cannot place more &4{material}&6. Max amount per chunk &2{amount}.");
         this.maxAmountBlocksTitle = config.getString(messagesPath + "maxAmountBlocksTitle", "&6Cannot place more &4{material}&6.");
