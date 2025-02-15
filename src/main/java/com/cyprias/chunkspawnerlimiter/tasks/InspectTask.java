@@ -41,7 +41,7 @@ public class InspectTask extends BukkitRunnable {
     public void run() {
         final Chunk chunk = this.refChunk.get();
         if (chunk == null || !chunk.isLoaded()) {
-            Bukkit.getLogger().fine("Chunk is null! Ignoring");
+            Bukkit.getLogger().fine("Chunk is null or unloaded! Ignoring");
             return;
         }
 
@@ -50,6 +50,7 @@ public class InspectTask extends BukkitRunnable {
             ChunkSpawnerLimiter.cancelTask(id);
             return;
         }
+
         checkChunk(chunk);
     }
 
