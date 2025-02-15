@@ -9,7 +9,8 @@ Maintained fork of the [ChunkSpawnerLimiter](https://dev.bukkit.org/projects/chu
 A plugin for enforcing spawner limits per chunk in Minecraft,
 designed to improve server performance by controlling mob spawns.
 This plugin is especially useful for large servers or resource-constrained environments.
-Features
+
+## Features
 
 * Spawner Limits: Enforce per-chunk spawner limits.
 * Customizable: Adjust limits via configuration files.
