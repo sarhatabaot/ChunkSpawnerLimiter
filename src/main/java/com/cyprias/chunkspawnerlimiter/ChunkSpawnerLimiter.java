@@ -2,8 +2,8 @@ package com.cyprias.chunkspawnerlimiter;
 
 import co.aikar.commands.PaperCommandManager;
 import com.cyprias.chunkspawnerlimiter.commands.CslCommand;
-import com.cyprias.chunkspawnerlimiter.configs.BlocksConfig;
-import com.cyprias.chunkspawnerlimiter.configs.CslConfig;
+import com.cyprias.chunkspawnerlimiter.configs.impl.BlocksConfig;
+import com.cyprias.chunkspawnerlimiter.configs.impl.CslConfig;
 import com.cyprias.chunkspawnerlimiter.listeners.EntityListener;
 import com.cyprias.chunkspawnerlimiter.listeners.PlaceBlockListener;
 import com.cyprias.chunkspawnerlimiter.listeners.WorldListener;
