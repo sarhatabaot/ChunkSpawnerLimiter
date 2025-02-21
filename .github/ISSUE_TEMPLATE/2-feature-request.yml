@@ -2,15 +2,6 @@ name: "💡 Feature Request"
 description: "Suggest a new feature or improvement"
 labels: ["type: enhancement"]
 body:
-  - type: markdown
-    attributes:
-      value: "## 💡 Feature Request\nLet us know what you have in mind!"
-  - type: input
-    id: feature-title
-    attributes:
-      label: "Feature Title"
-      description: "A short title for your feature request."
-      placeholder: "e.g. Add support for 1.8"
   - type: textarea
     id: description
     attributes:
