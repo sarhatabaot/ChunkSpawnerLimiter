@@ -1,0 +1,63 @@
+name: "🐞 Bug Report"
+description: "Report an issue or unexpected behavior"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "## 🐞 Bug Report\nPlease fill out the details below."
+  - type: input
+    id: minecraft-version
+    attributes:
+      label: "Minecraft Version"
+      description: "Which Minecraft version are you using?"
+      placeholder: "e.g. 1.20.1"
+  - type: input
+    id: plugin-version
+    attributes:
+      label: "Plugin Version"
+      description: "Which version of the plugin are you using?"
+      placeholder: "e.g. 4.3.12"
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: "Expected Behavior"
+      description: "What should have happened?"
+      placeholder: "Describe what you expected to happen."
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: "Actual Behavior"
+      description: "What actually happened?"
+      placeholder: "Describe what happened instead."
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: "Steps to Reproduce"
+      description: "Provide step-by-step instructions to reproduce the issue."
+      placeholder: "1. Do this\n2. Do that\n3. See the issue"
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Relevant Logs"
+      description: "Attach any relevant logs or errors."
+      render: shell
+  - type: dropdown
+    id: server-type
+    attributes:
+      label: "Server Type"
+      description: "What server software are you using?"
+      options:
+        - "Paper"
+        - "Spigot"
+        - "Purpur"
+        - "Other"
+  - type: input
+    id: server-type-version
+    attributes:
+      label: "Server Type Version"
+      description: "Get this by running /version"
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: "Additional Information"
+      description: "Anything else that might help?"

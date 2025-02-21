@@ -1,0 +1,36 @@
+name: "💡 Feature Request"
+description: "Suggest a new feature or improvement"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: "## 💡 Feature Request\nLet us know what you have in mind!"
+  - type: input
+    id: feature-title
+    attributes:
+      label: "Feature Title"
+      description: "A short title for your feature request."
+      placeholder: "e.g. Add support for 1.8"
+  - type: textarea
+    id: description
+    attributes:
+      label: "Feature Description"
+      description: "Describe the feature in detail."
+      placeholder: "Explain what the feature is and why it would be useful."
+  - type: textarea
+    id: use-case
+    attributes:
+      label: "Use Case"
+      description: "How would this feature be used in the game?"
+      placeholder: "Describe a situation where this feature would be helpful."
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternatives Considered"
+      description: "Have you considered any alternatives?"
+      placeholder: "Describe any other ways this could be implemented."
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: "Additional Information"
+      description: "Anything else you'd like to add?"
