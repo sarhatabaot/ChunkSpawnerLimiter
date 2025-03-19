@@ -1,5 +1,11 @@
 rootProject.name = "ChunkSpawnerLimiter"
 
+include("api")
+include("common")
+include("spigot")
+include("paper")
+
+
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
@@ -13,11 +19,15 @@ dependencyResolutionManagement {
             library("spigot-api", "org.spigotmc:spigot-api:1.14.4-R0.1-SNAPSHOT")
             library("bstats", "org.bstats:bstats-bukkit:3.1.0")
             library("acf", "co.aikar:acf-paper:0.5.1-SNAPSHOT")
-            library("annotations", "org.jetbrains:annotations:26.0.1")
             library("nbt-api", "de.tr7zw:item-nbt-api:2.14.1")
-
             plugin("plugin-yml","net.minecrell.plugin-yml.bukkit").version("0.6.0")
+
+
+            library("annotations", "org.jetbrains:annotations:26.0.1")
+            library("boosted-yaml", "dev.dejvokep:boosted-yaml:1.3.7")
+
             plugin("shadow","com.gradleup.shadow").version("8.3.1")
         }
     }
 }
+
