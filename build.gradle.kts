@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.shadow)
     alias(libs.plugins.plugin.yml)
 }
-version = "4.3.12"
+version = "4.4.0-beta"
 description = "Limit entities in chunks."
 
 dependencies {
