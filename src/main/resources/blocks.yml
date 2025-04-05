@@ -18,7 +18,9 @@ count:
       min-y: 0
       max-y: 128
 
-
+# Use cache only for high-limit materials
+cache:
+  min-limit-for-cache: 50
 
 # Set blocks to block per chunk
 # Anything from https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html is supported.

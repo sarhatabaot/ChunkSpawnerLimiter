@@ -22,6 +22,8 @@ public class BlocksConfig extends ConfigFile<ChunkSpawnerLimiter> {
 
     private Map<String, WorldLimits> worldLimits;
 
+    private int minLimitForCache;
+
     public BlocksConfig(final @NotNull ChunkSpawnerLimiter plugin) {
         super(plugin, "", "blocks.yml", "");
         saveDefaultConfig();
@@ -38,7 +40,10 @@ public class BlocksConfig extends ConfigFile<ChunkSpawnerLimiter> {
         this.maxY = config.getInt("count.default.max-y", 256);
 
         this.worldLimits = loadWorldLimits();
+
+        this.minLimitForCache = config.getInt("cache.min-limit-for-cache", 50);
     }
+
 
     private @NotNull Map<String, WorldLimits> loadWorldLimits() {
         final Map<String, WorldLimits> limits = new HashMap<>();
@@ -82,6 +87,10 @@ public class BlocksConfig extends ConfigFile<ChunkSpawnerLimiter> {
 
     public boolean hasLimit(final Material material) {
         return materialLimits.containsKey(material);
+    }
+
+    public int getMinLimitForCache() {
+        return minLimitForCache;
     }
 
     private @NotNull Map<Material, Integer> loadMaterialLimits() {
@@ -150,5 +159,7 @@ public class BlocksConfig extends ConfigFile<ChunkSpawnerLimiter> {
     public boolean isEnabled() {
         return enabled;
     }
+
+
 
 }

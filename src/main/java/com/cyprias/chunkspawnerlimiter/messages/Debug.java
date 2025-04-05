@@ -10,6 +10,7 @@ public final class Debug {
     public static final String CHUNK_LOAD_EVENT = "ChunkLoadEvent %s %s";
     public static final String VEHICLE_CREATE_EVENT = "VehicleCreateEvent %s %s";
     public static final String BLOCK_PLACE_CHECK = "Material=%s, Count=%d, Limit=%d";
+    public static final String SCAN_LIMIT = "Counted %s: %d | Used cache: %b";
 
     private Debug() {
         throw new UnsupportedOperationException("This operation is not supported");
