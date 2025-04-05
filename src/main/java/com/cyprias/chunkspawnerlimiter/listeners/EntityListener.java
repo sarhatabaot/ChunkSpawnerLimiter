@@ -1,6 +1,7 @@
 package com.cyprias.chunkspawnerlimiter.listeners;
 
 import com.cyprias.chunkspawnerlimiter.ChunkSpawnerLimiter;
+import com.cyprias.chunkspawnerlimiter.inspection.entities.EntityChunkInspector;
 import com.cyprias.chunkspawnerlimiter.utils.ChatUtil;
 import com.cyprias.chunkspawnerlimiter.messages.Debug;
 import org.bukkit.Chunk;
@@ -18,9 +19,11 @@ import org.jetbrains.annotations.NotNull;
  */
 public class EntityListener implements Listener {
     private final CslConfig config;
+    private final EntityChunkInspector entityChunkInspector;
 
     public EntityListener(final ChunkSpawnerLimiter plugin) {
         this.config = plugin.getCslConfig();
+        this.entityChunkInspector = plugin.getChunkInspector();
     }
 
     @EventHandler
@@ -37,7 +40,7 @@ public class EntityListener implements Listener {
         }
 
         Chunk chunk = event.getLocation().getChunk();
-        WorldListener.checkChunk(chunk);
+        entityChunkInspector.checkChunk(chunk);
         checkSurroundings(chunk);
     }
 
@@ -51,7 +54,7 @@ public class EntityListener implements Listener {
         Chunk chunk = event.getVehicle().getLocation().getChunk();
 
         ChatUtil.debug(Debug.VEHICLE_CREATE_EVENT, chunk.getX(), chunk.getZ());
-        WorldListener.checkChunk(chunk);
+        entityChunkInspector.checkChunk(chunk);
         checkSurroundings(chunk);
     }
 
@@ -64,7 +67,7 @@ public class EntityListener implements Listener {
         Chunk chunk = event.getEntity().getLocation().getChunk();
 
         ChatUtil.debug("Entity Spawn Event: %s, %dx, %dz ", event.getEntity().getType().name(), chunk.getX(), chunk.getZ());
-        WorldListener.checkChunk(chunk);
+        entityChunkInspector.checkChunk(chunk);
         checkSurroundings(chunk);
     }
 
@@ -74,7 +77,7 @@ public class EntityListener implements Listener {
         if (surrounding > 0) {
             for (int x = chunk.getX() + surrounding; x >= (chunk.getX() - surrounding); x--) {
                 for (int z = chunk.getZ() + surrounding; z >= (chunk.getZ() - surrounding); z--) {
-                    WorldListener.checkChunk(chunk.getWorld().getChunkAt(x, z));
+                    entityChunkInspector.checkChunk(chunk.getWorld().getChunkAt(x, z));
                 }
             }
         }

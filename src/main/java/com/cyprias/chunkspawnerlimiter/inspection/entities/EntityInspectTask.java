@@ -1,4 +1,4 @@
-package com.cyprias.chunkspawnerlimiter.tasks;
+package com.cyprias.chunkspawnerlimiter.inspection.entities;
 
 import com.cyprias.chunkspawnerlimiter.ChunkSpawnerLimiter;
 import com.cyprias.chunkspawnerlimiter.utils.ChatUtil;
@@ -10,14 +10,14 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.lang.ref.WeakReference;
 
-import static com.cyprias.chunkspawnerlimiter.listeners.WorldListener.checkChunk;
 
 /**
  * A BukkitRunnable task that inspects a chunk for potential spawner issues.
  * The task checks if the chunk is loaded and then calls the checkChunk method.
  * If the chunk is not loaded, the task cancels itself.
  */
-public class InspectTask extends BukkitRunnable {
+public class EntityInspectTask extends BukkitRunnable {
+    private final EntityChunkInspector entityChunkInspector;
     /**
      * A WeakReference to the chunk being inspected.
      * This is used to prevent memory leaks when the chunk is garbage collected.
@@ -51,7 +51,7 @@ public class InspectTask extends BukkitRunnable {
             return;
         }
 
-        checkChunk(chunk);
+        entityChunkInspector.checkChunk(chunk);
     }
 
     /**
@@ -59,8 +59,9 @@ public class InspectTask extends BukkitRunnable {
      *
      * @param chunk The chunk to be inspected
      */
-    public InspectTask(final Chunk chunk) {
+    public EntityInspectTask(final Chunk chunk, final EntityChunkInspector entityChunkInspector) {
         this.refChunk = new WeakReference<>(chunk);
+        this.entityChunkInspector = entityChunkInspector;
     }
 
     /**

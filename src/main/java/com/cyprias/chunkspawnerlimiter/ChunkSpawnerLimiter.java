@@ -4,6 +4,7 @@ import co.aikar.commands.PaperCommandManager;
 import com.cyprias.chunkspawnerlimiter.commands.CslCommand;
 import com.cyprias.chunkspawnerlimiter.configs.impl.BlocksConfig;
 import com.cyprias.chunkspawnerlimiter.configs.impl.CslConfig;
+import com.cyprias.chunkspawnerlimiter.inspection.entities.EntityChunkInspector;
 import com.cyprias.chunkspawnerlimiter.listeners.EntityListener;
 import com.cyprias.chunkspawnerlimiter.listeners.PlaceBlockListener;
 import com.cyprias.chunkspawnerlimiter.listeners.WorldListener;
@@ -15,6 +16,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class ChunkSpawnerLimiter extends JavaPlugin {
+	private EntityChunkInspector entityChunkInspector;
 	private CslConfig cslConfig;
 
 	private BlocksConfig blocksConfig;
@@ -27,6 +29,7 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
 		ChatUtil.init(this);
 		ChatUtil.logAndCheckArmorStandTickWarning();
 
+		this.entityChunkInspector = new EntityChunkInspector(this);
 		registerListeners();
 		PaperCommandManager paperCommandManager = new PaperCommandManager(this);
 		paperCommandManager.enableUnstableAPI("help");
@@ -79,5 +82,7 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
 		return cslConfig;
 	}
 
-
+	public EntityChunkInspector getChunkInspector() {
+		return entityChunkInspector;
+	}
 }
