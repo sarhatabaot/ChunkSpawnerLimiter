@@ -41,15 +41,11 @@ public class EntityInspectTask extends BukkitRunnable {
     public void run() {
         final Chunk chunk = this.refChunk.get();
         if (chunk == null || !chunk.isLoaded()) {
-            Bukkit.getLogger().fine("Chunk is null or unloaded! Ignoring");
+            ChunkSpawnerLimiter.cancelTask(id);
             return;
         }
 
         ChatUtil.debug(Debug.ACTIVE_CHECK, chunk.getX(), chunk.getZ());
-        if (!chunk.isLoaded()) {
-            ChunkSpawnerLimiter.cancelTask(id);
-            return;
-        }
 
         entityChunkInspector.checkChunk(chunk);
     }
