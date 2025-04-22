@@ -61,6 +61,7 @@ public class EntityChunkInspector {
         AtomicBoolean existingFlag = activeChunks.putIfAbsent(chunkId, needsRecheck);
 
         if (existingFlag != null) {
+            ChatUtil.debug("Chunk is already being processed. Mark for re-check.");
             // Chunk is already being processed. Mark for re-check.
             existingFlag.set(true);
             return;
