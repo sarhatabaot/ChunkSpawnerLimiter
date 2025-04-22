@@ -40,6 +40,10 @@ public class EntityChunkInspector {
      * @param chunk Chunk
      */
     public void checkChunk(@NotNull Chunk chunk) {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> checkChunkInternal(chunk), 1L);
+    }
+
+    private void checkChunkInternal(@NotNull Chunk chunk) {
         String worldName = chunk.getWorld().getName();
         if (config.isWorldNotAllowed(worldName)) {
             ChatUtil.debug("World %s is not allowed", worldName);
