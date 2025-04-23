@@ -117,15 +117,18 @@ public class EntityChunkInspector {
     }
 
     private void handleChunkPostProcessing(ChunkIdentifier chunkId) {
+        ChatUtil.debug("Post processing.. for (%s)", chunkId.toString());
         AtomicBoolean flag = activeChunks.get(chunkId);
         if (flag == null) return;
 
         if (flag.get()) {
             // Reset flag and re-check
+            ChatUtil.debug("Recheck chunk (%s)", chunkId.toString());
             flag.set(false);
             recheckChunk(chunkId);
         } else {
             // No pending changes; remove
+            ChatUtil.debug("No pending changes for (%s)", chunkId.toString());
             activeChunks.remove(chunkId);
         }
     }

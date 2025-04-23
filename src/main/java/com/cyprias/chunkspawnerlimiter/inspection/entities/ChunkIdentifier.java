@@ -38,4 +38,13 @@ public class ChunkIdentifier {
     public int getZ() {
         return z;
     }
+
+    @Override
+    public String toString() {
+        return "ChunkIdentifier{" +
+                "worldUuid=" + worldUuid +
+                ", x=" + x +
+                ", z=" + z +
+                '}';
+    }
 }
