@@ -173,6 +173,10 @@ public class EntityChunkInspector {
     }
 
     private void removeOrKillEntity(Entity entity) {
+        if (!entity.isValid()) {
+            return;
+        }
+
         if (!config.isKillInsteadOfRemove() || !isKillable(entity)) {
             entity.remove();
             return;
