@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.shadow)
     alias(libs.plugins.plugin.yml)
 }
-version = "4.4.3"
+version = "4.4.3-BETA"
 description = "Limit entities in chunks."
 
 dependencies {
@@ -42,7 +42,6 @@ tasks {
         archiveClassifier.set("shadow")
 
         relocate("org.bstats", "com.cyprias.chunkspawnerlimiter.libs.bstats")
-        relocate("de.tr7zw.changeme.nbtapi", "com.cyprias.chunkspawnerlimiter.libs.nbt")
         relocate("co.aikar.commands", "com.cyprias.chunkspawnerlimiter.libs.acf")
         relocate("co.aikar.locales", "com.cyprias.chunkspawnerlimiter.libs.locales")
     }

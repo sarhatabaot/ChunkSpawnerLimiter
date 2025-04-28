@@ -14,7 +14,6 @@ dependencyResolutionManagement {
             library("bstats", "org.bstats:bstats-bukkit:3.1.0")
             library("acf", "co.aikar:acf-paper:0.5.1-SNAPSHOT")
             library("annotations", "org.jetbrains:annotations:26.0.2")
-            library("nbt-api", "de.tr7zw:item-nbt-api:2.15.0")
 
             plugin("plugin-yml","net.minecrell.plugin-yml.bukkit").version("0.6.0")
             plugin("shadow","com.gradleup.shadow").version("8.3.1")
