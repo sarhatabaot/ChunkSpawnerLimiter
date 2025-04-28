@@ -1,7 +1,6 @@
 package com.cyprias.chunkspawnerlimiter.listeners;
 
-import com.cyprias.chunkspawnerlimiter.ChunkSpawnerLimiter;
-import com.cyprias.chunkspawnerlimiter.inspection.entities.EntityChunkInspector;
+import com.cyprias.chunkspawnerlimiter.inspection.entities.EntityChunkInspectorScheduler;
 import com.cyprias.chunkspawnerlimiter.utils.ChatUtil;
 import com.cyprias.chunkspawnerlimiter.messages.Debug;
 import org.bukkit.Chunk;
@@ -19,11 +18,11 @@ import org.jetbrains.annotations.NotNull;
  */
 public class EntityListener implements Listener {
     private final CslConfig config;
-    private final EntityChunkInspector entityChunkInspector;
+    private final EntityChunkInspectorScheduler entityChunkInspectorScheduler;
 
-    public EntityListener(final ChunkSpawnerLimiter plugin) {
-        this.config = plugin.getCslConfig();
-        this.entityChunkInspector = plugin.getChunkInspector();
+    public EntityListener(CslConfig config, EntityChunkInspectorScheduler entityChunkInspectorScheduler) {
+        this.config = config;
+        this.entityChunkInspectorScheduler = entityChunkInspectorScheduler;
     }
 
     @EventHandler
@@ -39,8 +38,8 @@ public class EntityListener implements Listener {
             return;
         }
 
-        Chunk chunk = event.getLocation().getChunk();
-        entityChunkInspector.checkChunk(chunk);
+        final Chunk chunk = event.getLocation().getChunk();
+        entityChunkInspectorScheduler.scheduleInspection(chunk,false);
         checkSurroundings(chunk);
     }
 
@@ -51,10 +50,10 @@ public class EntityListener implements Listener {
             return;
         }
 
-        Chunk chunk = event.getVehicle().getLocation().getChunk();
+        final Chunk chunk = event.getVehicle().getLocation().getChunk();
 
         ChatUtil.debug(Debug.VEHICLE_CREATE_EVENT, chunk.getX(), chunk.getZ());
-        entityChunkInspector.checkChunk(chunk);
+        entityChunkInspectorScheduler.scheduleInspection(chunk,false);
         checkSurroundings(chunk);
     }
 
@@ -64,10 +63,10 @@ public class EntityListener implements Listener {
             return;
         }
 
-        Chunk chunk = event.getEntity().getLocation().getChunk();
+        final Chunk chunk = event.getEntity().getLocation().getChunk();
 
         ChatUtil.debug("Entity Spawn Event: %s, %dx, %dz ", event.getEntity().getType().name(), chunk.getX(), chunk.getZ());
-        entityChunkInspector.checkChunk(chunk);
+        entityChunkInspectorScheduler.scheduleInspection(chunk,false);
         checkSurroundings(chunk);
     }
 
@@ -77,7 +76,7 @@ public class EntityListener implements Listener {
         if (surrounding > 0) {
             for (int x = chunk.getX() + surrounding; x >= (chunk.getX() - surrounding); x--) {
                 for (int z = chunk.getZ() + surrounding; z >= (chunk.getZ() - surrounding); z--) {
-                    entityChunkInspector.checkChunk(chunk.getWorld().getChunkAt(x, z));
+                    entityChunkInspectorScheduler.scheduleInspection(chunk.getWorld().getChunkAt(x, z),false);
                 }
             }
         }

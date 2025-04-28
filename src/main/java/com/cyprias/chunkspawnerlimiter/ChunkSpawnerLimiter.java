@@ -5,6 +5,7 @@ import com.cyprias.chunkspawnerlimiter.commands.CslCommand;
 import com.cyprias.chunkspawnerlimiter.configs.impl.BlocksConfig;
 import com.cyprias.chunkspawnerlimiter.configs.impl.CslConfig;
 import com.cyprias.chunkspawnerlimiter.inspection.entities.EntityChunkInspector;
+import com.cyprias.chunkspawnerlimiter.inspection.entities.EntityChunkInspectorScheduler;
 import com.cyprias.chunkspawnerlimiter.listeners.EntityListener;
 import com.cyprias.chunkspawnerlimiter.listeners.PlaceBlockListener;
 import com.cyprias.chunkspawnerlimiter.listeners.WorldListener;
@@ -16,6 +17,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class ChunkSpawnerLimiter extends JavaPlugin {
+	private EntityChunkInspectorScheduler entityChunkInspectorScheduler;
 	private EntityChunkInspector entityChunkInspector;
 	private CslConfig cslConfig;
 
@@ -30,6 +32,7 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
 		ChatUtil.logAndCheckArmorStandTickWarning();
 
 		this.entityChunkInspector = new EntityChunkInspector(this);
+		this.entityChunkInspectorScheduler = new EntityChunkInspectorScheduler(this, entityChunkInspector);
 		registerListeners();
 		PaperCommandManager paperCommandManager = new PaperCommandManager(this);
 		paperCommandManager.enableUnstableAPI("help");
@@ -64,8 +67,8 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
 
 	private void registerListeners() {
 		PluginManager pm = getServer().getPluginManager();
-		pm.registerEvents(new EntityListener(this), this);
-		pm.registerEvents(new WorldListener(this), this);
+		pm.registerEvents(new EntityListener(cslConfig, entityChunkInspectorScheduler), this);
+		pm.registerEvents(new WorldListener(this, entityChunkInspectorScheduler), this);
 		pm.registerEvents(new PlaceBlockListener(this),this);
 		ChatUtil.debug(Debug.REGISTER_LISTENERS);
 	}
