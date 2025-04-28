@@ -6,8 +6,10 @@ import com.cyprias.chunkspawnerlimiter.compare.MobGroupCompare;
 import com.cyprias.chunkspawnerlimiter.configs.impl.CslConfig;
 import com.cyprias.chunkspawnerlimiter.utils.ChatUtil;
 import com.cyprias.chunkspawnerlimiter.utils.Util;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Raid;
+import org.bukkit.World;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
@@ -18,10 +20,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class EntityChunkInspector {
     private final ChunkSpawnerLimiter plugin;
     private final CslConfig config;
+
+    private final ConcurrentHashMap<ChunkIdentifier, AtomicBoolean> activeChunks = new ConcurrentHashMap<>();
 
     public EntityChunkInspector(@NotNull ChunkSpawnerLimiter plugin) {
         this.plugin = plugin;
@@ -34,47 +40,108 @@ public class EntityChunkInspector {
      * @param chunk Chunk
      */
     public void checkChunk(@NotNull Chunk chunk) {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> checkChunkInternal(chunk), 1L);
+    }
+
+    private void checkChunkInternal(@NotNull Chunk chunk) {
         String worldName = chunk.getWorld().getName();
         if (config.isWorldNotAllowed(worldName)) {
             ChatUtil.debug("World %s is not allowed", worldName);
             return;
         }
 
-        Entity[] entities = chunk.getEntities();
+        ChunkIdentifier chunkId = new ChunkIdentifier(
+                chunk.getWorld().getUID(),
+                chunk.getX(),
+                chunk.getZ()
+        );
+
+        // Attempt to add the chunk with a new flag (default: no re-check needed)
+        AtomicBoolean needsRecheck = new AtomicBoolean(false);
+        AtomicBoolean existingFlag = activeChunks.putIfAbsent(chunkId, needsRecheck);
+
+        if (existingFlag != null) {
+            ChatUtil.debug("Chunk is already being processed. Mark for re-check.");
+            // Chunk is already being processed. Mark for re-check.
+            existingFlag.set(true);
+            return;
+        }
 
         // Offload calculations to an async task
         new BukkitRunnable() {
             @Override
             public void run() {
-                // Perform calculations async
-                Map<String, ArrayList<Entity>> types = addEntitiesByConfig(entities); // should be cached on load (already is)
-                List<Entity> entitiesToRemove = new ArrayList<>();
+                try {
+                    Entity[] entities = chunk.getEntities();
+                    // Perform calculations async
+                    Map<String, ArrayList<Entity>> types = addEntitiesByConfig(entities);
+                    List<Entity> entitiesToRemove = calculateRemovals(types);
 
-                for (Map.Entry<String, ArrayList<Entity>> entry : types.entrySet()) {
-                    String entityType = entry.getKey();
-                    List<Entity> entityList = entry.getValue();
-                    int limit = config.getEntityLimit(entityType);
-
-                    if (entityList.size() > limit) {
-                        for (int i = entityList.size() - 1; i >= limit; i--) {
-                            Entity entity = entityList.get(i);
-                            if (!shouldPreserve(entity)) {
-                                entitiesToRemove.add(entity);
-                            }
+                    // Pass the results back to the main thread
+                    EntityChunkInspectionResult result = new EntityChunkInspectionResult(entitiesToRemove);
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            applyChanges(result); // Apply changes on the main thread
                         }
-                    }
+                    }.runTask(plugin);
+                } finally {
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            handleChunkPostProcessing(chunkId);
+                        }
+                    }.runTask(plugin);
                 }
-
-                // Pass the results back to the main thread
-                EntityChunkInspectionResult result = new EntityChunkInspectionResult(entitiesToRemove);
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        applyChanges(result); // Apply changes on the main thread
-                    }
-                }.runTask(plugin);
             }
         }.runTaskAsynchronously(plugin);
+    }
+
+    private @NotNull List<Entity> calculateRemovals(@NotNull Map<String, ArrayList<Entity>> types) {
+        final ArrayList<Entity> entitiesToRemove = new ArrayList<>();
+        for (Map.Entry<String, ArrayList<Entity>> entry : types.entrySet()) {
+            String entityType = entry.getKey();
+            List<Entity> entityList = entry.getValue();
+            int limit = config.getEntityLimit(entityType);
+
+            if (entityList.size() > limit) {
+                for (int i = entityList.size() - 1; i >= limit; i--) {
+                    Entity entity = entityList.get(i);
+                    if (!shouldPreserve(entity)) {
+                        entitiesToRemove.add(entity);
+                    }
+                }
+            }
+        }
+        return entitiesToRemove;
+    }
+
+    private void handleChunkPostProcessing(ChunkIdentifier chunkId) {
+        ChatUtil.debug("Post processing.. for (%s)", chunkId.toString());
+        AtomicBoolean flag = activeChunks.get(chunkId);
+        if (flag == null) return;
+
+        if (flag.get()) {
+            // Reset flag and re-check
+            ChatUtil.debug("Recheck chunk (%s)", chunkId.toString());
+            flag.set(false);
+            recheckChunk(chunkId);
+        } else {
+            // No pending changes; remove
+            ChatUtil.debug("No pending changes for (%s)", chunkId.toString());
+            activeChunks.remove(chunkId);
+        }
+    }
+
+    private void recheckChunk(@NotNull ChunkIdentifier chunkId) {
+        final World world = Bukkit.getWorld(chunkId.getWorldUuid());
+        if (world == null || !world.isChunkLoaded(chunkId.getX(), chunkId.getZ())) {
+            activeChunks.remove(chunkId);
+            return;
+        }
+
+        final Chunk chunk = world.getChunkAt(chunkId.getX(), chunkId.getZ());
+        checkChunk(chunk);
     }
 
     public void applyChanges(final @NotNull EntityChunkInspectionResult result) {
