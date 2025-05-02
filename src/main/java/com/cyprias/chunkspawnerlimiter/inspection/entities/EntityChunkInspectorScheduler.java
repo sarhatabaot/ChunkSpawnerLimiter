@@ -32,7 +32,7 @@ public class EntityChunkInspectorScheduler {
 
         BukkitTask bukkitTask = repeating ?
                 task.runTaskTimer(plugin, delay, delay) :
-                task.runTaskLater(plugin, delay);
+                task.runTask(plugin);
 
         task.setId(bukkitTask.getTaskId());
         chunkTasks.put(chunk, bukkitTask);
