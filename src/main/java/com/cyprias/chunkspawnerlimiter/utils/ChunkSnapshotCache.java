@@ -63,7 +63,7 @@ public final class ChunkSnapshotCache {
     }
 
     /**
-     * Counts blocks in a chunk section (reused from your original method).
+     * Counts blocks in a chunk section.
      */
     private int countBlocksInChunk(ChunkSnapshot snapshot, Material material, int minY, int maxY) {
         int count = 0;

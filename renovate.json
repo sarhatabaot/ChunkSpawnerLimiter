@@ -1,15 +1,52 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:base",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":disableRateLimiting"
   ],
   "labels": ["dependencies"],
   "packageRules": [
     {
-      "matchPackageNames": [
-        "com.gradleup.shadow"
-      ],
+      "matchPackageNames": ["org.spigotmc:spigot-api"],
+      "allowedVersions": "1.14.4-R0.1-SNAPSHOT"
+    },
+    {
+      "matchPackageNames": ["co.aikar:acf-paper"],
+      "allowedVersions": "0.5.1-SNAPSHOT"
+    },
+    {
+      "matchPackageNames": ["net.minecrell.plugin-yml.bukkit"],
+      "allowedVersions": "0.6.0"
+    },
+    {
+      "matchPackageNames": ["com.gradleup.shadow"],
       "enabled": false
+    },
+    {
+      "matchPackageNames": ["org.bstats:bstats-bukkit"],
+      "groupName": "bstats"
+    },
+    {
+      "matchPackageNames": ["org.jetbrains:annotations"],
+      "groupName": "JetBrains Annotations"
+    },
+    {
+      "matchUpdateTypes": ["patch", "minor"],
+      "matchCurrentVersion": "!/^0/",
+      "groupName": "non-major updates",
+      "schedule": ["before 5am on monday"]
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "groupName": "major updates",
+      "dependencyDashboardApproval": true
     }
-  ]
+  ],
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 0,
+  "rangeStrategy": "bump",
+  "dependencyDashboard": true,
+  "ignoreDeps": ["org.gradle.toolchains.foojay-resolver-convention"]
 }
