@@ -16,7 +16,7 @@ dependencyResolutionManagement {
             library("annotations", "org.jetbrains:annotations:26.0.2")
 
             plugin("plugin-yml","net.minecrell.plugin-yml.bukkit").version("0.6.0")
-            plugin("shadow","com.gradleup.shadow").version("8.3.1")
+            plugin("shadow","com.gradleup.shadow").version("8.3.9")
         }
     }
 }
