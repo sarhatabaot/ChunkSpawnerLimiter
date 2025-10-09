@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.shadow)
     alias(libs.plugins.plugin.yml)
 }
-version = "4.4.4"
+version = "4.4.5"
 description = "Limit entities in chunks."
 
 dependencies {
@@ -13,6 +13,7 @@ dependencies {
 
     implementation(libs.bstats)
     implementation(libs.acf)
+    implementation(libs.commands)
     implementation(libs.annotations)
 }
 
@@ -42,6 +43,9 @@ tasks {
         archiveClassifier.set("shadow")
 
         relocate("org.bstats", "com.cyprias.chunkspawnerlimiter.libs.bstats")
+        relocate("me.despical.commandframework", "com.cyprias.chunkspawnerlimiter.libs.commands")
+
+        //todo remove once conversion is done
         relocate("co.aikar.commands", "com.cyprias.chunkspawnerlimiter.libs.acf")
         relocate("co.aikar.locales", "com.cyprias.chunkspawnerlimiter.libs.locales")
     }
