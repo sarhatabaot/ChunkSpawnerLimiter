@@ -1,0 +1,123 @@
+properties:
+  # Show debug messages.
+  debug-messages: false
+
+  # Check a chunk upon load (ChunkLoadEvent).
+  check-chunk-load: false
+  
+  # Check a chunk upon unload (ChunkUnloadEvent).
+  check-chunk-unload: false
+
+  # When a chunk is loaded, recheck it periodically.
+  # Check-chunk-load must be true for this to work.
+  active-inspections: true
+  
+  # Check a chunk when a mob spawns (CreatureSpawnEvent).
+  watch-creature-spawns: true
+
+  # Check a chunk when a vehicle spawns (VehicleCreateEvent).
+  watch-vehicle-create-event: true
+
+  # Check a chunk when an entity spawns (ArmorStand)
+  watch-entity-spawns: true
+
+  # Radius of surrounding chunks to check.
+  check-surrounding-chunks: 1
+
+  # How often, in seconds, to check the chunk.
+  inspection-frequency: 300
+  
+  # Notify players in that chunk if stuff has been culled. 
+  notify-players: false
+
+  # Prioritize entities without names over older entities.
+  preserve-named-entities: true
+
+  # Don't remove pillagers that are part of a raid.
+  preserve-raid-entities: true
+
+  # Ignore entities with any of the following metadata.
+  ignore-metadata:
+    - shopkeeper
+
+  kill-instead-of-remove: false
+
+  # Only relevant if kill-instead-of-remove is used (unless paper's tick setting is set to false)
+  # Drops the items from the armor stands, i.e. helmet, etc
+  drop-items-from-armor-stands: false
+
+  log-armor-stand-tick-warning: true
+
+# Spawn reasons to cull on.
+spawn-reasons:
+  BREEDING: true
+  BUILD_IRONGOLEM: true
+  BUILD_SNOWMAN: true
+  BUILD_WITHER: true
+  CHUNK_GEN: true
+  DEFAULT: true
+  DISPENSE_EGG: true
+  DROWNED: true
+  EGG: true
+  JOCKEY: true
+  LIGHTNING: true
+  MOUNT: true
+  NATURAL: true
+  NETHER_PORTAL: true
+  OCELOT_BABY: true
+  REINFORCEMENTS: true #proabably animals
+  SILVERFISH_BLOCK: true
+  SPAWNER: true
+  SPAWNER_EGG: true
+  TRAP: true
+  VILLAGE_DEFENSE: true
+  VILLAGE_INVASION: true
+
+entities:
+  ANIMAL: 50
+  MONSTER: 50
+  NPC: 50
+  OTHER: 500
+#  WATER_MOB: 5
+#  AMBIENT: 5
+#  CREEPER: 10
+#  SHEEP: 10
+#  OCELOT: 10
+#  GIANT: 10
+#  SLIME: 10
+#  GHAST: 10
+#  PIG_ZOMBIE: 10
+#  ENDERMAN: 10
+#  SILVERFISH: 10
+#  MAGMA_CUBE: 10
+#  CHICKEN: 10
+#  SQUID: 10
+#  WOLF: 10
+#  MUSHROOM_COW: 10
+#  SNOWMAN: 10
+#  VILLAGER: 10
+#  SPIDER: 10
+#  SKELETON: 10
+#  ZOMBIE: 10
+#  BLAZE: 10
+#  CAVE_SPIDER: 10
+#  IRON_GOLEM: 10
+#  WITHER: 10
+#  PIG: 10
+#  HORSE: 10
+#  WITCH: 10
+
+# Exclude these worlds from limits.
+worlds:
+  # Can be "excluded" or "included"
+  mode: excluded
+  worlds: []
+
+messages:
+  removedEntities: "&7Removed %s %s in your chunk."
+  reloadedConfig: "&cReloaded csl config."
+  maxAmountBlocks: "&6Cannot place more &4{material}&6. Max amount per chunk &2{amount}."
+  maxAmountBlocksTitle: "&6Cannot place more &4{material}&6."
+  maxAmountBlocksSubtitle: "&6Max amount per chunk &2{amount}."
+
+metrics: true

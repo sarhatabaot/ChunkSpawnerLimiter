@@ -1,0 +1,290 @@
+package com.github.sarhatabaot.chunkspawnerlimiter;
+
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Unmodifiable;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+
+public class PluginConfig {
+    private final JavaPlugin plugin;
+    private FileConfiguration config;
+
+    // Record for world scan ranges
+    public record WorldScanRange(int minY, int maxY) {}
+
+    // Sealed interface for removal modes
+    public sealed interface RemovalMode {
+        String getKey();
+
+        static @NotNull RemovalMode fromString(@NotNull String mode) {
+            return switch (mode.toLowerCase()) {
+                case "prevent" -> new Prevent();
+                case "remove" -> new Remove();
+                case "kill" -> new Kill();
+                case "enforce" -> new Enforce();
+                case "enforce-kill" -> new EnforceKill();
+                default -> new Enforce(); // Default fallback
+            };
+        }
+    }
+
+    public record Prevent() implements RemovalMode {
+        @Contract(pure = true)
+        public @NotNull String getKey() { return "prevent"; }
+    }
+
+    public record Remove() implements RemovalMode {
+        @Contract(pure = true)
+        public @NotNull String getKey() { return "remove"; }
+    }
+
+    public record Kill() implements RemovalMode {
+        @Contract(pure = true)
+        public @NotNull String getKey() { return "kill"; }
+    }
+
+    public record Enforce() implements RemovalMode {
+        @Contract(pure = true)
+        public @NotNull String getKey() { return "enforce"; }
+    }
+
+    public record EnforceKill() implements RemovalMode {
+        @Contract(pure = true)
+        public @NotNull String getKey() { return "enforce-kill"; }
+    }
+
+    public PluginConfig(JavaPlugin plugin) {
+        this.plugin = Objects.requireNonNull(plugin, "Plugin cannot be null");
+        this.plugin.saveDefaultConfig();
+        reload();
+    }
+
+    public void reload() {
+        plugin.reloadConfig();
+        this.config = plugin.getConfig();
+    }
+
+    // Main settings
+    public boolean isEnabled() {
+        return config.getBoolean("enabled", false);
+    }
+
+    public boolean isDebugMessages() {
+        return config.getBoolean("debug-messages", false);
+    }
+
+    public boolean isMetrics() {
+        return config.getBoolean("metrics", true);
+    }
+
+    // Event settings
+    // Might remove this entirely, we always want to check when a chunk loads / unloads. todo
+    public boolean isChunkLoadCheck() {
+        return config.getBoolean("events.chunk.load", false);
+    }
+    // Might remove this entirely, we always want to check when a chunk loads / unloads. todo
+    public boolean isChunkUnloadCheck() {
+        return config.getBoolean("events.chunk.unload", false);
+    }
+
+    // In theory, this is covered by EntitySpawnEvent, so why do we need this? todo
+    public boolean isCreatureSpawnWatch() {
+        return config.getBoolean("events.spawn.creature", true);
+    }
+
+    public boolean isVehicleSpawnWatch() {
+        return config.getBoolean("events.spawn.vehicle", true);
+    }
+
+    public boolean isEntitySpawnWatch() {
+        return config.getBoolean("events.spawn.entity", true);
+    }
+
+    public boolean isActiveInspections() {
+        return config.getBoolean("events.active-inspections", true);
+    }
+
+    public int getInspectionFrequency() {
+        return config.getInt("events.inspection-frequency", 300);
+    }
+
+    public int getSurroundingChunksRadius() {
+        return config.getInt("events.chunk.surrounding-chunks-radius", 1);
+    }
+
+    // Entity settings
+    public Map<String, Integer> getEntityLimits() {
+        var limitsSection = config.getConfigurationSection("entities.limits");
+        if (limitsSection == null) return Collections.emptyMap();
+
+        return limitsSection.getKeys(false).stream()
+                .collect(Collectors.toMap(
+                        key -> key,
+                        limitsSection::getInt
+                ));
+    }
+
+    public RemovalMode getRemovalMode() {
+        var mode = config.getString("entities.removal.mode", "enforce");
+        return RemovalMode.fromString(mode);
+    }
+
+    public boolean shouldDropArmorStandItems() {
+        return config.getBoolean("entities.removal.drop-armor-stand-items", false);
+    }
+
+    public boolean shouldLogArmorStandWarnings() {
+        return config.getBoolean("entities.removal.log-armor-stand-warnings", true);
+    }
+
+    public boolean shouldPreserveNamedEntities() {
+        return config.getBoolean("entities.preservation.named-entities", true);
+    }
+
+    public boolean shouldPreserveRaidEntities() {
+        return config.getBoolean("entities.preservation.raid-entities", true);
+    }
+
+    public List<String> getIgnoreMetadata() {
+        return Objects.requireNonNullElse(
+                config.getStringList("entities.ignore-metadata"),
+                List.of("shopkeeper")
+        );
+    }
+
+    // Spawn reasons
+    public Map<String, Boolean> getSpawnReasons() {
+        var reasonsSection = config.getConfigurationSection("spawn-reasons");
+        if (reasonsSection == null) return getDefaultSpawnReasons();
+
+        return reasonsSection.getKeys(false).stream()
+                .collect(Collectors.toMap(
+                        key -> key,
+                        reasonsSection::getBoolean
+                ));
+    }
+
+    private @NotNull @Unmodifiable Map<String, Boolean> getDefaultSpawnReasons() {
+        return Map.ofEntries(
+                Map.entry("BREEDING", true),
+                Map.entry("BUILD_IRONGOLEM", true),
+                Map.entry("BUILD_SNOWMAN", true),
+                Map.entry("BUILD_WITHER", true),
+                Map.entry("CHUNK_GEN", true),
+                Map.entry("DEFAULT", true),
+                Map.entry("DISPENSE_EGG", true),
+                Map.entry("DROWNED", true),
+                Map.entry("EGG", true),
+                Map.entry("JOCKEY", true),
+                Map.entry("LIGHTNING", true),
+                Map.entry("MOUNT", true),
+                Map.entry("NATURAL", true),
+                Map.entry("NETHER_PORTAL", true),
+                Map.entry("OCELOT_BABY", true),
+                Map.entry("REINFORCEMENTS", true),
+                Map.entry("SILVERFISH_BLOCK", true),
+                Map.entry("SPAWNER", true),
+                Map.entry("SPAWNER_EGG", true),
+                Map.entry("TRAP", true),
+                Map.entry("VILLAGE_DEFENSE", true),
+                Map.entry("VILLAGE_INVASION", true)
+        );
+    }
+
+    // Block limits
+    public Map<String, Integer> getBlockLimits() {
+        var blocksSection = config.getConfigurationSection("blocks");
+        if (blocksSection == null) return Collections.emptyMap();
+
+        return blocksSection.getKeys(false).stream()
+                .collect(Collectors.toMap(
+                        key -> key,
+                        blocksSection::getInt
+                ));
+    }
+
+    // World settings
+    public String getWorldsMode() {
+        return config.getString("worlds.mode", "excluded");
+    }
+
+    public List<String> getWorldsList() {
+        return Objects.requireNonNullElse(
+                config.getStringList("worlds.list"),
+                List.of()
+        );
+    }
+    private static final String DEFAULT_STRING = "default";
+
+    public Map<String, WorldScanRange> getWorldScanRanges() {
+        var rangesSection = config.getConfigurationSection("worlds.scan-ranges");
+        if (rangesSection == null) {
+            return Map.of(DEFAULT_STRING, new WorldScanRange(-64, 256));
+        }
+
+        var ranges = new HashMap<String, WorldScanRange>();
+
+        // Default range
+        var defaultSection = rangesSection.getConfigurationSection(DEFAULT_STRING);
+        if (defaultSection != null) {
+            ranges.put(
+                    DEFAULT_STRING, new WorldScanRange(
+                    defaultSection.getInt("min-y", -64),
+                    defaultSection.getInt("max-y", 256)
+            ));
+        } else {
+            ranges.put(DEFAULT_STRING, new WorldScanRange(-64, 256));
+        }
+
+        // World-specific ranges
+        for (var worldName : rangesSection.getKeys(false)) {
+            if (!worldName.equals(DEFAULT_STRING)) {
+                var worldSection = rangesSection.getConfigurationSection(worldName);
+                if (worldSection != null) {
+                    ranges.put(worldName, new WorldScanRange(
+                            worldSection.getInt("min-y"),
+                            worldSection.getInt("max-y")
+                    ));
+                }
+            }
+        }
+
+        return ranges;
+    }
+
+    public WorldScanRange getWorldScanRange(String worldName) {
+        var ranges = getWorldScanRanges();
+        return ranges.getOrDefault(worldName, ranges.get(DEFAULT_STRING));
+    }
+
+    // Notification settings
+    public boolean shouldNotifyPlayersInChunk() {
+        return config.getBoolean("notifications.players-in-chunk", false);
+    }
+
+    public boolean shouldUseTitleNotifications() {
+        return config.getBoolean("notifications.method.title", true);
+    }
+
+    public boolean shouldUseMessageNotifications() {
+        return config.getBoolean("notifications.method.message", false);
+    }
+
+    public String getEntitiesRemovedMessage() {
+        return config.getString("notifications.messages.entities-removed", "&7Removed %s %s in your chunk.");
+    }
+
+    public String getReloadCompleteMessage() {
+        return config.getString("notifications.messages.reload-complete", "&cReloaded csl config.");
+    }
+
+    public String getMaxBlocksMessage() {
+        return config.getString("notifications.messages.max-blocks", "&6Cannot place more &4{material}&6. Max amount per chunk &2{amount}.");
+    }
+
+}

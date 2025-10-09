@@ -7,3 +7,5 @@ dependency-reduced-pom.xml
 
 .gradle
 build
+
+DESIGN.md
