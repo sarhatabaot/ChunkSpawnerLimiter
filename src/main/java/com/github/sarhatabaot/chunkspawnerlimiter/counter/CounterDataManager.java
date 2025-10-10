@@ -12,5 +12,9 @@ public class CounterDataManager {
         return loadedChunkCounters.get(chunkCoord);
     }
 
+    public void removeCounterData(final ChunkCoord chunkCoord) {
+        loadedChunkCounters.remove(chunkCoord);
+    }
+
 
 }

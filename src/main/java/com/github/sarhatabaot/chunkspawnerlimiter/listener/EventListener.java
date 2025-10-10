@@ -52,7 +52,7 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void onEntitySpawn(EntitySpawnEvent event) {
-        if (!pluginConfig.getEntityLimits().containsKey(event.getEntity().getType().name())) {
+        if (!pluginConfig.hasEntityLimit(event.getEntity().getType().name())) { //todo add group (instance of)
             return;
         }
 
@@ -60,7 +60,7 @@ public class EventListener implements Listener {
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getEntity().getWorld().getChunkAt(event.getEntity().getLocation()));
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
-        if (counterData.getEntityCount(entityType) + 1 <= pluginConfig.getEntityLimits().get(entityType.name())) {
+        if (isUnderOrEqualToLimit(counterData.getEntityCount(entityType), pluginConfig.getEntityLimits().get(entityType.name()))) {
             counterData.incrementEntity(entityType);
             return;
         }
@@ -74,11 +74,16 @@ public class EventListener implements Listener {
         //this logic applied to vehicle & block as well.
     }
 
+    private boolean isUnderOrEqualToLimit(int count, int limit) {
+        return count + 1 <= limit;
+    }
+
     @EventHandler
     public void onEntityDeath(@NotNull EntityDeathEvent event) { //just to decrease counters for tracking.
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getEntity().getWorld().getChunkAt(event.getEntity().getLocation()));
         counterDataManager.getCounterData(chunkCoord).decrementEntity(event.getEntityType());
     }
+
 
     @EventHandler
     public void onVehicleCreate(@NotNull VehicleCreateEvent event) {

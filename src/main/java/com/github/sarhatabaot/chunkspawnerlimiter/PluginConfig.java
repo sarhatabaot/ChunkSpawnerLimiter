@@ -1,9 +1,13 @@
 package com.github.sarhatabaot.chunkspawnerlimiter;
 
+import com.github.sarhatabaot.chunkspawnerlimiter.listener.ChunkListener;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.*;
@@ -119,6 +123,7 @@ public class PluginConfig {
 
     // Entity settings
     public Map<String, Integer> getEntityLimits() {
+        //todo cache this locally
         var limitsSection = config.getConfigurationSection("entities.limits");
         if (limitsSection == null) return Collections.emptyMap();
 
@@ -127,6 +132,19 @@ public class PluginConfig {
                         key -> key,
                         limitsSection::getInt
                 ));
+    }
+
+    public boolean hasEntityLimit(final Entity entity) {
+        final String entityGroup = getEntityGroup(entity);
+        return hasEntityLimit(entity.getType().name()) || getEntityLimits().containsKey(entityGroup);
+    }
+
+    public boolean hasEntityLimit(final String entityType) {
+        return getEntityLimits().containsKey(entityType);
+    }
+
+    public boolean hasBlockLimit(final String material) {
+        return getBlockLimits().containsKey(material);
     }
 
     public RemovalMode getRemovalMode() {
@@ -159,6 +177,7 @@ public class PluginConfig {
 
     // Spawn reasons
     public Map<String, Boolean> getSpawnReasons() {
+        //cache this
         var reasonsSection = config.getConfigurationSection("spawn-reasons");
         if (reasonsSection == null) return getDefaultSpawnReasons();
 
@@ -198,6 +217,7 @@ public class PluginConfig {
 
     // Block limits
     public Map<String, Integer> getBlockLimits() {
+        //todo cache this
         var blocksSection = config.getConfigurationSection("blocks");
         if (blocksSection == null) return Collections.emptyMap();
 
@@ -222,6 +242,7 @@ public class PluginConfig {
     private static final String DEFAULT_STRING = "default";
 
     public Map<String, WorldScanRange> getWorldScanRanges() {
+        //todo cache this
         var rangesSection = config.getConfigurationSection("worlds.scan-ranges");
         if (rangesSection == null) {
             return Map.of(DEFAULT_STRING, new WorldScanRange(-64, 256));
@@ -285,6 +306,63 @@ public class PluginConfig {
 
     public String getMaxBlocksMessage() {
         return config.getString("notifications.messages.max-blocks", "&6Cannot place more &4{material}&6. Max amount per chunk &2{amount}.");
+    }
+
+    public @NotNull String getEntityGroup(
+            @NotNull Entity entity
+    ) {
+        // 1️⃣ Try to find a match in config
+        String fromConfig = getGroupFromConfig(entity.getType(), config);
+        if (fromConfig != null) {
+            return fromConfig;
+        }
+
+        // 2️⃣ Fallback to class-based group
+        return getGroupFromInstance(entity);
+    }
+
+    private @Nullable String getGroupFromConfig(
+            EntityType type,
+            @NotNull FileConfiguration config
+    ) {
+        ConfigurationSection section = config.getConfigurationSection("entity-groups");
+        if (section == null) {
+            return null;
+        }
+
+        for (String group : section.getKeys(false)) {
+            List<String> members = config.getStringList("entity-groups." + group);
+            if (members.contains(type.name())) {
+                return group;
+            }
+        }
+        return null;
+    }
+
+
+    private @NotNull String getGroupFromInstance(Entity entity) {
+        if (entity instanceof Animals) {
+            return "ANIMALS";
+        }
+        if (entity instanceof Monster) {
+            return "MONSTER";
+        }
+        if (entity instanceof NPC) {
+            return "NPC";
+        }
+        if (entity instanceof WaterMob) {
+            return "WATER_MOB";
+        }
+        if (entity instanceof Ambient) {
+            return "AMBIENT";
+        }
+        if (entity instanceof Golem) {
+            return "GOLEM";
+        }
+        if (entity instanceof Vehicle) {
+            return "VEHICLE";
+        }
+        return entity.getType().name();
     }
 
 }
