@@ -18,7 +18,7 @@ events:
   active-inspections: false # same here, we want these to always be on.
   # todo, the modes wont work properly without these enabled. Actually not sure about this one, should we occassionaly inspect loaded chunks?? We check every time a creature spawns etc
   # todo needed, because, entities may naturally move between chunks
-  # todo so we can trigger an inspection on all loaded chunks every x amount of seconds.
+  # todo so we can trigger an inspection on all loaded chunks every x amount of seconds. Probably safe to trigger this every once in a while (1 min)
   # todo defaults are powerful, so let's experiment and choose the most appropriate one
   inspection-frequency: 300
 
@@ -92,6 +92,8 @@ blocks:
 worlds:
   mode: excluded  # "excluded" or "included"
   list: []
+
+  # todo I'm removing these, bypassed issues with reflection, this is always causing so many problems
   scan-ranges:
     default:
       min-y: -64

@@ -5,6 +5,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterData;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalMode;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
@@ -65,6 +66,9 @@ public class EventListener implements Listener {
             return;
         }
 
+        RemovalMode removalMode = pluginConfig.getRemovalMode();
+        removalMode.handleEntity(event.getEntity(), event);
+        // callback function and then we can implement depending on mode?
         //mode logic, probably in a different class.
 
         //check if there is a limit. If there isn't return.
@@ -95,7 +99,7 @@ public class EventListener implements Listener {
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getVehicle().getWorld().getChunkAt(event.getVehicle().getLocation()));
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
-        if (counterData.getEntityCount(vehicleType) + 1 <= pluginConfig.getEntityLimits().get(vehicleType.name())) {
+        if (isUnderOrEqualToLimit(counterData.getEntityCount(vehicleType), pluginConfig.getEntityLimits().get(vehicleType.name()))) {
             counterData.incrementEntity(vehicleType);
             return;
         }

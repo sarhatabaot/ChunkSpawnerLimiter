@@ -1,11 +1,10 @@
 package com.github.sarhatabaot.chunkspawnerlimiter;
 
-import com.github.sarhatabaot.chunkspawnerlimiter.listener.ChunkListener;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalMode;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.*;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -20,47 +19,6 @@ public class PluginConfig {
 
     // Record for world scan ranges
     public record WorldScanRange(int minY, int maxY) {}
-
-    // Sealed interface for removal modes
-    public sealed interface RemovalMode {
-        String getKey();
-
-        static @NotNull RemovalMode fromString(@NotNull String mode) {
-            return switch (mode.toLowerCase()) {
-                case "prevent" -> new Prevent();
-                case "remove" -> new Remove();
-                case "kill" -> new Kill();
-                case "enforce" -> new Enforce();
-                case "enforce-kill" -> new EnforceKill();
-                default -> new Enforce(); // Default fallback
-            };
-        }
-    }
-
-    public record Prevent() implements RemovalMode {
-        @Contract(pure = true)
-        public @NotNull String getKey() { return "prevent"; }
-    }
-
-    public record Remove() implements RemovalMode {
-        @Contract(pure = true)
-        public @NotNull String getKey() { return "remove"; }
-    }
-
-    public record Kill() implements RemovalMode {
-        @Contract(pure = true)
-        public @NotNull String getKey() { return "kill"; }
-    }
-
-    public record Enforce() implements RemovalMode {
-        @Contract(pure = true)
-        public @NotNull String getKey() { return "enforce"; }
-    }
-
-    public record EnforceKill() implements RemovalMode {
-        @Contract(pure = true)
-        public @NotNull String getKey() { return "enforce-kill"; }
-    }
 
     public PluginConfig(JavaPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin, "Plugin cannot be null");
