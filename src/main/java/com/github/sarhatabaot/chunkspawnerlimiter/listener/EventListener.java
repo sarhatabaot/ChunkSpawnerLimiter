@@ -41,12 +41,13 @@ public class EventListener implements Listener {
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getBlock().getLocation());
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
-        if (counterData.getBlockCount(material) + 1 <= pluginConfig.getBlockLimits().get(material.name())) {
+        if (isUnderOrEqualToLimit(counterData.getBlockCount(material),  pluginConfig.getBlockLimits().get(material.name()))) {
             counterData.incrementBlock(material);
             return;
         }
 
-        //todo mode logic;
+        RemovalMode removalMode = pluginConfig.getRemovalMode();
+        removalMode.handleBlock(event.getBlock(), event);
     }
 
     @EventHandler
@@ -56,7 +57,7 @@ public class EventListener implements Listener {
     }
 
     @EventHandler
-    public void onEntitySpawn(EntitySpawnEvent event) {
+    public void onEntitySpawn(@NotNull EntitySpawnEvent event) {
         if (!pluginConfig.hasEntityLimit(event.getEntity().getType().name())) { //todo add group (instance of)
             return;
         }
@@ -73,6 +74,7 @@ public class EventListener implements Listener {
         RemovalMode removalMode = pluginConfig.getRemovalMode();
         removalMode.handleEntity(event.getEntity(), event);
     }
+
 // TODO Check that impl works across versions
 // MaterialData was changed at some stage
 //    @EventHandler(priority = EventPriority.HIGHEST)

@@ -29,7 +29,7 @@ public class ChunkListener implements Listener {
     }
 
     @EventHandler
-    public void onChunkLoad(ChunkLoadEvent event) {
+    public void onChunkLoad(@NotNull ChunkLoadEvent event) {
         final Chunk chunk = event.getChunk();
         final ChunkCoord chunkCoord = ChunkCoord.from(chunk);
 
