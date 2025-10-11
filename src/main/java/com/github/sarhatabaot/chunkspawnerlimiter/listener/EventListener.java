@@ -9,13 +9,17 @@ import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalMode;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.material.SpawnEgg;
 import org.jetbrains.annotations.NotNull;
 
 public class EventListener implements Listener {
@@ -68,15 +72,25 @@ public class EventListener implements Listener {
 
         RemovalMode removalMode = pluginConfig.getRemovalMode();
         removalMode.handleEntity(event.getEntity(), event);
-        // callback function and then we can implement depending on mode?
-        //mode logic, probably in a different class.
-
-        //check if there is a limit. If there isn't return.
-        //check if we increase by one it exceeds the limit, if it does, don't increase it, and act according to mode
-        //if it doesn't, increase it by one and return.
-
-        //this logic applied to vehicle & block as well.
     }
+// TODO Check that impl works across versions
+// MaterialData was changed at some stage
+//    @EventHandler(priority = EventPriority.HIGHEST)
+//    public void onPlayerUseEgg(PlayerInteractEvent event) {
+//        ItemStack item = event.getItem();
+//        if (item != null && item.getType().toString().endsWith("_SPAWN_EGG")) {
+//            final EntityType entityType = event.getEntity().getType();
+//            final ChunkCoord chunkCoord = ChunkCoord.from(event.getEntity().getWorld().getChunkAt(event.getEntity().getLocation()));
+//            final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
+//
+//            if (isUnderOrEqualToLimit(counterData.getEntityCount(entityType), pluginConfig.getEntityLimits().get(entityType.name()))) {
+//                counterData.incrementEntity(entityType);
+//                return;
+//            }
+//
+//            event.setCancelled(true);
+//        }
+//    }
 
     private boolean isUnderOrEqualToLimit(int count, int limit) {
         return count + 1 <= limit;
@@ -104,7 +118,8 @@ public class EventListener implements Listener {
             return;
         }
 
-        //mode logic, probably in a different class.
+        RemovalMode removalMode = pluginConfig.getRemovalMode();
+        removalMode.handleEntity(event.getVehicle(), null);
     }
 
     @EventHandler
