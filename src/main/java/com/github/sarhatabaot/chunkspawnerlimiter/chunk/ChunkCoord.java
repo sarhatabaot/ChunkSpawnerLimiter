@@ -47,11 +47,6 @@ public record ChunkCoord(UUID worldUuid, int chunkX, int chunkZ) {
         return world != null ? world.getChunkAt(chunkX, chunkZ) : null;
     }
 
-    // Convert to Bukkit's Chunk representation
-    public org.bukkit.Chunk toBukkitChunk() {
-        return getChunk();
-    }
-
     // Check if this chunk is currently loaded
     public boolean isLoaded() {
         World world = getWorld();

@@ -4,6 +4,7 @@ dependencyResolutionManagement {
     repositories {
         mavenCentral()
         maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
+        maven("https://repo.loohpjames.com/repository/")
     }
 
     versionCatalogs {
