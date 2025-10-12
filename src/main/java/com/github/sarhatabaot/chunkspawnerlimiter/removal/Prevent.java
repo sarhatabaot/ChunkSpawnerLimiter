@@ -2,6 +2,7 @@ package com.github.sarhatabaot.chunkspawnerlimiter.removal;
 
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Vehicle;
 import org.bukkit.event.Cancellable;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -16,12 +17,14 @@ public final class Prevent implements RemovalMode {
         if (event != null) {
             event.setCancelled(true);
         }
-        // Do nothing — entity will not spawn or will be cancelled upstream
+
+        if (entity instanceof Vehicle) {
+            entity.remove();
+        }
     }
 
     @Override
     public void handleBlock(@NotNull Block block,@NotNull Cancellable event) {
         event.setCancelled(true);
-        // Prevent placement — could log or cancel placement event
     }
 }

@@ -22,6 +22,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.SpawnEgg;
 import org.jetbrains.annotations.NotNull;
 
+import static com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager.isUnderOrEqualToLimit;
+
 public class EventListener implements Listener {
     private final PluginConfig pluginConfig;
     private final CounterDataManager counterDataManager;
@@ -58,10 +60,10 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void onEntitySpawn(@NotNull EntitySpawnEvent event) {
-        if (!pluginConfig.hasEntityLimit(event.getEntity().getType().name())) { //todo add group (instance of)
+        if (!pluginConfig.hasEntityLimit(event.getEntity().getType().name()) || !pluginConfig.hasEntityLimit(pluginConfig.getEntityGroup(event.getEntity()))) {
             return;
         }
-
+//todo add group (instance of)
         final EntityType entityType = event.getEntity().getType();
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getEntity().getWorld().getChunkAt(event.getEntity().getLocation()));
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
@@ -93,10 +95,6 @@ public class EventListener implements Listener {
 //            event.setCancelled(true);
 //        }
 //    }
-
-    private boolean isUnderOrEqualToLimit(int count, int limit) {
-        return count + 1 <= limit;
-    }
 
     @EventHandler
     public void onEntityDeath(@NotNull EntityDeathEvent event) { //just to decrease counters for tracking.

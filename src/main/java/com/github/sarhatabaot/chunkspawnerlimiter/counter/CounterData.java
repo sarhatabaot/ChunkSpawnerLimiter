@@ -5,6 +5,7 @@ import org.bukkit.entity.EntityType;
 
 import java.util.Map;
 
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -12,6 +13,10 @@ public class CounterData {
     private final Map<Material, AtomicInteger> blockCounts = new ConcurrentHashMap<>();
     private final Map<EntityType, AtomicInteger> entityCounts = new ConcurrentHashMap<>();
     private final Map<String, AtomicInteger> entityGroupCounts = new ConcurrentHashMap<>();
+
+    public Set<EntityType> getTrackedEntityTypes() {
+        return entityCounts.keySet();
+    }
 
     public int getEntityGroupCount(String group) {
         AtomicInteger count = entityGroupCounts.get(group);
