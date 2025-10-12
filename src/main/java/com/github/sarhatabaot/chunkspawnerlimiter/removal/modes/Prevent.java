@@ -1,4 +1,4 @@
-package com.github.sarhatabaot.chunkspawnerlimiter.removal;
+package com.github.sarhatabaot.chunkspawnerlimiter.removal.modes;
 
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;

@@ -1,32 +1,44 @@
-package com.github.sarhatabaot.chunkspawnerlimiter.removal;
+package com.github.sarhatabaot.chunkspawnerlimiter.removal.modes;
 
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.Cancellable;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public final class Remove implements RemovalMode {
+import java.util.function.Consumer;
+
+public final class Kill implements RemovalMode {
     private final RemovalTaskManager removalTaskManager;
-    public Remove(RemovalTaskManager removalTaskManager) {
+    public Kill(RemovalTaskManager removalTaskManager) {
         this.removalTaskManager = removalTaskManager;
     }
 
     @Contract(pure = true)
-    public @NotNull String getKey() { return "remove"; }
+    public @NotNull String getKey() { return "kill"; }
 
     @Override
     public void handleEntity(@NotNull Entity entity, @Nullable Cancellable event) {
-        entity.remove();
+        final Consumer<Entity> action = e -> {
+            if (entity instanceof LivingEntity living) {
+                living.setHealth(0);
+            } else {
+                entity.remove();
+            }
+        };
+
+        action.accept(entity);
 
         ChunkCoord coord = ChunkCoord.from(entity.getLocation().getChunk());
-        removalTaskManager.queueChunkCheck(coord, Entity::remove);
+        removalTaskManager.queueChunkCheck(coord, action);
     }
 
     @Override
     public void handleBlock(@NotNull Block block, @NotNull Cancellable event) {
-        block.setType(org.bukkit.Material.AIR);
+        block.breakNaturally();
     }
 }

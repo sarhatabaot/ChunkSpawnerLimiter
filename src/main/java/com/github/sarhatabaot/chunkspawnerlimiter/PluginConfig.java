@@ -1,6 +1,6 @@
 package com.github.sarhatabaot.chunkspawnerlimiter;
 
-import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalMode;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.*;
