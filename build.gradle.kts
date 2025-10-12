@@ -11,6 +11,8 @@ dependencies {
 
     implementation(libs.bstats)
     implementation(libs.annotations)
+
+    implementation(libs.commands) //need to shade
 }
 
 java {
