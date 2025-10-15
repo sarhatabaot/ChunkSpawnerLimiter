@@ -15,6 +15,8 @@ dependencyResolutionManagement {
             library("commands", "com.github.despical:command-framework:1.5.3")
 
             plugin("run-paper", "xyz.jpenilla.run-paper").version("2.3.1")
+            plugin("shadow", "com.gradleup.shadow").version("9.2.2")
+            plugin("plugin-yml", "de.eldoria.plugin-yml.bukkit").version("0.8.0")
         }
     }
 }

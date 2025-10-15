@@ -1,10 +1,15 @@
+import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
+
 plugins {
     java
+    alias(libs.plugins.shadow)
+    alias(libs.plugins.plugin.yml)
     alias(libs.plugins.run.paper)
 }
 
 group = "com.github.sarhatabaot"
 version = "5.0.0-ALPHA"
+description = "Limit blocks & entities in chunks."
 
 dependencies {
     compileOnly(libs.spigot.api)
@@ -12,12 +17,44 @@ dependencies {
     implementation(libs.bstats)
     implementation(libs.annotations)
 
-    implementation(libs.commands) //need to shade
+    implementation(libs.commands)
 }
 
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
         vendor.set(JvmVendorSpec.ADOPTIUM)
+    }
+}
+bukkit {
+    name = rootProject.name
+    main = "com.github.sarhatabaot.chunkspawnerlimiter.ChunkSpawnerLimiter"
+    version = project.version.toString()
+    website = "https://github.com/sarhatabaot/ChunkSpawnerLimiter"
+    authors = listOf("Cyprias", "sarhatabaot")
+    load = BukkitPluginDescription.PluginLoadOrder.POSTWORLD
+    prefix = "CSL"
+    //todo api-version="1.8" since we are supporting 1.8, this may block the loading? idk need to test
+}
+
+tasks {
+    build {
+        dependsOn(shadowJar)
+    }
+
+    shadowJar {
+        minimize()
+
+        archiveFileName.set("chunkspawnerlimiter-${project.version}.jar")
+        archiveClassifier.set("shadow")
+
+        exclude("META-INF/**")
+
+        relocate("me.despical.commandframework","com.github.sarhatabaot.chunkspawnerlimiter.libs")
+        relocate("org.bstats", "com.github.sarhatabaot.chunkspawnerlimiter.libs")
+    }
+
+    compileJava {
+        options.encoding = "UTF-8"
     }
 }
