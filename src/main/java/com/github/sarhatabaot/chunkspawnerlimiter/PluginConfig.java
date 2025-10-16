@@ -104,6 +104,16 @@ public class PluginConfig {
         return hasEntityLimit(entity.getType().name()) || getEntityLimits().containsKey(entityGroup);
     }
 
+    public Integer getEntityLimit(final Entity entity) {
+        final String entityType = entity.getType().name();
+        if (getEntityLimits().containsKey(entityType)) {
+            return getEntityLimits().get(entityType);
+        }
+
+        final String entityGroup = getEntityGroup(entity);
+        return getEntityLimits().get(entityGroup);
+    }
+
     public boolean hasEntityLimit(final String entityType) {
         return getEntityLimits().containsKey(entityType);
     }

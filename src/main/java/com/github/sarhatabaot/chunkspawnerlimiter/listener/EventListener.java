@@ -68,8 +68,8 @@ public class EventListener implements Listener {
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getEntity().getWorld().getChunkAt(event.getEntity().getLocation()));
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
-        if (isUnderOrEqualToLimit(counterData.getEntityCount(entityType), pluginConfig.getEntityLimits().get(entityType.name()))) {
-            CSLLogger.debug("%s entity under entity limits (%d/%d)".formatted(entityType.name(), counterData.getEntityCount(entityType), pluginConfig.getEntityLimits().get(entityType.name())));
+        if (isUnderOrEqualToLimit(counterData.getEntityCount(entityType), pluginConfig.getEntityLimit(event.getEntity()))) {
+            CSLLogger.debug("%s entity under entity limits (%d/%d)".formatted(entityType.name(), counterData.getEntityCount(entityType), pluginConfig.getEntityLimit(event.getEntity())));
             counterData.incrementEntity(entityType);
             return;
         }
@@ -106,7 +106,7 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void onVehicleCreate(@NotNull VehicleCreateEvent event) {
-        if (!pluginConfig.getEntityLimits().containsKey(event.getVehicle().getType().name())) {
+        if (!pluginConfig.hasEntityLimit(event.getVehicle())) {
             return;
         }
 
@@ -114,7 +114,7 @@ public class EventListener implements Listener {
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getVehicle().getWorld().getChunkAt(event.getVehicle().getLocation()));
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
-        if (isUnderOrEqualToLimit(counterData.getEntityCount(vehicleType), pluginConfig.getEntityLimits().get(vehicleType.name()))) {
+        if (isUnderOrEqualToLimit(counterData.getEntityCount(vehicleType), pluginConfig.getEntityLimit(event.getVehicle()))) {
             counterData.incrementEntity(vehicleType);
             return;
         }
