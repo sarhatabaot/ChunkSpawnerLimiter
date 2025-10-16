@@ -74,6 +74,8 @@ public class RemovalTaskManager {
                 int toRemove = entities.size() - allowed;
                 for (int i = 0; i < toRemove; i++) {
                     //todo additional checks here.??
+                    //todo I think this is the spot for additional checls.
+                    //todo optionally add the ability to kill players need to add to config
                     removalAction.accept(entities.get(i));
                 }
             }
@@ -93,5 +95,25 @@ public class RemovalTaskManager {
             this.coord = coord;
             this.action = action;
         }
+    }
+
+    private boolean hasCustomName(final Entity entity) {
+        //check from config
+        if (!pluginConfig.shouldPreserveNamedEntities()) {
+            return false;
+        }
+        return entity.getCustomName() != null;
+    }
+
+    private boolean hasMetaData(final Entity entity) {
+        if (pluginConfig.getIgnoreMetadata().isEmpty()) {
+            return false;
+        }
+
+        for (final String metadata: pluginConfig.getIgnoreMetadata()) {
+            if (entity.hasMetadata(metadata))
+                return true;
+        }
+        return false;
     }
 }
