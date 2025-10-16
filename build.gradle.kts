@@ -41,7 +41,7 @@ tasks {
     runServer {
         //use this to manually test various version load, probably should use docker with ci/cd for the automated version
         //todo amazing 1.13-1.16 breaks with jvm 21, the rest works, lmao, mention this on the website
-        minecraftVersion("1.12.2")
+        minecraftVersion("1.21.10")
         jvmArgs("-Dcom.mojang.eula.agree=true")
     }
     build {

@@ -8,6 +8,8 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Consumer;
+
 public final class Prevent implements RemovalMode {
     @Contract(pure = true)
     public @NotNull String getKey() { return "prevent"; }
@@ -21,6 +23,11 @@ public final class Prevent implements RemovalMode {
         if (entity instanceof Vehicle) {
             entity.remove();
         }
+    }
+
+    @Override
+    public Consumer<Entity> getEntityRemovalAction() {
+        return null;
     }
 
     @Override

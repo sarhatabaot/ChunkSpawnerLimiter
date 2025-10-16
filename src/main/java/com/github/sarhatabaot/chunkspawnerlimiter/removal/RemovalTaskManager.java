@@ -11,11 +11,15 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
 public class RemovalTaskManager {
     private final Queue<QueuedCheck> pendingChunks = new ConcurrentLinkedQueue<>();
+    private final Set<ChunkCoord> queuedChunks =
+            Collections.newSetFromMap(new ConcurrentHashMap<>());
+
     private final CounterDataManager counterDataManager;
     private final ChunkSpawnerLimiter plugin;
     private final PluginConfig pluginConfig;
@@ -28,7 +32,9 @@ public class RemovalTaskManager {
     }
 
     public void queueChunkCheck(ChunkCoord coord, Consumer<Entity> action) {
-        pendingChunks.add(new QueuedCheck(coord, action));
+        if (queuedChunks.add(coord)) {
+            pendingChunks.add(new QueuedCheck(coord, action));
+        }
     }
 
 
@@ -40,6 +46,7 @@ public class RemovalTaskManager {
         QueuedCheck check;
         while ((check = pendingChunks.poll()) != null) {
             processChunk(check.coord, check.action);
+            queuedChunks.remove(check.coord);
         }
     }
 

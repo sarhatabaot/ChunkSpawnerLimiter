@@ -59,7 +59,7 @@ public class EventListener implements Listener {
         if (!pluginConfig.hasEntityLimit(event.getEntity().getType().name()) || !pluginConfig.hasEntityLimit(pluginConfig.getEntityGroup(event.getEntity()))) {
             return;
         }
-//todo add group (instance of)
+        //todo add group (instance of)
         final EntityType entityType = event.getEntity().getType();
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getEntity().getWorld().getChunkAt(event.getEntity().getLocation()));
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
@@ -73,7 +73,7 @@ public class EventListener implements Listener {
         removalMode.handleEntity(event.getEntity(), event);
     }
 
-// TODO Check that impl works across versions
+// TODO Check that impl works across versions, maybe use XMaterial.
 // MaterialData was changed at some stage
 //    @EventHandler(priority = EventPriority.HIGHEST)
 //    public void onPlayerUseEgg(PlayerInteractEvent event) {

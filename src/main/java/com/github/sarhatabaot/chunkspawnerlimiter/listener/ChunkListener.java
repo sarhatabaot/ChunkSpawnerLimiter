@@ -3,6 +3,8 @@ package com.github.sarhatabaot.chunkspawnerlimiter.listener;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -22,10 +24,12 @@ import java.util.List;
 public class ChunkListener implements Listener {
     private final PluginConfig pluginConfig;
     private final CounterDataManager counterDataManager;
+    private final RemovalTaskManager removalTaskManager;
 
-    public ChunkListener(PluginConfig pluginConfig, CounterDataManager counterDataManager) {
+    public ChunkListener(PluginConfig pluginConfig, CounterDataManager counterDataManager, RemovalTaskManager removalTaskManager) {
         this.pluginConfig = pluginConfig;
         this.counterDataManager = counterDataManager;
+        this.removalTaskManager = removalTaskManager;
     }
 
     @EventHandler
@@ -37,8 +41,8 @@ public class ChunkListener implements Listener {
         addBlockLimits(chunk, chunkCoord);
 
 
-        // todo not sure we even need to check limits here. We would check the limits themselvees via a task we schedule here, no?
-        //scan and add info to counters + check limits according to mode.
+        RemovalMode removalMode = pluginConfig.getRemovalMode();
+        removalTaskManager.queueChunkCheck(chunkCoord, removalMode.getEntityRemovalAction());
     }
 
     @EventHandler

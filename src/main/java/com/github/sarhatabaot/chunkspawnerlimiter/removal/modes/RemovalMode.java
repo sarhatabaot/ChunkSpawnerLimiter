@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public sealed interface RemovalMode
         permits Prevent, Remove, Kill, Enforce, EnforceKill {
@@ -17,6 +18,8 @@ public sealed interface RemovalMode
 
     void handleEntity(@NotNull Entity entity, @Nullable Cancellable event);
     void handleBlock(@NotNull Block block, @NotNull Cancellable event);
+
+    Consumer<Entity> getEntityRemovalAction();
 
     Map<String, RemovalMode> MODES = new HashMap<>();
 

@@ -10,6 +10,8 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Consumer;
+
 public final class EnforceKill implements RemovalMode {
     private final RemovalTaskManager removalTaskManager;
     public EnforceKill(RemovalTaskManager removalTaskManager) {
@@ -27,18 +29,22 @@ public final class EnforceKill implements RemovalMode {
         }
 
         ChunkCoord coord = ChunkCoord.from(entity.getLocation().getChunk());
-        removalTaskManager.queueChunkCheck(coord, e -> {
-            if (entity instanceof LivingEntity living) {
+        removalTaskManager.queueChunkCheck(coord, getEntityRemovalAction());
+    }
+
+    @Override
+    public Consumer<Entity> getEntityRemovalAction() {
+        return e -> {
+            if (e instanceof LivingEntity living) {
                 living.setHealth(0);
             } else {
-                entity.remove();
+                e.remove();
             }
-        });
+        };
     }
 
     @Override
     public void handleBlock(@NotNull Block block, @NotNull Cancellable event) {
         event.setCancelled(true);
-        //todo not sure we want to remove excess blocks, though that is what we stated we will do.
     }
 }

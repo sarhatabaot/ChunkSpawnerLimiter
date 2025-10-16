@@ -23,8 +23,9 @@ public class AdminCommand {
     }
 
     @Command(
-            name = "csl.help",
-            permission = "csl.help"
+            name = "csl",
+            aliases = {"csl.help", "csl.version"},
+            permission = "csl"
     )
     public void onHelp(@NotNull CommandArguments arguments) {
         int page = arguments.getArgumentAsInt(0);
@@ -36,14 +37,11 @@ public class AdminCommand {
         List<String> helpPages = List.of(
                 // Page 1 - Basic Commands
                 """
-                &6&lChunkSpawnerLimiter Help &7(Page 1/2)
-                &7Limit mob spawners per chunk to prevent lag
+                &6&lChunkSpawnerLimiter v%s Help &7(Page 1/2)
                 &e/csl chunk info &7- Show chunk spawner info
-                &7  View current chunk's spawner counts
+                &7View current chunk's spawner counts
                 &e/csl help [page] &7- Show help menu
-                """,
-
-                // Page 2 - Admin Commands
+                """.formatted(plugin.getDescription().getVersion()),
                 """
                 &6&lChunkSpawnerLimiter Help &7(Page 2/2)
                 &6Admin Commands:
@@ -51,15 +49,9 @@ public class AdminCommand {
                 &e/csl reload &7- Reload configuration
                 &e/csl search entities &7- List entity types
                 &e/csl search blocks &7- List block materials
-                \s
                 &e/csl rebuild &7- Rebuild all counters
                 &c  ⚠️ Can cause lag - use with caution
-                \s
-
-                \s
-                &7Permission: &fcsl.*
-                &7Issues: &fhttps://github.com/sarhatabaot/chunkspawnerlimiter/issues
-               \s"""
+               """
         );
 
         int maxPage = helpPages.size();
@@ -89,18 +81,6 @@ public class AdminCommand {
         this.plugin.reloadConfig();
 
         arguments.getSender().sendMessage("Reloaded config.");
-    }
-
-    /*
-    TODO
-    Simple version command.
-     */
-    @Command(
-            name = "csl.version",
-            permission = "csl.version"
-    )
-    public void onVersion(@NotNull CommandArguments arguments) {
-        arguments.getSender().sendMessage(plugin.getDescription().getVersion());
     }
 
     @Command(

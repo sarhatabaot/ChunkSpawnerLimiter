@@ -10,6 +10,8 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Consumer;
+
 public final class Enforce implements RemovalMode {
     private final RemovalTaskManager removalTaskManager;
 
@@ -35,7 +37,12 @@ public final class Enforce implements RemovalMode {
         }
 
         ChunkCoord coord = ChunkCoord.from(entity.getLocation().getChunk());
-        removalTaskManager.queueChunkCheck(coord, Entity::remove);
+        removalTaskManager.queueChunkCheck(coord, getEntityRemovalAction());
+    }
+
+    @Override
+    public Consumer<Entity> getEntityRemovalAction() {
+        return Entity::remove;
     }
 
     @Override

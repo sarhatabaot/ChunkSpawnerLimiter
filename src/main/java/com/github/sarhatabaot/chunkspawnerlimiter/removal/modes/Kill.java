@@ -23,18 +23,23 @@ public final class Kill implements RemovalMode {
 
     @Override
     public void handleEntity(@NotNull Entity entity, @Nullable Cancellable event) {
-        final Consumer<Entity> action = e -> {
-            if (entity instanceof LivingEntity living) {
-                living.setHealth(0);
-            } else {
-                entity.remove();
-            }
-        };
+        final Consumer<Entity> action = getEntityRemovalAction();
 
         action.accept(entity);
 
         ChunkCoord coord = ChunkCoord.from(entity.getLocation().getChunk());
         removalTaskManager.queueChunkCheck(coord, action);
+    }
+
+    @Override
+    public Consumer<Entity> getEntityRemovalAction() {
+        return e -> {
+            if (e instanceof LivingEntity living) {
+                living.setHealth(0);
+            } else {
+                e.remove();
+            }
+        };
     }
 
     @Override
