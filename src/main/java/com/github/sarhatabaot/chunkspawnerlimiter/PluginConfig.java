@@ -354,4 +354,11 @@ public class PluginConfig {
         return entity.getType().name();
     }
 
+    public boolean isWorldDisabled(final String worldName) {
+        if (getWorldsMode().equalsIgnoreCase("exclude")) {
+            return getWorldsList().contains(worldName);
+        }
+        return !getWorldsList().contains(worldName);
+    }
+
 }

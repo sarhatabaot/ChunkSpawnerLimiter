@@ -34,12 +34,15 @@ public class ChunkListener implements Listener {
 
     @EventHandler
     public void onChunkLoad(@NotNull ChunkLoadEvent event) {
+        if (!pluginConfig.isWorldDisabled(event.getWorld().getName())) {
+            return;
+        }
+
         final Chunk chunk = event.getChunk();
         final ChunkCoord chunkCoord = ChunkCoord.from(chunk);
 
         addEntityLimits(chunk, chunkCoord);
         addBlockLimits(chunk, chunkCoord);
-
 
         RemovalMode removalMode = pluginConfig.getRemovalMode();
         removalTaskManager.queueChunkCheck(chunkCoord, removalMode.getEntityRemovalAction());
@@ -47,6 +50,10 @@ public class ChunkListener implements Listener {
 
     @EventHandler
     public void onChunkUnload(@NotNull ChunkUnloadEvent event) {
+        if (pluginConfig.isWorldDisabled(event.getWorld().getName())) {
+            return;
+        }
+
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getChunk());
         counterDataManager.removeCounterData(chunkCoord);
     }

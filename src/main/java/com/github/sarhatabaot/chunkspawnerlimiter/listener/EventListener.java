@@ -32,6 +32,7 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void onBlockPlace(@NotNull BlockPlaceEvent event) {
+
         if (!pluginConfig.getBlockLimits().containsKey(event.getBlock().getType().name())) {
             CSLLogger.debug("%s block not in block limits.".formatted(event.getBlock().getType().name()));
             return;

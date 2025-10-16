@@ -73,6 +73,7 @@ public class RemovalTaskManager {
             if (entities.size() > allowed) {
                 int toRemove = entities.size() - allowed;
                 for (int i = 0; i < toRemove; i++) {
+                    //todo additional checks here.??
                     removalAction.accept(entities.get(i));
                 }
             }
