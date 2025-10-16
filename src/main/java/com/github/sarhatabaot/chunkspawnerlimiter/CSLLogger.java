@@ -38,8 +38,6 @@ public final class CSLLogger {
     private static void log(String message) {
         StackTraceElement[] stack = Thread.currentThread().getStackTrace();
 
-        // Index [3] = the caller of the public log method
-        // Example: LoggerProvider.info() → actual caller
         String caller = "UnknownSource";
         if (stack.length > 3) {
             StackTraceElement element = stack[3];

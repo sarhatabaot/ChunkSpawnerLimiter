@@ -45,7 +45,9 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
 
     @Override
     public void onDisable() {
-
+        this.counterDataManager = null;
+        this.removalTaskManager = null;
+        this.pluginConfig = null;
     }
 
 
