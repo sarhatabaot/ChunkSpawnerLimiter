@@ -94,6 +94,11 @@ public class PluginConfig {
         return entityLimits;
     }
 
+    /**
+     * Checks for both entity limits & entity group
+     * @param entity The entity being checked
+     * @return true if it has a limit or matches a group
+     */
     public boolean hasEntityLimit(final Entity entity) {
         final String entityGroup = getEntityGroup(entity);
         return hasEntityLimit(entity.getType().name()) || getEntityLimits().containsKey(entityGroup);

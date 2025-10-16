@@ -1,6 +1,7 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.listener;
 
 
+import com.github.sarhatabaot.chunkspawnerlimiter.CSLLogger;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterData;
@@ -32,6 +33,7 @@ public class EventListener implements Listener {
     @EventHandler
     public void onBlockPlace(@NotNull BlockPlaceEvent event) {
         if (!pluginConfig.getBlockLimits().containsKey(event.getBlock().getType().name())) {
+            CSLLogger.debug("%s block not in block limits.".formatted(event.getBlock().getType().name()));
             return;
         }
 
@@ -40,6 +42,7 @@ public class EventListener implements Listener {
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
         if (isUnderOrEqualToLimit(counterData.getBlockCount(material),  pluginConfig.getBlockLimits().get(material.name()))) {
+            CSLLogger.debug("%s block under block limits (%d/%d)".formatted(material.name(), counterData.getBlockCount(material), pluginConfig.getBlockLimits().get(material.name())));
             counterData.incrementBlock(material);
             return;
         }
@@ -56,7 +59,8 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void onEntitySpawn(@NotNull EntitySpawnEvent event) {
-        if (!pluginConfig.hasEntityLimit(event.getEntity().getType().name()) || !pluginConfig.hasEntityLimit(pluginConfig.getEntityGroup(event.getEntity()))) {
+        if (!pluginConfig.hasEntityLimit(event.getEntity())) {
+            CSLLogger.debug("%s entity not in entity limits.".formatted(event.getEntity().getType().name()));
             return;
         }
         //todo add group (instance of)
@@ -65,6 +69,7 @@ public class EventListener implements Listener {
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
         if (isUnderOrEqualToLimit(counterData.getEntityCount(entityType), pluginConfig.getEntityLimits().get(entityType.name()))) {
+            CSLLogger.debug("%s entity under entity limits (%d/%d)".formatted(entityType.name(), counterData.getEntityCount(entityType), pluginConfig.getEntityLimits().get(entityType.name())));
             counterData.incrementEntity(entityType);
             return;
         }
