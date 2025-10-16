@@ -1,8 +1,6 @@
 package com.github.sarhatabaot.chunkspawnerlimiter;
 
 
-import org.bukkit.plugin.Plugin;
-
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,31 +15,27 @@ public final class CSLLogger {
         CSLLogger.pluginConfig = pluginConfig;
     }
 
-    public static Logger get() {
-        return LOGGER;
-    }
-
     public static void info(String message) {
-        log(Level.INFO, message);
+        LOGGER.log(Level.INFO, message);
     }
 
     public static void warn(String message) {
-        log(Level.WARNING, message);
+        LOGGER.log(Level.WARNING, message);
     }
 
     public static void error(String message) {
-        log(Level.SEVERE, message);
+        LOGGER.log(Level.SEVERE, message);
     }
 
     public static void debug(String message) {
         if (pluginConfig.isDebugMessages()) {
-            log(Level.INFO, "DEBUG " + message);
+            log("DEBUG " + message);
         }
     }
 
     // --- Core Implementation ---
 
-    private static void log(Level level, String message) {
+    private static void log(String message) {
         StackTraceElement[] stack = Thread.currentThread().getStackTrace();
 
         // Index [3] = the caller of the public log method
@@ -52,7 +46,7 @@ public final class CSLLogger {
             caller = element.getClassName() + "#" + element.getMethodName() + ":" + element.getLineNumber();
         }
 
-        LOGGER.log(level, "[" + caller + "] " + message);
+        LOGGER.log(Level.INFO, "[" + caller + "] " + message);
     }
 
 }

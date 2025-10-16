@@ -20,6 +20,7 @@ public class PluginConfig {
     private Map<String, Integer> entityLimits;
     private Map<String, Integer> blockLimits;
     private Map<String, Boolean> spawnReasons;
+    private Map<String, List<String>> entityGroups;
 
 
     public PluginConfig(JavaPlugin plugin) {
@@ -35,6 +36,7 @@ public class PluginConfig {
         this.entityLimits = null;
         this.blockLimits = null;
         this.spawnReasons = null;
+        this.entityGroups = null;
     }
 
     // Main settings
@@ -112,6 +114,53 @@ public class PluginConfig {
 
         final String entityGroup = getEntityGroup(entity);
         return getEntityLimits().get(entityGroup);
+    }
+    public Integer getEntityLimit(final EntityType entityType) {
+        final String entityTypeName = entityType.name();
+
+        // First check if the entity type has a direct limit
+        if (getEntityLimits().containsKey(entityTypeName)) {
+            return getEntityLimits().get(entityTypeName);
+        }
+
+        // Then check if it belongs to a group that has a limit
+        final String entityGroup = getEntityGroup(entityType);
+        if (entityGroup != null && getEntityLimits().containsKey(entityGroup)) {
+            return getEntityLimits().get(entityGroup);
+        }
+
+        return null;
+    }
+
+    public String getEntityGroup(final EntityType entityType) {
+        Map<String, List<String>> entityGroups = getEntityGroups();
+        for (Map.Entry<String, List<String>> entry : entityGroups.entrySet()) {
+            if (entry.getValue().contains(entityType.name())) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
+    public boolean hasEntityLimit(final EntityType entityType) {
+        return getEntityLimit(entityType) != null;
+    }
+
+    public Map<String, List<String>> getEntityGroups() {
+        if (this.entityGroups == null) {
+            this.entityGroups = new HashMap<>();
+
+            var groupsSection = config.getConfigurationSection("entities.entity-groups");
+            if (groupsSection == null) return Collections.emptyMap();
+
+            for (String groupName : groupsSection.getKeys(false)) {
+                List<String> entities = groupsSection.getStringList(groupName);
+                this.entityGroups.put(groupName.toUpperCase(), entities.stream()
+                        .map(String::toUpperCase)
+                        .collect(Collectors.toList()));
+            }
+        }
+        return entityGroups;
     }
 
     public boolean hasEntityLimit(final String entityType) {

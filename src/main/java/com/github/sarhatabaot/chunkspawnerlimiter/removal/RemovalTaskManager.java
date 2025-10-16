@@ -1,5 +1,6 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.removal;
 
+import com.github.sarhatabaot.chunkspawnerlimiter.CSLLogger;
 import com.github.sarhatabaot.chunkspawnerlimiter.ChunkSpawnerLimiter;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
@@ -63,7 +64,12 @@ public class RemovalTaskManager {
                     .filter(e -> e.getType() == type)
                     .toList();
 
-            int allowed = pluginConfig.getEntityLimits().get(type.name());
+            Integer allowed = pluginConfig.getEntityLimit(type);
+            if (allowed == null) {
+                CSLLogger.debug("No limit found for entity type: %s, skipping".formatted(type.name()));
+                continue;
+            }
+
             if (entities.size() > allowed) {
                 int toRemove = entities.size() - allowed;
                 for (int i = 0; i < toRemove; i++) {
