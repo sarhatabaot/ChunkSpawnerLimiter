@@ -17,6 +17,11 @@ public class PluginConfig {
     private final JavaPlugin plugin;
     private FileConfiguration config;
 
+    private Map<String, Integer> entityLimits;
+    private Map<String, Integer> blockLimits;
+    private Map<String, Boolean> spawnReasons;
+    private Map<String, WorldScanRange> worldScanRangeMap;
+
     // Record for world scan ranges
     public record WorldScanRange(int minY, int maxY) {}
 
@@ -29,6 +34,11 @@ public class PluginConfig {
     public void reload() {
         plugin.reloadConfig();
         this.config = plugin.getConfig();
+
+        this.entityLimits = null;
+        this.blockLimits = null;
+        this.spawnReasons = null;
+        this.worldScanRangeMap = null;
     }
 
     // Main settings
@@ -81,15 +91,20 @@ public class PluginConfig {
 
     // Entity settings
     public Map<String, Integer> getEntityLimits() {
-        //todo cache this locally
-        var limitsSection = config.getConfigurationSection("entities.limits");
-        if (limitsSection == null) return Collections.emptyMap();
+        if (this.entityLimits == null) {
+            this.entityLimits = new HashMap<>();
 
-        return limitsSection.getKeys(false).stream()
-                .collect(Collectors.toMap(
-                        key -> key,
-                        limitsSection::getInt
-                ));
+            var limitsSection = config.getConfigurationSection("entities.limits");
+            if (limitsSection == null) return Collections.emptyMap();
+
+            this.entityLimits = limitsSection.getKeys(false).stream()
+                    .collect(Collectors.toMap(
+                            key -> key,
+                            limitsSection::getInt
+                    ));
+        }
+
+        return entityLimits;
     }
 
     public boolean hasEntityLimit(final Entity entity) {
@@ -135,15 +150,18 @@ public class PluginConfig {
 
     // Spawn reasons
     public Map<String, Boolean> getSpawnReasons() {
-        //cache this
-        var reasonsSection = config.getConfigurationSection("spawn-reasons");
-        if (reasonsSection == null) return getDefaultSpawnReasons();
+        if (spawnReasons == null) {
+            var reasonsSection = config.getConfigurationSection("spawn-reasons");
+            if (reasonsSection == null) return getDefaultSpawnReasons();
 
-        return reasonsSection.getKeys(false).stream()
-                .collect(Collectors.toMap(
-                        key -> key,
-                        reasonsSection::getBoolean
-                ));
+            this.spawnReasons = reasonsSection.getKeys(false).stream()
+                    .collect(Collectors.toMap(
+                            key -> key,
+                            reasonsSection::getBoolean
+                    ));
+        }
+
+        return spawnReasons;
     }
 
     private @NotNull @Unmodifiable Map<String, Boolean> getDefaultSpawnReasons() {
@@ -175,15 +193,18 @@ public class PluginConfig {
 
     // Block limits
     public Map<String, Integer> getBlockLimits() {
-        //todo cache this
-        var blocksSection = config.getConfigurationSection("blocks");
-        if (blocksSection == null) return Collections.emptyMap();
+        if (blockLimits == null) {
+            var blocksSection = config.getConfigurationSection("blocks");
+            if (blocksSection == null) return Collections.emptyMap();
 
-        return blocksSection.getKeys(false).stream()
-                .collect(Collectors.toMap(
-                        key -> key,
-                        blocksSection::getInt
-                ));
+            this.blockLimits = blocksSection.getKeys(false).stream()
+                    .collect(Collectors.toMap(
+                            key -> key,
+                            blocksSection::getInt
+                    ));
+        }
+
+        return blockLimits;
     }
 
     // World settings
@@ -200,40 +221,44 @@ public class PluginConfig {
     private static final String DEFAULT_STRING = "default";
 
     public Map<String, WorldScanRange> getWorldScanRanges() {
-        //todo cache this
-        var rangesSection = config.getConfigurationSection("worlds.scan-ranges");
-        if (rangesSection == null) {
-            return Map.of(DEFAULT_STRING, new WorldScanRange(-64, 256));
-        }
+        if (this.worldScanRangeMap == null) {
+            //todo cache this
+            var rangesSection = config.getConfigurationSection("worlds.scan-ranges");
+            if (rangesSection == null) {
+                return Map.of(DEFAULT_STRING, new WorldScanRange(-64, 256));
+            }
 
-        var ranges = new HashMap<String, WorldScanRange>();
+            var ranges = new HashMap<String, WorldScanRange>();
 
-        // Default range
-        var defaultSection = rangesSection.getConfigurationSection(DEFAULT_STRING);
-        if (defaultSection != null) {
-            ranges.put(
-                    DEFAULT_STRING, new WorldScanRange(
-                    defaultSection.getInt("min-y", -64),
-                    defaultSection.getInt("max-y", 256)
-            ));
-        } else {
-            ranges.put(DEFAULT_STRING, new WorldScanRange(-64, 256));
-        }
+            // Default range
+            var defaultSection = rangesSection.getConfigurationSection(DEFAULT_STRING);
+            if (defaultSection != null) {
+                ranges.put(
+                        DEFAULT_STRING, new WorldScanRange(
+                                defaultSection.getInt("min-y", -64),
+                                defaultSection.getInt("max-y", 256)
+                        ));
+            } else {
+                ranges.put(DEFAULT_STRING, new WorldScanRange(-64, 256));
+            }
 
-        // World-specific ranges
-        for (var worldName : rangesSection.getKeys(false)) {
-            if (!worldName.equals(DEFAULT_STRING)) {
-                var worldSection = rangesSection.getConfigurationSection(worldName);
-                if (worldSection != null) {
-                    ranges.put(worldName, new WorldScanRange(
-                            worldSection.getInt("min-y"),
-                            worldSection.getInt("max-y")
-                    ));
+            // World-specific ranges
+            for (var worldName : rangesSection.getKeys(false)) {
+                if (!worldName.equals(DEFAULT_STRING)) {
+                    var worldSection = rangesSection.getConfigurationSection(worldName);
+                    if (worldSection != null) {
+                        ranges.put(worldName, new WorldScanRange(
+                                worldSection.getInt("min-y"),
+                                worldSection.getInt("max-y")
+                        ));
+                    }
                 }
             }
+
+            this.worldScanRangeMap = ranges;
         }
 
-        return ranges;
+        return this.worldScanRangeMap;
     }
 
     public WorldScanRange getWorldScanRange(String worldName) {

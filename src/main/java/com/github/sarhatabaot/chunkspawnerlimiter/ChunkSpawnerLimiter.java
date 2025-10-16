@@ -1,6 +1,10 @@
 package com.github.sarhatabaot.chunkspawnerlimiter;
 
 
+import com.github.sarhatabaot.chunkspawnerlimiter.command.AdminCommand;
+import me.despical.commandframework.CommandFramework;
+import org.bstats.bukkit.Metrics;
+import org.bstats.charts.SimplePie;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class ChunkSpawnerLimiter extends JavaPlugin {
@@ -10,7 +14,11 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
     public void onEnable() {
         this.pluginConfig = new PluginConfig(this);
 
-        // Stats, add for Removal Mode, notifications for now
+        CommandFramework commandFramework = new CommandFramework(this);
+        commandFramework.registerCommands(new AdminCommand(this));
+
+        Metrics metrics = new Metrics(this, 4195);
+        metrics.addCustomChart(new SimplePie("removal-mode", () -> pluginConfig.getRemovalMode().getKey()));
     }
 
     @Override
