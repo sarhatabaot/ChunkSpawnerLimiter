@@ -20,10 +20,7 @@ public class PluginConfig {
     private Map<String, Integer> entityLimits;
     private Map<String, Integer> blockLimits;
     private Map<String, Boolean> spawnReasons;
-    private Map<String, WorldScanRange> worldScanRangeMap;
 
-    // Record for world scan ranges
-    public record WorldScanRange(int minY, int maxY) {}
 
     public PluginConfig(JavaPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin, "Plugin cannot be null");
@@ -38,7 +35,6 @@ public class PluginConfig {
         this.entityLimits = null;
         this.blockLimits = null;
         this.spawnReasons = null;
-        this.worldScanRangeMap = null;
     }
 
     // Main settings
@@ -54,15 +50,6 @@ public class PluginConfig {
         return config.getBoolean("metrics", true);
     }
 
-    // Event settings
-    // Might remove this entirely, we always want to check when a chunk loads / unloads. todo
-    public boolean isChunkLoadCheck() {
-        return config.getBoolean("events.chunk.load", false);
-    }
-    // Might remove this entirely, we always want to check when a chunk loads / unloads. todo
-    public boolean isChunkUnloadCheck() {
-        return config.getBoolean("events.chunk.unload", false);
-    }
 
     // In theory, this is covered by EntitySpawnEvent, so why do we need this? todo
     public boolean isCreatureSpawnWatch() {
@@ -220,51 +207,6 @@ public class PluginConfig {
     }
     private static final String DEFAULT_STRING = "default";
 
-    public Map<String, WorldScanRange> getWorldScanRanges() {
-        if (this.worldScanRangeMap == null) {
-            //todo cache this
-            var rangesSection = config.getConfigurationSection("worlds.scan-ranges");
-            if (rangesSection == null) {
-                return Map.of(DEFAULT_STRING, new WorldScanRange(-64, 256));
-            }
-
-            var ranges = new HashMap<String, WorldScanRange>();
-
-            // Default range
-            var defaultSection = rangesSection.getConfigurationSection(DEFAULT_STRING);
-            if (defaultSection != null) {
-                ranges.put(
-                        DEFAULT_STRING, new WorldScanRange(
-                                defaultSection.getInt("min-y", -64),
-                                defaultSection.getInt("max-y", 256)
-                        ));
-            } else {
-                ranges.put(DEFAULT_STRING, new WorldScanRange(-64, 256));
-            }
-
-            // World-specific ranges
-            for (var worldName : rangesSection.getKeys(false)) {
-                if (!worldName.equals(DEFAULT_STRING)) {
-                    var worldSection = rangesSection.getConfigurationSection(worldName);
-                    if (worldSection != null) {
-                        ranges.put(worldName, new WorldScanRange(
-                                worldSection.getInt("min-y"),
-                                worldSection.getInt("max-y")
-                        ));
-                    }
-                }
-            }
-
-            this.worldScanRangeMap = ranges;
-        }
-
-        return this.worldScanRangeMap;
-    }
-
-    public WorldScanRange getWorldScanRange(String worldName) {
-        var ranges = getWorldScanRanges();
-        return ranges.getOrDefault(worldName, ranges.get(DEFAULT_STRING));
-    }
 
     // Notification settings
     public boolean shouldNotifyPlayersInChunk() {

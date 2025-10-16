@@ -8,8 +8,6 @@ metrics: true
 # Event monitoring configuration
 events:
   chunk:
-    load: true # might not even use these since we want them to always be on. todo
-    unload: true # might not even use these since we want them to always be on. todo
     surrounding-chunks-radius: 1 # Maybe not?
   spawn:
     creature: true
@@ -92,15 +90,6 @@ blocks:
 worlds:
   mode: excluded  # "excluded" or "included"
   list: []
-
-  # todo I'm removing these, bypassed issues with reflection, this is always causing so many problems
-  scan-ranges:
-    default:
-      min-y: -64
-      max-y: 256
-    world_nether:
-      min-y: 0
-      max-y: 128
 
 # Player notification settings
 notifications:

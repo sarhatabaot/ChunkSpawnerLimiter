@@ -17,8 +17,10 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         CommandFramework commandFramework = new CommandFramework(this);
         commandFramework.registerCommands(new AdminCommand(this));
 
-        Metrics metrics = new Metrics(this, 4195);
-        metrics.addCustomChart(new SimplePie("removal-mode", () -> pluginConfig.getRemovalMode().getKey()));
+        if (pluginConfig.isMetrics()) {
+            Metrics metrics = new Metrics(this, 4195);
+            metrics.addCustomChart(new SimplePie("removal-mode", () -> pluginConfig.getRemovalMode().getKey()));
+        }
     }
 
     @Override

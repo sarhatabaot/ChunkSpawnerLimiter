@@ -7,15 +7,12 @@ import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterData;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
-import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class RemovalTaskManager {
     private final Queue<QueuedCheck> pendingChunks = new ConcurrentLinkedQueue<>();
@@ -46,18 +43,14 @@ public class RemovalTaskManager {
         }
     }
 
-
-    private final Consumer<Entity> defaultRemoval = Entity::remove;
-
-    private void processChunk(ChunkCoord coord) {
-        processChunk(coord, defaultRemoval);
-    }
-
     public void processChunk(ChunkCoord coord, Consumer<Entity> removalAction) {
         CounterData data = counterDataManager.getCounterData(coord);
         if (data == null) return;
 
         Chunk chunk = coord.getChunk();
+        if (chunk == null || !chunk.isLoaded()) {
+            return;
+        }
         for (EntityType type : data.getTrackedEntityTypes()) {
             List<Entity> entities = Arrays.stream(chunk.getEntities())
                     .filter(e -> e.getType() == type)
