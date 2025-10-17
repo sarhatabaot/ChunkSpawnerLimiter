@@ -32,6 +32,9 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void onBlockPlace(@NotNull BlockPlaceEvent event) {
+        if (pluginConfig.isWorldDisabled(event.getBlock().getWorld().getName())) {
+            return;
+        }
 
         if (!pluginConfig.getBlockLimits().containsKey(event.getBlock().getType().name())) {
             CSLLogger.debug("%s block not in block limits.".formatted(event.getBlock().getType().name()));
@@ -54,12 +57,20 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void onBlockBreak(@NotNull BlockBreakEvent event) {
+        if (pluginConfig.isWorldDisabled(event.getBlock().getWorld().getName())) {
+            return;
+        }
+
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getBlock().getLocation());
         counterDataManager.getCounterData(chunkCoord).decrementBlock(event.getBlock().getType());
     }
 
     @EventHandler
     public void onEntitySpawn(@NotNull EntitySpawnEvent event) {
+        if (pluginConfig.isWorldDisabled(event.getLocation().getWorld().getName())) {
+            return;
+        }
+
         if (!pluginConfig.hasEntityLimit(event.getEntity())) {
             CSLLogger.debug("%s entity not in entity limits.".formatted(event.getEntity().getType().name()));
             return;
@@ -100,6 +111,10 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void onEntityDeath(@NotNull EntityDeathEvent event) { //just to decrease counters for tracking.
+        if (pluginConfig.isWorldDisabled(event.getEntity().getWorld().getName())) {
+            return;
+        }
+
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getEntity().getWorld().getChunkAt(event.getEntity().getLocation()));
         counterDataManager.getCounterData(chunkCoord).decrementEntity(event.getEntityType());
     }
@@ -107,6 +122,10 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void onVehicleCreate(@NotNull VehicleCreateEvent event) {
+        if (pluginConfig.isWorldDisabled(event.getVehicle().getWorld().getName())) {
+            return;
+        }
+
         if (!pluginConfig.hasEntityLimit(event.getVehicle())) {
             return;
         }
@@ -126,6 +145,10 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void onVehicleDestroy(@NotNull VehicleDestroyEvent event) {
+        if (pluginConfig.isWorldDisabled(event.getVehicle().getWorld().getName())) {
+            return;
+        }
+        
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getVehicle().getWorld().getChunkAt(event.getVehicle().getLocation()));
         counterDataManager.getCounterData(chunkCoord).decrementEntity(event.getVehicle().getType());
     }
