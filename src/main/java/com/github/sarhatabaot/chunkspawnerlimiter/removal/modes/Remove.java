@@ -4,6 +4,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -35,6 +36,12 @@ public final class Remove implements RemovalMode {
 
     @Override
     public Consumer<Entity> getEntityRemovalAction() {
-        return Entity::remove;
+        return e -> {
+            if (e instanceof Player player) {
+                player.setHealth(0);
+            } else {
+                e.remove();
+            }
+        };
     }
 }

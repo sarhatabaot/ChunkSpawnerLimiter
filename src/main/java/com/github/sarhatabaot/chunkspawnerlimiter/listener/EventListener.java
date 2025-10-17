@@ -148,7 +148,7 @@ public class EventListener implements Listener {
         if (pluginConfig.isWorldDisabled(event.getVehicle().getWorld().getName())) {
             return;
         }
-        
+
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getVehicle().getWorld().getChunkAt(event.getVehicle().getLocation()));
         counterDataManager.getCounterData(chunkCoord).decrementEntity(event.getVehicle().getType());
     }

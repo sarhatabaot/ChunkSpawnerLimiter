@@ -21,6 +21,9 @@ public class RemovalTaskManager {
     private final Set<ChunkCoord> queuedChunks =
             Collections.newSetFromMap(new ConcurrentHashMap<>());
 
+    // Map of chunks that should be rechecked after a delay (timestamp in ms)
+    private final Map<ChunkCoord, Long> scheduledRechecks = new ConcurrentHashMap<>();
+
     private final CounterDataManager counterDataManager;
     private final ChunkSpawnerLimiter plugin;
     private final PluginConfig pluginConfig;
@@ -30,6 +33,15 @@ public class RemovalTaskManager {
         this.counterDataManager = counterDataManager;
         this.pluginConfig = pluginConfig;
         startProcessingTask();
+    }
+
+    /**
+     * Schedule this chunk to be checked again after X seconds.
+     */
+    public void scheduleRecheck(ChunkCoord coord, Consumer<Entity> action, long delaySeconds) {
+        long nextCheck = System.currentTimeMillis() + (delaySeconds * 1000L);
+        scheduledRechecks.put(coord, nextCheck);
+        CSLLogger.debug("Scheduled recheck for chunk %s in %d seconds".formatted(coord, delaySeconds));
     }
 
     public void queueChunkCheck(ChunkCoord coord, Consumer<Entity> action) {
@@ -49,6 +61,19 @@ public class RemovalTaskManager {
             processChunk(check.coord, check.action);
             queuedChunks.remove(check.coord);
         }
+
+        long now = System.currentTimeMillis();
+        for (Iterator<Map.Entry<ChunkCoord, Long>> it = scheduledRechecks.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<ChunkCoord, Long> entry = it.next();
+            if (entry.getValue() <= now) {
+                it.remove();
+                queueChunkCheck(entry.getKey(), getDefaultAction());
+            }
+        }
+    }
+
+    private Consumer<Entity> getDefaultAction() {
+        return pluginConfig.getRemovalMode().getEntityRemovalAction();
     }
 
     public void processChunk(ChunkCoord coord, Consumer<Entity> removalAction) {
@@ -87,14 +112,7 @@ public class RemovalTaskManager {
         return count + 1 <= limit;
     }
 
-    private static class QueuedCheck {
-        final ChunkCoord coord;
-        final Consumer<Entity> action;
-
-        QueuedCheck(ChunkCoord coord, Consumer<Entity> action) {
-            this.coord = coord;
-            this.action = action;
-        }
+    private record QueuedCheck(ChunkCoord coord, Consumer<Entity> action) {
     }
 
     private boolean hasCustomName(final Entity entity) {

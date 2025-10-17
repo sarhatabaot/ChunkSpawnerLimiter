@@ -4,7 +4,6 @@ debug-messages: false
 metrics: true
 
 # This config is written with 1.21.10 in mind, but is still compatible with earlier versions. Make sure to convert the values
-# Or use one of the prebuilt default configurations available here: <add-link>
 # Event monitoring configuration
 events:
   chunk:
@@ -13,12 +12,10 @@ events:
     creature: true
     vehicle: true
     entity: true
-  active-inspections: false # same here, we want these to always be on.
-  # todo, the modes wont work properly without these enabled. Actually not sure about this one, should we occassionaly inspect loaded chunks?? We check every time a creature spawns etc
-  # todo needed, because, entities may naturally move between chunks
-  # todo so we can trigger an inspection on all loaded chunks every x amount of seconds. Probably safe to trigger this every once in a while (1 min)
-  # todo defaults are powerful, so let's experiment and choose the most appropriate one
-  inspection-frequency: 300
+  inspections:
+    # This will recheck loaded chunks every {frequency} seconds
+    enabled: true
+    frequency: 60
 
 # Entity management settings
 entities:
@@ -54,6 +51,9 @@ entities:
     # "kill" - Kill excess entities with death effects/drops
     drop-armor-stand-items: false
     log-armor-stand-warnings: true
+    # This will allow players to be killed by CSL, if they reach the set limit in entities.
+    # This will work with kill, remove, enforce & enforce kill. Since we can't "remove" players in those modes the players will be killed.
+    kill-players: false
   ignore-metadata:
     - shopkeeper
 

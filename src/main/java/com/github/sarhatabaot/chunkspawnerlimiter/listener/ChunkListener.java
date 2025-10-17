@@ -61,6 +61,11 @@ public class ChunkListener implements Listener {
     private void addEntityLimits(final @NotNull Chunk chunk, final ChunkCoord chunkCoord) {
         final Entity[] entities = chunk.getEntities();
         for (Entity entity: entities) {
+            if (entity instanceof Player && !pluginConfig.isKillPlayers()) {
+                //is player & kill players is disabled
+                continue;
+            }
+
             if (pluginConfig.hasEntityLimit(entity.getType().name())) {
                 counterDataManager.getCounterData(chunkCoord).incrementEntity(entity.getType());
             }

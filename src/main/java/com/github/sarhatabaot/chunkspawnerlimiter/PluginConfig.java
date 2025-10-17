@@ -67,11 +67,11 @@ public class PluginConfig {
     }
 
     public boolean isActiveInspections() {
-        return config.getBoolean("events.active-inspections", true);
+        return config.getBoolean("events.inspections.enabled", true);
     }
 
     public int getInspectionFrequency() {
-        return config.getInt("events.inspection-frequency", 300);
+        return config.getInt("events.inspections.frequency", 300);
     }
 
     public int getSurroundingChunksRadius() {
@@ -359,6 +359,10 @@ public class PluginConfig {
             return getWorldsList().contains(worldName);
         }
         return !getWorldsList().contains(worldName);
+    }
+
+    public boolean isKillPlayers() {
+        return config.getBoolean("entities.removal.kill-players", false);
     }
 
 }

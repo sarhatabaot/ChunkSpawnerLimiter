@@ -4,6 +4,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.Cancellable;
 import org.jetbrains.annotations.Contract;
@@ -42,7 +43,13 @@ public final class Enforce implements RemovalMode {
 
     @Override
     public Consumer<Entity> getEntityRemovalAction() {
-        return Entity::remove;
+        return e -> {
+            if (e instanceof Player player) {
+                player.setHealth(0);
+            } else {
+                e.remove();
+            }
+        };
     }
 
     @Override
