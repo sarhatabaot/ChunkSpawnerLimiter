@@ -15,4 +15,4 @@ This plugin is especially useful for large servers or resource-constrained envir
 * Spawner Limits: Enforce per-chunk spawner limits.
 * Customizable: Adjust limits via configuration files.
 * Lightweight: Minimal performance impact on your server.
-* Support for Multiple Versions: Works with Minecraft 1.13-1.18+.
+* Support for Multiple Versions: Works with Minecraft 1.8.8-1.12.10.
