@@ -86,8 +86,13 @@ public class EventListener implements Listener {
             return;
         }
 
+        //todo impl broadcast to player
         RemovalMode removalMode = pluginConfig.getRemovalMode();
         removalMode.handleEntity(event.getEntity(), event);
+    }
+
+    private void messagePlayers() {
+
     }
 
 // TODO Check that impl works across versions, maybe use XMaterial.

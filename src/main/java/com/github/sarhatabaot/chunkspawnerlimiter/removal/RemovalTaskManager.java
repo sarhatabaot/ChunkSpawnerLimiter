@@ -98,13 +98,19 @@ public class RemovalTaskManager {
             if (entities.size() > allowed) {
                 int toRemove = entities.size() - allowed;
                 for (int i = 0; i < toRemove; i++) {
-                    //todo additional checks here.??
-                    //todo I think this is the spot for additional checls.
-                    //todo optionally add the ability to kill players need to add to config
-                    removalAction.accept(entities.get(i));
+                    final Entity entity = entities.get(i);
+                    if (!checks(entity)) {
+                        continue;
+                    }
+
+                    removalAction.accept(entity);
                 }
             }
         }
+    }
+
+    private boolean checks(final Entity entity) {
+        return hasCustomName(entity) || hasMetaData(entity);
     }
 
     //todo make this not static.
@@ -121,6 +127,12 @@ public class RemovalTaskManager {
             return false;
         }
         return entity.getCustomName() != null;
+    }
+
+    //todo, I don't really want to add reliance on another library, and if this doesn't allow us to use 1.8.8, it's a no go
+    // this will be optional, not required. that way users don't have to use this.
+    private boolean hasNbtData(final Entity entity) {
+        return false;
     }
 
     private boolean hasMetaData(final Entity entity) {

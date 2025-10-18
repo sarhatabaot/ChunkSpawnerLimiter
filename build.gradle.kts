@@ -35,6 +35,7 @@ bukkit {
     load = BukkitPluginDescription.PluginLoadOrder.POSTWORLD
     prefix = "CSL"
     //todo api-version="1.8" since we are supporting 1.8, this may block the loading? idk need to test
+    softDepend = listOf("NBTAPI") //todo, this way we keep it small
 }
 
 tasks {

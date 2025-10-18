@@ -38,6 +38,12 @@ entities:
     MONSTER: 50
     NPC: 50
     OTHER: 500
+#    ZOMBIE:
+#      base-limit: 10 todo
+#      To disable the preserved functionality, remove the section or set it to "unlimited"
+#      preserved-limit: "50%"
+#      preserved-limit: "5"
+#      preserved-limit: "unlimited"
   preservation:
     named-entities: true
     raid-entities: true
@@ -54,8 +60,11 @@ entities:
     # This will allow players to be killed by CSL, if they reach the set limit in entities.
     # This will work with kill, remove, enforce & enforce kill. Since we can't "remove" players in those modes the players will be killed.
     kill-players: false
-  ignore-metadata:
-    - shopkeeper
+  ignore:
+    metadata:
+      - shopkeeper
+    nbt:
+      - ""
 
 # Spawn reason filtering
 spawn-reasons:
@@ -92,11 +101,11 @@ worlds:
   list: []
 
 # Player notification settings
+# todo This should probably be configured, per user, with a permission to toggle.
 notifications:
   enabled: false
-  players-in-chunk: false
   method:
-    title: true
+    title: false
     message: false
   messages:
     entities-blocked: "&7Blocked %s from spawning in your chunk."

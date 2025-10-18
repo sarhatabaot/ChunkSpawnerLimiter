@@ -194,7 +194,7 @@ public class PluginConfig {
 
     public List<String> getIgnoreMetadata() {
         return Objects.requireNonNullElse(
-                config.getStringList("entities.ignore-metadata"),
+                config.getStringList("entities.ignore.metadata"),
                 List.of("shopkeeper")
         );
     }
