@@ -13,6 +13,7 @@ description = "Limit blocks & entities in chunks."
 
 dependencies {
     compileOnly(libs.spigot.api)
+    compileOnly(libs.nbt.api)
 
     implementation(libs.bstats)
     implementation(libs.annotations)

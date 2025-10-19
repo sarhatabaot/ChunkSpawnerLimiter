@@ -11,7 +11,7 @@ public final class CSLLogger {
     private CSLLogger() {
     }
 
-    public static void init(PluginConfig pluginConfig) {
+    public static void setup(PluginConfig pluginConfig) {
         CSLLogger.pluginConfig = pluginConfig;
     }
 

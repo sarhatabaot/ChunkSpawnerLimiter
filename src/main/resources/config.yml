@@ -65,7 +65,7 @@ entities:
       - shopkeeper
     # This will only work if you have NBTAPI Installed https://modrinth.com/plugin/nbtapi
     nbt:
-      - ""
+      - "tag"
 
 # Spawn reason filtering
 spawn-reasons:

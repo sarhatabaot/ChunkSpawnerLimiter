@@ -5,6 +5,7 @@ dependencyResolutionManagement {
         mavenCentral()
         maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
         maven("https://repo.loohpjames.com/repository/")
+        maven("https://repo.codemc.io/repository/maven-public/")
     }
 
     versionCatalogs {
@@ -13,6 +14,7 @@ dependencyResolutionManagement {
             library("bstats", "org.bstats:bstats-bukkit:3.1.0")
             library("annotations", "org.jetbrains:annotations:26.0.2-1")
             library("commands", "com.github.despical:command-framework:1.5.3")
+            library("nbt-api", "de.tr7zw:item-nbt-api-plugin:2.15.3")
 
             plugin("run-paper", "xyz.jpenilla.run-paper").version("2.3.1")
             plugin("shadow", "com.gradleup.shadow").version("9.2.2")

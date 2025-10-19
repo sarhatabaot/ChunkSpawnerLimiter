@@ -38,7 +38,7 @@ public class RemovalTaskManager {
     /**
      * Schedule this chunk to be checked again after X seconds.
      */
-    public void scheduleRecheck(ChunkCoord coord, Consumer<Entity> action, long delaySeconds) {
+    public void scheduleRecheck(ChunkCoord coord, long delaySeconds) {
         long nextCheck = System.currentTimeMillis() + (delaySeconds * 1000L);
         scheduledRechecks.put(coord, nextCheck);
         CSLLogger.debug("Scheduled recheck for chunk %s in %d seconds".formatted(coord, delaySeconds));
@@ -49,7 +49,6 @@ public class RemovalTaskManager {
             pendingChunks.add(new QueuedCheck(coord, action));
         }
     }
-
 
     private void startProcessingTask() {
         Bukkit.getScheduler().runTaskTimer(plugin, this::processQueue, 20L, 20L); // every 1 second
@@ -67,7 +66,7 @@ public class RemovalTaskManager {
             Map.Entry<ChunkCoord, Long> entry = it.next();
             if (entry.getValue() <= now) {
                 it.remove();
-                queueChunkCheck(entry.getKey(), getDefaultAction());
+                queueChunkCheck(entry.getKey(), getDefaultAction()); //idk about the default action here, it should all be in removal mode, though technically it is.
             }
         }
     }
@@ -104,13 +103,14 @@ public class RemovalTaskManager {
                     }
 
                     removalAction.accept(entity);
+                    //todo message players, or queue up a task to message players?, I don't want it to block this method
                 }
             }
         }
     }
 
     private boolean checks(final Entity entity) {
-        return hasCustomName(entity) || hasMetaData(entity);
+        return hasCustomName(entity) || hasMetaData(entity) || ExternalChecks.hasNbtData(entity);
     }
 
     //todo make this not static.
@@ -122,18 +122,13 @@ public class RemovalTaskManager {
     }
 
     private boolean hasCustomName(final Entity entity) {
-        //check from config
         if (!pluginConfig.shouldPreserveNamedEntities()) {
             return false;
         }
         return entity.getCustomName() != null;
     }
 
-    //todo, I don't really want to add reliance on another library, and if this doesn't allow us to use 1.8.8, it's a no go
-    // this will be optional, not required. that way users don't have to use this.
-    private boolean hasNbtData(final Entity entity) {
-        return false;
-    }
+
 
     private boolean hasMetaData(final Entity entity) {
         if (pluginConfig.getIgnoreMetadata().isEmpty()) {
