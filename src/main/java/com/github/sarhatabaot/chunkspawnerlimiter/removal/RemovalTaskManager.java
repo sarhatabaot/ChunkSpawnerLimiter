@@ -22,7 +22,7 @@ public class RemovalTaskManager {
             Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     // Map of chunks that should be rechecked after a delay (timestamp in ms)
-    private final Map<ChunkCoord, Long> scheduledRechecks = new ConcurrentHashMap<>();
+    private final Map<QueuedCheck, Long> scheduledRechecks = new ConcurrentHashMap<>();
 
     private final CounterDataManager counterDataManager;
     private final ChunkSpawnerLimiter plugin;
@@ -38,9 +38,10 @@ public class RemovalTaskManager {
     /**
      * Schedule this chunk to be checked again after X seconds.
      */
-    public void scheduleRecheck(ChunkCoord coord, long delaySeconds) {
+    public void scheduleRecheck(ChunkCoord coord, Consumer<Entity> action, long delaySeconds) {
         long nextCheck = System.currentTimeMillis() + (delaySeconds * 1000L);
-        scheduledRechecks.put(coord, nextCheck);
+        final QueuedCheck check = new QueuedCheck(coord, action);
+        scheduledRechecks.put(check, nextCheck);
         CSLLogger.debug("Scheduled recheck for chunk %s in %d seconds".formatted(coord, delaySeconds));
     }
 
@@ -62,11 +63,11 @@ public class RemovalTaskManager {
         }
 
         long now = System.currentTimeMillis();
-        for (Iterator<Map.Entry<ChunkCoord, Long>> it = scheduledRechecks.entrySet().iterator(); it.hasNext();) {
-            Map.Entry<ChunkCoord, Long> entry = it.next();
+        for (Iterator<Map.Entry<QueuedCheck, Long>> it = scheduledRechecks.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<QueuedCheck, Long> entry = it.next();
             if (entry.getValue() <= now) {
                 it.remove();
-                queueChunkCheck(entry.getKey(), getDefaultAction()); //idk about the default action here, it should all be in removal mode, though technically it is.
+                queueChunkCheck(entry.getKey().coord, entry.getKey().action);
             }
         }
     }
@@ -112,8 +113,7 @@ public class RemovalTaskManager {
     private boolean checks(final Entity entity) {
         return hasCustomName(entity) || hasMetaData(entity) || ExternalChecks.hasNbtData(entity);
     }
-
-    //todo make this not static.
+    
     public static boolean isUnderOrEqualToLimit(int count, int limit) {
         return count + 1 <= limit;
     }

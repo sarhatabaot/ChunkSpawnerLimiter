@@ -8,17 +8,12 @@ import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
 
 
 public class ChunkListener implements Listener {
@@ -46,6 +41,10 @@ public class ChunkListener implements Listener {
 
         RemovalMode removalMode = pluginConfig.getRemovalMode();
         removalTaskManager.queueChunkCheck(chunkCoord, removalMode.getEntityRemovalAction());
+
+        if (pluginConfig.isActiveInspections()) {
+            removalTaskManager.scheduleRecheck(chunkCoord, removalMode.getEntityRemovalAction(), pluginConfig.getInspectionFrequency());
+        }
     }
 
     @EventHandler
@@ -102,7 +101,7 @@ public class ChunkListener implements Listener {
         }
     }
 
-    private static int getWorldMinHeightSafe(World world) {
+    private int getWorldMinHeightSafe(World world) {
         try {
             // Check if getMinHeight() exists (MC 1.18+)
             return (int) World.class.getMethod("getMinHeight").invoke(world);

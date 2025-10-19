@@ -75,7 +75,7 @@ public class EventListener implements Listener {
             CSLLogger.debug("%s entity not in entity limits.".formatted(event.getEntity().getType().name()));
             return;
         }
-        //todo add group (instance of)
+
         final EntityType entityType = event.getEntity().getType();
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getEntity().getWorld().getChunkAt(event.getEntity().getLocation()));
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
