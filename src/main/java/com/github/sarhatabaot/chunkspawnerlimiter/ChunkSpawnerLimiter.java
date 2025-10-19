@@ -5,6 +5,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.command.AdminCommand;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.listener.ChunkListener;
 import com.github.sarhatabaot.chunkspawnerlimiter.listener.EventListener;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.ExternalChecks;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import me.despical.commandframework.CommandFramework;
@@ -23,7 +24,8 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
     public void onEnable() {
         this.pluginConfig = new PluginConfig(this);
 
-        CSLLogger.init(this.pluginConfig);
+        CSLLogger.setup(this.pluginConfig);
+        ExternalChecks.setup(this.pluginConfig);
 
         CommandFramework commandFramework = new CommandFramework(this);
         commandFramework.registerCommands(new AdminCommand(this));

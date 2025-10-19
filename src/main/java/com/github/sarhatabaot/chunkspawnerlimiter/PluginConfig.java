@@ -199,6 +199,13 @@ public class PluginConfig {
         );
     }
 
+    public List<String> getIgnoreNbt() {
+        return Objects.requireNonNullElse(
+                config.getStringList("entities.ignore.nbt"),
+                Collections.emptyList()
+        );
+    }
+
     // Spawn reasons
     public Map<String, Boolean> getSpawnReasons() {
         if (spawnReasons == null) {
