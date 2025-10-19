@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.github.sarhatabaot"
-version = "5.0.0-ALPHA"
+version = "5.0.0-RC1"
 description = "Limit blocks & entities in chunks."
 
 dependencies {
@@ -35,7 +35,7 @@ bukkit {
     authors = listOf("Cyprias", "sarhatabaot")
     load = BukkitPluginDescription.PluginLoadOrder.POSTWORLD
     prefix = "CSL"
-    //todo api-version="1.8" since we are supporting 1.8, this may block the loading? idk need to test
+    apiVersion = "1.13"
     softDepend = listOf("NBTAPI") //todo, this way we keep it small
 }
 
@@ -43,7 +43,7 @@ tasks {
     runServer {
         //use this to manually test various version load, probably should use docker with ci/cd for the automated version
         //todo amazing 1.13-1.16 breaks with jvm 21, the rest works, lmao, mention this on the website
-        minecraftVersion("1.21.10")
+        minecraftVersion("1.8.8")
         jvmArgs("-Dcom.mojang.eula.agree=true")
     }
     build {
