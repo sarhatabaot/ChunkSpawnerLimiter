@@ -77,7 +77,7 @@ public class AdminCommand {
             name = "csl.reload",
             permission = "csl.reload"
     )
-    public void onReload(CommandArguments arguments) {
+    public void onReload(@NotNull CommandArguments arguments) {
         this.plugin.onReload();
 
         arguments.getSender().sendMessage("Reloaded config.");
@@ -104,7 +104,7 @@ public class AdminCommand {
     @Command(
             name="csl.search.blocks"
     )
-    public void onSearchBlocks(CommandArguments arguments) {
+    public void onSearchBlocks(@NotNull CommandArguments arguments) {
         arguments.getSender().sendMessage(Arrays.stream(Material.values())
                         .filter(material -> material != Material.AIR)
                 .map(Enum::name)
@@ -123,6 +123,7 @@ public class AdminCommand {
 
     /*
     TODO
+    5.0.0 RC2
     Show specific chunk info counters. Either in a clickable list format or something like that.
     Optionally users should be able to view this, so they know when to stop placing?
     Mention that the user can see all the entity amounts using /spark profiler
@@ -134,25 +135,6 @@ public class AdminCommand {
 
     }
 
-
-    //I'm still debating if it's actually worth using this, shouldn't we just restart the server? todo
-    @Command(
-            name="csl.rebuild"
-    )
-    @Confirmation(
-            message = """
-                    ⚠️ WARNING: This will rebuild every counter on the server.
-                    The process can be slow and may cause lag or instability.
-                    It’s recommended to restart the server instead.
-                    To proceed anyway, re-run this command within 10 seconds.""",
-            expireAfter = 10,
-            bypassPerm = "csl.rebuild.bypass",
-            timeUnit = TimeUnit.SECONDS,
-            overrideConsole = true
-    )
-    public void onRebuild() {
-
-    }
 
     //https://docker-minecraft-server.readthedocs.io/en/latest/
 
