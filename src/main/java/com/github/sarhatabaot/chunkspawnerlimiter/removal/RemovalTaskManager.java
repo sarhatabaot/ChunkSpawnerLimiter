@@ -114,7 +114,7 @@ public class RemovalTaskManager {
         return Checks.hasCustomName(entity) || Checks.hasMetaData(entity) || ExternalChecks.hasNbtData(entity) || Checks.isPartOfRaid(entity);
     }
 
-    
+
     private record QueuedCheck(ChunkCoord coord, Consumer<Entity> action) {
     }
 

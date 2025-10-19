@@ -3,6 +3,7 @@ package com.github.sarhatabaot.chunkspawnerlimiter.listener;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
+import com.github.sarhatabaot.chunkspawnerlimiter.reflection.WorldReflection;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import org.bukkit.Chunk;
@@ -86,7 +87,7 @@ public class ChunkListener implements Listener {
         int startX = chunkCoordsToCoords(chunk.getX());
         int startZ = chunkCoordsToCoords(chunk.getZ());
 
-        int minY = getWorldMinHeightSafe(world);
+        int minY = WorldReflection.getWorldMinHeightSafe(world);
         int maxY = world.getMaxHeight();
 
         for (int x = 0; x < 16; x++) {
@@ -101,14 +102,5 @@ public class ChunkListener implements Listener {
         }
     }
 
-    private int getWorldMinHeightSafe(World world) {
-        try {
-            // Check if getMinHeight() exists (MC 1.18+)
-            return (int) World.class.getMethod("getMinHeight").invoke(world);
-        } catch (Exception ignored) {
-            // Older versions (like 1.8.8) start at Y = 0
-            return 0;
-        }
-    }
 
 }
