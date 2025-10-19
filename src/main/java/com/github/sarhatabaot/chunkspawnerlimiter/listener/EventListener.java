@@ -6,6 +6,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterData;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.Checks;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
@@ -19,7 +20,6 @@ import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.jetbrains.annotations.NotNull;
 
-import static com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager.isUnderOrEqualToLimit;
 
 public class EventListener implements Listener {
     private final PluginConfig pluginConfig;
@@ -45,7 +45,7 @@ public class EventListener implements Listener {
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getBlock().getLocation());
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
-        if (isUnderOrEqualToLimit(counterData.getBlockCount(material),  pluginConfig.getBlockLimits().get(material.name()))) {
+        if (Checks.isUnderOrEqualToLimit(counterData.getBlockCount(material),  pluginConfig.getBlockLimits().get(material.name()))) {
             CSLLogger.debug("%s block under block limits (%d/%d)".formatted(material.name(), counterData.getBlockCount(material), pluginConfig.getBlockLimits().get(material.name())));
             counterData.incrementBlock(material);
             return;
@@ -80,7 +80,7 @@ public class EventListener implements Listener {
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getEntity().getWorld().getChunkAt(event.getEntity().getLocation()));
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
-        if (isUnderOrEqualToLimit(counterData.getEntityCount(entityType), pluginConfig.getEntityLimit(event.getEntity()))) {
+        if (Checks.isUnderOrEqualToLimit(counterData.getEntityCount(entityType), pluginConfig.getEntityLimit(event.getEntity()))) {
             CSLLogger.debug("%s entity under entity limits (%d/%d)".formatted(entityType.name(), counterData.getEntityCount(entityType), pluginConfig.getEntityLimit(event.getEntity())));
             counterData.incrementEntity(entityType);
             return;
@@ -139,7 +139,7 @@ public class EventListener implements Listener {
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getVehicle().getWorld().getChunkAt(event.getVehicle().getLocation()));
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
-        if (isUnderOrEqualToLimit(counterData.getEntityCount(vehicleType), pluginConfig.getEntityLimit(event.getVehicle()))) {
+        if (Checks.isUnderOrEqualToLimit(counterData.getEntityCount(vehicleType), pluginConfig.getEntityLimit(event.getVehicle()))) {
             counterData.incrementEntity(vehicleType);
             return;
         }

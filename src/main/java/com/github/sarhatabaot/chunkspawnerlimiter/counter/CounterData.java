@@ -41,8 +41,6 @@ public class CounterData {
         if (count != null) {
             count.decrementAndGet();
         }
-        // Note: count could go negative, but that might be acceptable for some use cases
-        // If negative counts should be prevented, we could use updateAndGet with a check
     }
 
     public void incrementEntity(EntityType type) {

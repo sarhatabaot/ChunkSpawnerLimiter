@@ -111,34 +111,12 @@ public class RemovalTaskManager {
     }
 
     private boolean checks(final Entity entity) {
-        return hasCustomName(entity) || hasMetaData(entity) || ExternalChecks.hasNbtData(entity);
-    }
-    
-    public static boolean isUnderOrEqualToLimit(int count, int limit) {
-        return count + 1 <= limit;
+        return Checks.hasCustomName(entity) || Checks.hasMetaData(entity) || ExternalChecks.hasNbtData(entity) || Checks.isPartOfRaid(entity);
     }
 
+    
     private record QueuedCheck(ChunkCoord coord, Consumer<Entity> action) {
     }
 
-    private boolean hasCustomName(final Entity entity) {
-        if (!pluginConfig.shouldPreserveNamedEntities()) {
-            return false;
-        }
-        return entity.getCustomName() != null;
-    }
 
-
-
-    private boolean hasMetaData(final Entity entity) {
-        if (pluginConfig.getIgnoreMetadata().isEmpty()) {
-            return false;
-        }
-
-        for (final String metadata: pluginConfig.getIgnoreMetadata()) {
-            if (entity.hasMetadata(metadata))
-                return true;
-        }
-        return false;
-    }
 }

@@ -177,11 +177,11 @@ public class PluginConfig {
     }
 
     public boolean shouldDropArmorStandItems() {
-        return config.getBoolean("entities.removal.drop-armor-stand-items", false);
+        return config.getBoolean("entities.removal.armor-stand.drop", false);
     }
 
     public boolean shouldLogArmorStandWarnings() {
-        return config.getBoolean("entities.removal.log-armor-stand-warnings", true);
+        return config.getBoolean("entities.removal.armor-stand.log-warnings", true);
     }
 
     public boolean shouldPreserveNamedEntities() {

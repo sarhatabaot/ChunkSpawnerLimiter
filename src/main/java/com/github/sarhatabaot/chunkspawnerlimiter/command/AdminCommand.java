@@ -78,7 +78,7 @@ public class AdminCommand {
             permission = "csl.reload"
     )
     public void onReload(CommandArguments arguments) {
-        this.plugin.reloadConfig();
+        this.plugin.onReload();
 
         arguments.getSender().sendMessage("Reloaded config.");
     }

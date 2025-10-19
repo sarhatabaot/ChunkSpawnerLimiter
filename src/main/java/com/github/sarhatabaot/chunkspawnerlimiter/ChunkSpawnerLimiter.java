@@ -5,6 +5,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.command.AdminCommand;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.listener.ChunkListener;
 import com.github.sarhatabaot.chunkspawnerlimiter.listener.EventListener;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.Checks;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.ExternalChecks;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
@@ -25,6 +26,7 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         this.pluginConfig = new PluginConfig(this);
 
         CSLLogger.setup(this.pluginConfig);
+        Checks.setup(pluginConfig);
         ExternalChecks.setup(this.pluginConfig);
 
         CommandFramework commandFramework = new CommandFramework(this);
@@ -50,6 +52,10 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         this.counterDataManager = null;
         this.removalTaskManager = null;
         this.pluginConfig = null;
+    }
+
+    public void onReload() {
+        this.pluginConfig.reload();
     }
 
 

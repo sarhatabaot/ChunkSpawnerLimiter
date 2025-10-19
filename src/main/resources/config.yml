@@ -6,8 +6,6 @@ metrics: true
 # This config is written with 1.21.10 in mind, but is still compatible with earlier versions. Make sure to convert the values
 # Event monitoring configuration
 events:
-  chunk:
-    surrounding-chunks-radius: 1 # Maybe not?
   spawn:
     creature: true
     vehicle: true
@@ -55,8 +53,9 @@ entities:
     # "prevent" - Only prevent new entities/blocks from exceeding limits
     # "remove" - Instantly remove excess entities without effects
     # "kill" - Kill excess entities with death effects/drops
-    drop-armor-stand-items: false
-    log-armor-stand-warnings: true
+    armor-stand:
+      drop: false
+      log-warnings: true
     # This will allow players to be killed by CSL, if they reach the set limit in entities.
     # This will work with kill, remove, enforce & enforce kill. Since we can't "remove" players in those modes the players will be killed.
     kill-players: false
