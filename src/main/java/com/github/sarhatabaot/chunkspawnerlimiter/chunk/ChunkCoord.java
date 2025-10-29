@@ -1,5 +1,6 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.chunk;
 
+import java.lang.ref.WeakReference;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -41,10 +42,23 @@ public record ChunkCoord(UUID worldUuid, int chunkX, int chunkZ) {
         return Bukkit.getWorld(worldUuid);
     }
 
-    // Get the Chunk object (may return null if chunk is not loaded)
-    public @Nullable Chunk getChunk() { //todo weak reference here
+    private static WeakReference<Chunk> cachedChunk = new WeakReference<>(null);
+
+    public @Nullable Chunk getChunk() {
+        Chunk chunk = cachedChunk.get();
+        if (chunk != null && chunk.isLoaded()) {
+            return chunk;
+        }
+
         World world = getWorld();
-        return world != null ? world.getChunkAt(chunkX, chunkZ) : null;
+        if (world == null || !world.isChunkLoaded(chunkX, chunkZ)) {
+            cachedChunk = new WeakReference<>(null);
+            return null;
+        }
+
+        chunk = world.getChunkAt(chunkX, chunkZ);
+        cachedChunk = new WeakReference<>(chunk);
+        return chunk;
     }
 
     // Check if this chunk is currently loaded
