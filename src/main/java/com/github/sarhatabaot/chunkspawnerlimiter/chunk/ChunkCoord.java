@@ -42,7 +42,7 @@ public record ChunkCoord(UUID worldUuid, int chunkX, int chunkZ) {
     }
 
     // Get the Chunk object (may return null if chunk is not loaded)
-    public @Nullable Chunk getChunk() {
+    public @Nullable Chunk getChunk() { //todo weak reference here
         World world = getWorld();
         return world != null ? world.getChunkAt(chunkX, chunkZ) : null;
     }

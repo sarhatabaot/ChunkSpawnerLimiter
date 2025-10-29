@@ -1,11 +1,8 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.removal;
 
-import com.github.sarhatabaot.chunkspawnerlimiter.CSLLogger;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.reflection.RaidReflection;
 import org.bukkit.entity.Entity;
-
-import java.util.Collection;
 
 public class Checks {
     private static PluginConfig pluginConfig;
