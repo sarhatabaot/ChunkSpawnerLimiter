@@ -33,15 +33,9 @@ entities:
       - MINECART
   limits:
     ANIMAL: 50
-    MONSTER: 50
+    MONSTERS: 50
     NPC: 50
     OTHER: 500
-#    ZOMBIE:
-#      base-limit: 10 todo
-#      To disable the preserved functionality, remove the section or set it to "unlimited"
-#      preserved-limit: "50%"
-#      preserved-limit: "5"
-#      preserved-limit: "unlimited"
   preservation:
     named-entities: true
     raid-entities: true
