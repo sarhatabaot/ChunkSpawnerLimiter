@@ -1,0 +1,142 @@
+package com.github.sarhatabaot.chunkspawnerlimiter.reflection;
+
+import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
+import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
+import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
+import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
+import org.bukkit.Material;
+import org.bukkit.World;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.util.logging.Level;
+
+public class NmsBlockScanner {
+    private final PluginConfig pluginConfig;
+    private final CounterDataManager counterDataManager;
+
+    private final String version;
+    private final boolean legacy;
+    private final Method getTypeMethod;
+    private final Method getHandleMethod;
+    private final Constructor<?> blockPosConstructor;
+    private final Method getBlockMethod;
+    private final Method craftMagicNumbersGetMaterial;
+
+    public NmsBlockScanner(
+            final PluginConfig pluginConfig,
+            final CounterDataManager counterDataManager
+    ) {
+        this.pluginConfig = pluginConfig;
+        this.counterDataManager = counterDataManager;
+
+        try {
+            this.version = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
+            this.legacy = isLegacyVersion(version);
+
+            // Reflection setup
+            Class<?> craftWorldClass = Class.forName("org.bukkit.craftbukkit." + version + ".CraftWorld");
+            Class<?> nmsWorldClass = Class.forName("net.minecraft.server." + version + ".World");
+            Class<?> blockPosClass = Class.forName("net.minecraft.server." + version + ".BlockPosition");
+
+            this.getHandleMethod = craftWorldClass.getMethod("getHandle");
+            this.blockPosConstructor = blockPosClass.getConstructor(int.class, int.class, int.class);
+            this.getTypeMethod = nmsWorldClass.getMethod("getType", blockPosClass);
+
+            // IBlockData class and conversion methods
+            Class<?> iBlockDataClass = Class.forName("net.minecraft.server." + version + ".IBlockData");
+
+            if (legacy) {
+                // 1.8 - 1.12
+                this.getBlockMethod = iBlockDataClass.getMethod("getBlock");
+                this.craftMagicNumbersGetMaterial = Class
+                        .forName("org.bukkit.craftbukkit." + version + ".util.CraftMagicNumbers")
+                        .getMethod("getMaterial", Class.forName("net.minecraft.server." + version + ".Block"));
+            } else {
+                // 1.13+
+                Method method = null;
+                try {
+                    method = iBlockDataClass.getMethod("getBukkitMaterial");
+                } catch (NoSuchMethodException ignored) {
+                    // fallback later
+                }
+                this.getBlockMethod = method;
+                this.craftMagicNumbersGetMaterial = null;
+            }
+
+            Bukkit.getLogger().log(Level.INFO, "[ChunkSpawnerLimiter] NMS Block Scanner initialized for {0} (legacy={1})",
+                    new Object[]{version, legacy});
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize NmsBlockScanner for " + Bukkit.getVersion(), e);
+        }
+    }
+
+    /**
+     * Returns the Material at a given world coordinate using NMS reflection.
+     */
+    public Material getBlockType(
+            final World world,
+            final int x,
+            final int y,
+            final int z
+    ) {
+        try {
+            Object nmsWorld = getHandleMethod.invoke(world);
+            Object blockPos = blockPosConstructor.newInstance(x, y, z);
+            Object iBlockData = getTypeMethod.invoke(nmsWorld, blockPos);
+
+            if (legacy) {
+                Object nmsBlock = getBlockMethod.invoke(iBlockData);
+                return (Material) craftMagicNumbersGetMaterial.invoke(null, nmsBlock);
+            } else if (getBlockMethod != null) {
+                Object material = getBlockMethod.invoke(iBlockData);
+                if (material instanceof Material) {
+                    return (Material) material;
+                }
+            }
+
+            // Fallback for future versions
+            return world.getBlockAt(x, y, z).getType();
+
+        } catch (Throwable t) {
+            // Safety fallback to AIR to prevent crashing
+            return Material.AIR;
+        }
+    }
+
+    /**
+     * Scans all blocks in the given chunk and increments counts for limited blocks.
+     * This is your original logic, but now powered by NMS reflection.
+     */
+    public void scanChunk(final Chunk chunk, final ChunkCoord chunkCoord) {
+        World world = chunk.getWorld();
+
+        int startX = chunk.getX() << 4;
+        int startZ = chunk.getZ() << 4;
+
+        int minY = WorldReflection.getWorldMinHeightSafe(world);
+        int maxY = world.getMaxHeight();
+
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                for (int y = minY; y < maxY; y++) {
+                    Material type = getBlockType(world, startX + x, y, startZ + z);
+                    if (pluginConfig.hasBlockLimit(type.name())) {
+                        counterDataManager.getCounterData(chunkCoord).incrementBlock(type);
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isLegacyVersion(String version) {
+        // Legacy means pre-flattening (1.8–1.12)
+        return version.startsWith("v1_8")
+                || version.startsWith("v1_9")
+                || version.startsWith("v1_10")
+                || version.startsWith("v1_11")
+                || version.startsWith("v1_12");
+    }
+}

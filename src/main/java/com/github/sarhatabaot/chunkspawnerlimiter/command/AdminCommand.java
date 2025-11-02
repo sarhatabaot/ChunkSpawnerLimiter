@@ -4,7 +4,6 @@ import com.github.sarhatabaot.chunkspawnerlimiter.ChunkSpawnerLimiter;
 import me.despical.commandframework.CommandArguments;
 import me.despical.commandframework.annotations.Command;
 import me.despical.commandframework.annotations.Completer;
-import me.despical.commandframework.annotations.Confirmation;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
@@ -12,7 +11,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class AdminCommand {
@@ -49,8 +47,6 @@ public class AdminCommand {
                 &e/csl reload &7- Reload configuration
                 &e/csl search entities &7- List entity types
                 &e/csl search blocks &7- List block materials
-                &e/csl rebuild &7- Rebuild all counters
-                &c  ⚠️ Can cause lag - use with caution
                """
         );
 
@@ -131,8 +127,11 @@ public class AdminCommand {
     /csl chunk info - show current chunk info
     /csl chunk info <optional> - shows a specific chunk
      */
+    @Command(
+            name="csl.chunk.info"
+    )
     public void onChunkInfo(CommandArguments commandArguments) {
-
+        commandArguments.getSender().sendMessage("Not implemented yet.");
     }
 
 

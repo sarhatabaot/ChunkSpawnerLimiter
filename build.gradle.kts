@@ -46,6 +46,30 @@ tasks {
         minecraftVersion("1.8.8")
         jvmArgs("-Dcom.mojang.eula.agree=true")
     }
+
+
+    // Define your versions
+    val minecraftVersions = listOf("1.8.8", "1.9.4", "1.12.2", "1.16.5", "1.20.1", "1.21.10")
+
+    // Create tasks for each version
+    minecraftVersions.forEach { version ->
+        // Convert version to valid task name (replace dots with underscores)
+        val taskName = "runServer${version.replace(".", "_")}"
+
+        register(taskName) {
+            group = "minecraft"
+            description = "Run Minecraft server version $version"
+            dependsOn(runServer)
+            doFirst {
+                // Set the minecraft version on the base task
+                (runServer.get() as Task).extensions.extraProperties.set("minecraftVersion", version)
+                (runServer.get() as Task).extensions.extraProperties.set("jvmArgs", "-Dcom.mojang.eula.agree=true")
+                // Or if runServer has a property/method for setting version:
+                // runServer.get().setMinecraftVersion(version)
+            }
+        }
+    }
+
     build {
         dependsOn(shadowJar)
     }

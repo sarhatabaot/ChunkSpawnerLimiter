@@ -1,11 +1,14 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.listener;
 
+import com.github.sarhatabaot.chunkspawnerlimiter.CSLLogger;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
+import com.github.sarhatabaot.chunkspawnerlimiter.reflection.NmsBlockScanner;
 import com.github.sarhatabaot.chunkspawnerlimiter.reflection.WorldReflection;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -21,11 +24,19 @@ public class ChunkListener implements Listener {
     private final PluginConfig pluginConfig;
     private final CounterDataManager counterDataManager;
     private final RemovalTaskManager removalTaskManager;
+    private final NmsBlockScanner nmsBlockScanner;
 
     public ChunkListener(PluginConfig pluginConfig, CounterDataManager counterDataManager, RemovalTaskManager removalTaskManager) {
         this.pluginConfig = pluginConfig;
         this.counterDataManager = counterDataManager;
         this.removalTaskManager = removalTaskManager;
+        try {
+            this.nmsBlockScanner = new NmsBlockScanner(pluginConfig, counterDataManager);
+        } catch (Exception e) {
+            CSLLogger.error("Failed to initialize NMS Block Scanner: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+
     }
 
     @EventHandler
@@ -38,7 +49,12 @@ public class ChunkListener implements Listener {
         final ChunkCoord chunkCoord = ChunkCoord.from(chunk);
 
         addEntityLimits(chunk, chunkCoord);
-        addBlockLimits(chunk, chunkCoord);
+        try {
+            this.nmsBlockScanner.scanChunk(chunk, chunkCoord);
+        } catch (Exception e) {
+            CSLLogger.error("There was a problem trying to add block limits in this chunk.");
+        }
+        //addBlockLimits(chunk, chunkCoord);
 
         RemovalMode removalMode = pluginConfig.getRemovalMode();
         removalTaskManager.queueChunkCheck(chunkCoord, removalMode.getEntityRemovalAction());
