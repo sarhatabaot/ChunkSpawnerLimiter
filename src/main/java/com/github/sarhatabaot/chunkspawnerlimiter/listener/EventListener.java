@@ -95,7 +95,7 @@ public class EventListener implements Listener {
 
     }
 
-// TODO Check that impl works across versions, maybe use XMaterial.
+// TODO Check that impl works across versions, use reflection.
 // MaterialData was changed at some stage
 //    @EventHandler(priority = EventPriority.HIGHEST)
 //    public void onPlayerUseEgg(PlayerInteractEvent event) {

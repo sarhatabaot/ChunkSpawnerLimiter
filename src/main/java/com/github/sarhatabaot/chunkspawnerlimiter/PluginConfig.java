@@ -19,7 +19,7 @@ public class PluginConfig {
 
     private Map<String, Integer> entityLimits;
     private Map<String, Integer> blockLimits;
-    private Map<String, Boolean> spawnReasons;
+    private Set<String> spawnReasons;
     private Map<String, List<String>> entityGroups;
 
 
@@ -206,46 +206,43 @@ public class PluginConfig {
         );
     }
 
-    // Spawn reasons
-    public Map<String, Boolean> getSpawnReasons() {
+    public Set<String> getSpawnReasons() {
         if (spawnReasons == null) {
-            var reasonsSection = config.getConfigurationSection("spawn-reasons");
-            if (reasonsSection == null) return getDefaultSpawnReasons();
+            var reasonsList = config.getStringList("spawn-reasons");
+            if (reasonsList == null || reasonsList.isEmpty()) {
+                return getDefaultSpawnReasons();
+            }
 
-            this.spawnReasons = reasonsSection.getKeys(false).stream()
-                    .collect(Collectors.toMap(
-                            key -> key,
-                            reasonsSection::getBoolean
-                    ));
+            this.spawnReasons = new HashSet<>(reasonsList);
         }
 
         return spawnReasons;
     }
 
-    private @NotNull @Unmodifiable Map<String, Boolean> getDefaultSpawnReasons() {
-        return Map.ofEntries(
-                Map.entry("BREEDING", true),
-                Map.entry("BUILD_IRONGOLEM", true),
-                Map.entry("BUILD_SNOWMAN", true),
-                Map.entry("BUILD_WITHER", true),
-                Map.entry("CHUNK_GEN", true),
-                Map.entry("DEFAULT", true),
-                Map.entry("DISPENSE_EGG", true),
-                Map.entry("DROWNED", true),
-                Map.entry("EGG", true),
-                Map.entry("JOCKEY", true),
-                Map.entry("LIGHTNING", true),
-                Map.entry("MOUNT", true),
-                Map.entry("NATURAL", true),
-                Map.entry("NETHER_PORTAL", true),
-                Map.entry("OCELOT_BABY", true),
-                Map.entry("REINFORCEMENTS", true),
-                Map.entry("SILVERFISH_BLOCK", true),
-                Map.entry("SPAWNER", true),
-                Map.entry("SPAWNER_EGG", true),
-                Map.entry("TRAP", true),
-                Map.entry("VILLAGE_DEFENSE", true),
-                Map.entry("VILLAGE_INVASION", true)
+    private @NotNull @Unmodifiable Set<String> getDefaultSpawnReasons() {
+        return Set.of(
+                "BREEDING",
+                "BUILD_IRONGOLEM",
+                "BUILD_SNOWMAN",
+                "BUILD_WITHER",
+                "CHUNK_GEN",
+                "DEFAULT",
+                "DISPENSE_EGG",
+                "DROWNED",
+                "EGG",
+                "JOCKEY",
+                "LIGHTNING",
+                "MOUNT",
+                "NATURAL",
+                "NETHER_PORTAL",
+                "OCELOT_BABY",
+                "REINFORCEMENTS",
+                "SILVERFISH_BLOCK",
+                "SPAWNER",
+                "SPAWNER_EGG",
+                "TRAP",
+                "VILLAGE_DEFENSE",
+                "VILLAGE_INVASION"
         );
     }
 

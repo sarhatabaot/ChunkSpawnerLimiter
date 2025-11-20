@@ -8,7 +8,6 @@ import com.github.sarhatabaot.chunkspawnerlimiter.reflection.NmsBlockScanner;
 import com.github.sarhatabaot.chunkspawnerlimiter.reflection.WorldReflection;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.block.Block;

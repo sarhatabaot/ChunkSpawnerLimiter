@@ -7,12 +7,16 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.logging.Level;
 
+// with latest minecraft un-obfuscating nms, this could become easier with newer versions.
 public class NmsBlockScanner {
+    private static final int CHUNK_SIZE = 16;
+
     private final PluginConfig pluginConfig;
     private final CounterDataManager counterDataManager;
 
@@ -65,7 +69,7 @@ public class NmsBlockScanner {
                 this.craftMagicNumbersGetMaterial = null;
             }
 
-            Bukkit.getLogger().log(Level.INFO, "[ChunkSpawnerLimiter] NMS Block Scanner initialized for {0} (legacy={1})",
+            Bukkit.getLogger().log(Level.INFO, "[CSL] NMS Block Scanner initialized for {0} (legacy={1})",
                     new Object[]{version, legacy});
 
         } catch (Exception e) {
@@ -106,11 +110,7 @@ public class NmsBlockScanner {
         }
     }
 
-    /**
-     * Scans all blocks in the given chunk and increments counts for limited blocks.
-     * This is your original logic, but now powered by NMS reflection.
-     */
-    public void scanChunk(final Chunk chunk, final ChunkCoord chunkCoord) {
+    public void scanChunk(final @NotNull Chunk chunk, final ChunkCoord chunkCoord) {
         World world = chunk.getWorld();
 
         int startX = chunk.getX() << 4;
@@ -119,8 +119,8 @@ public class NmsBlockScanner {
         int minY = WorldReflection.getWorldMinHeightSafe(world);
         int maxY = world.getMaxHeight();
 
-        for (int x = 0; x < 16; x++) {
-            for (int z = 0; z < 16; z++) {
+        for (int x = 0; x < CHUNK_SIZE; x++) {
+            for (int z = 0; z < CHUNK_SIZE; z++) {
                 for (int y = minY; y < maxY; y++) {
                     Material type = getBlockType(world, startX + x, y, startZ + z);
                     if (pluginConfig.hasBlockLimit(type.name())) {
@@ -131,7 +131,7 @@ public class NmsBlockScanner {
         }
     }
 
-    private boolean isLegacyVersion(String version) {
+    private boolean isLegacyVersion(@NotNull String version) {
         // Legacy means pre-flattening (1.8–1.12)
         return version.startsWith("v1_8")
                 || version.startsWith("v1_9")

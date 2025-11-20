@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class AdminCommand {
+
+
     private final ChunkSpawnerLimiter plugin;
 
     public AdminCommand(ChunkSpawnerLimiter plugin) {
@@ -79,8 +81,34 @@ public class AdminCommand {
         arguments.getSender().sendMessage("Reloaded config.");
     }
 
+    /*
+TODO
+5.0.0 RC3
+Show specific chunk info counters. Either in a clickable list format or something like that.
+Optionally users should be able to view this, so they know when to stop placing?
+Mention that the user can see all the entity amounts using /spark profiler
+/csl chunk - shows all options - can click on a chunk to show info
+/csl chunk info - show current chunk info
+/csl chunk info <optional> - shows a specific chunk
+*/
     @Command(
-            name="csl.search.entities"
+            name = "csl.chunk.info"
+    )
+    public void onChunkInfo(CommandArguments commandArguments) {
+        commandArguments.getSender().sendMessage("Not implemented yet.");
+    }
+
+    private static final List<String> ENTITY_NAMES =
+            Arrays.stream(EntityType.values()).map(Enum::name).toList();
+
+    private static final List<String> MATERIAL_NAMES =
+            Arrays.stream(Material.values())
+                    .filter(m -> m != Material.AIR)
+                    .map(Enum::name)
+                    .toList();
+
+    @Command(
+            name = "csl.search.entities"
     )
     public void onSearchEntities(@NotNull CommandArguments arguments) {
         arguments.getSender().sendMessage(Arrays.stream(EntityType.values())
@@ -88,21 +116,19 @@ public class AdminCommand {
                 .collect(Collectors.joining(", ")));
     }
 
-    @Command(
-            name="csl.search.entities"
+    @Completer(
+            name = "csl.search.entities"
     )
     public List<String> onSearchEntitiesCompletion() {
-        return Arrays.stream(EntityType.values())
-                .map(Enum::name)
-                .toList();
+        return ENTITY_NAMES;
     }
 
     @Command(
-            name="csl.search.blocks"
+            name = "csl.search.blocks"
     )
     public void onSearchBlocks(@NotNull CommandArguments arguments) {
         arguments.getSender().sendMessage(Arrays.stream(Material.values())
-                        .filter(material -> material != Material.AIR)
+                .filter(material -> material != Material.AIR)
                 .map(Enum::name)
                 .collect(Collectors.joining(", ")));
     }
@@ -111,30 +137,11 @@ public class AdminCommand {
             name = "csl.search.blocks"
     )
     public List<String> onSearchBlocksCompletion() {
-        return Arrays.stream(Material.values())
-                .map(Enum::name)
-                .toList();
+        return MATERIAL_NAMES;
     }
 
 
-    /*
-    TODO
-    5.0.0 RC2
-    Show specific chunk info counters. Either in a clickable list format or something like that.
-    Optionally users should be able to view this, so they know when to stop placing?
-    Mention that the user can see all the entity amounts using /spark profiler
-    /csl chunk - shows all options - can click on a chunk to show info
-    /csl chunk info - show current chunk info
-    /csl chunk info <optional> - shows a specific chunk
-     */
-    @Command(
-            name="csl.chunk.info"
-    )
-    public void onChunkInfo(CommandArguments commandArguments) {
-        commandArguments.getSender().sendMessage("Not implemented yet.");
-    }
 
 
-    //https://docker-minecraft-server.readthedocs.io/en/latest/
 
 }

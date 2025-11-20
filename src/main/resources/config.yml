@@ -61,33 +61,42 @@ entities:
       - "tag"
 
 # Spawn reason filtering
+# To disable, just remove what you don't want.
 spawn-reasons:
-  BREEDING: true
-  BUILD_IRONGOLEM: true
-  BUILD_SNOWMAN: true
-  BUILD_WITHER: true
-  CHUNK_GEN: true
-  DEFAULT: true
-  DISPENSE_EGG: true
-  DROWNED: true
-  EGG: true
-  JOCKEY: true
-  LIGHTNING: true
-  MOUNT: true
-  NATURAL: true
-  NETHER_PORTAL: true
-  OCELOT_BABY: true
-  REINFORCEMENTS: true
-  SILVERFISH_BLOCK: true
-  SPAWNER: true
-  SPAWNER_EGG: true
-  TRAP: true
-  VILLAGE_DEFENSE: true
-  VILLAGE_INVASION: true
+  - "BREEDING"
+  - "BUILD_IRONGOLEM"
+  - "BUILD_SNOWMAN"
+  - "BUILD_WITHER"
+  - "CHUNK_GEN"
+  - "DEFAULT"
+  - "DISPENSE_EGG"
+  - "DROWNED"
+  - "EGG"
+  - "JOCKEY"
+  - "LIGHTNING"
+  - "MOUNT"
+  - "NATURAL"
+  - "NETHER_PORTAL"
+  - "OCELOT_BABY"
+  - "REINFORCEMENTS"
+  - "SILVERFISH_BLOCK"
+  - "SPAWNER"
+  - "SPAWNER_EGG"
+  - "TRAP"
+  - "VILLAGE_DEFENSE"
+  - "VILLAGE_INVASION"
 
 # Block restrictions
 blocks:
-  SPAWNER: 10
+  block-groups:
+    basic:
+      - "STONE"
+      - "DIRT"
+    ores:
+      - "DIAMOND_BLOCK"
+      - "GOLD_BLOCK"
+  limits:
+    SPAWNER: 10
 
 # World configuration
 worlds:

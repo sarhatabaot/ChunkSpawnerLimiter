@@ -44,6 +44,9 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         if (pluginConfig.isMetrics()) {
             Metrics metrics = new Metrics(this, 4195);
             metrics.addCustomChart(new SimplePie("removal_mode", () -> pluginConfig.getRemovalMode().getKey()));
+            //entities removed
+            //blocks removed
+            //average settings?
         }
     }
 
