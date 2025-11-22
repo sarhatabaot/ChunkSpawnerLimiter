@@ -4,13 +4,10 @@ import com.github.sarhatabaot.chunkspawnerlimiter.CSLLogger;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
-import com.github.sarhatabaot.chunkspawnerlimiter.reflection.NmsBlockScannerV1;
-import com.github.sarhatabaot.chunkspawnerlimiter.reflection.WorldReflection;
+import com.github.sarhatabaot.chunkspawnerlimiter.reflection.scanner.NmsBlockScanner;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import org.bukkit.Chunk;
-import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -23,14 +20,14 @@ public class ChunkListener implements Listener {
     private final PluginConfig pluginConfig;
     private final CounterDataManager counterDataManager;
     private final RemovalTaskManager removalTaskManager;
-    private final NmsBlockScannerV1 nmsBlockScannerV1;
+    private final NmsBlockScanner nmsBlockScanner;
 
     public ChunkListener(PluginConfig pluginConfig, CounterDataManager counterDataManager, RemovalTaskManager removalTaskManager) {
         this.pluginConfig = pluginConfig;
         this.counterDataManager = counterDataManager;
         this.removalTaskManager = removalTaskManager;
         try {
-            this.nmsBlockScannerV1 = new NmsBlockScannerV1(pluginConfig, counterDataManager);
+            this.nmsBlockScanner = new NmsBlockScanner(pluginConfig, counterDataManager);
         } catch (Exception e) {
             CSLLogger.error("Failed to initialize NMS Block Scanner: " + e.getMessage());
             throw new RuntimeException(e);
@@ -49,11 +46,10 @@ public class ChunkListener implements Listener {
 
         addEntityLimits(chunk, chunkCoord);
         try {
-            this.nmsBlockScannerV1.scanChunk(chunk, chunkCoord);
+            this.nmsBlockScanner.scanChunk(chunk, chunkCoord);
         } catch (Exception e) {
             CSLLogger.error("There was a problem trying to add block limits in this chunk.");
         }
-        //addBlockLimits(chunk, chunkCoord);
 
         RemovalMode removalMode = pluginConfig.getRemovalMode();
         removalTaskManager.queueChunkCheck(chunkCoord, removalMode.getEntityRemovalAction());
@@ -91,31 +87,4 @@ public class ChunkListener implements Listener {
             }
         }
     }
-
-    private int chunkCoordsToCoords(int coord) {
-        return coord * 16;
-    }
-
-    private void addBlockLimits(final @NotNull Chunk chunk, final ChunkCoord chunkCoord) {
-        World world = chunk.getWorld();
-
-        int startX = chunkCoordsToCoords(chunk.getX());
-        int startZ = chunkCoordsToCoords(chunk.getZ());
-
-        int minY = WorldReflection.getWorldMinHeightSafe(world);
-        int maxY = world.getMaxHeight();
-
-        for (int x = 0; x < 16; x++) {
-            for (int z = 0; z < 16; z++) {
-                for (int y = minY; y < maxY; y++) {
-                    Block block = world.getBlockAt(startX + x, y, startZ + z);
-                    if (pluginConfig.hasBlockLimit(block.getType().name())) {
-                        counterDataManager.getCounterData(chunkCoord).incrementBlock(block.getType());
-                    }
-                }
-            }
-        }
-    }
-
-
 }
