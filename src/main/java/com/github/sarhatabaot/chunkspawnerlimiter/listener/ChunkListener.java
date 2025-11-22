@@ -4,7 +4,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.CSLLogger;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
-import com.github.sarhatabaot.chunkspawnerlimiter.reflection.NmsBlockScanner;
+import com.github.sarhatabaot.chunkspawnerlimiter.reflection.NmsBlockScannerV1;
 import com.github.sarhatabaot.chunkspawnerlimiter.reflection.WorldReflection;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
@@ -23,14 +23,14 @@ public class ChunkListener implements Listener {
     private final PluginConfig pluginConfig;
     private final CounterDataManager counterDataManager;
     private final RemovalTaskManager removalTaskManager;
-    private final NmsBlockScanner nmsBlockScanner;
+    private final NmsBlockScannerV1 nmsBlockScannerV1;
 
     public ChunkListener(PluginConfig pluginConfig, CounterDataManager counterDataManager, RemovalTaskManager removalTaskManager) {
         this.pluginConfig = pluginConfig;
         this.counterDataManager = counterDataManager;
         this.removalTaskManager = removalTaskManager;
         try {
-            this.nmsBlockScanner = new NmsBlockScanner(pluginConfig, counterDataManager);
+            this.nmsBlockScannerV1 = new NmsBlockScannerV1(pluginConfig, counterDataManager);
         } catch (Exception e) {
             CSLLogger.error("Failed to initialize NMS Block Scanner: " + e.getMessage());
             throw new RuntimeException(e);
@@ -40,7 +40,7 @@ public class ChunkListener implements Listener {
 
     @EventHandler
     public void onChunkLoad(@NotNull ChunkLoadEvent event) {
-        if (!pluginConfig.isWorldDisabled(event.getWorld().getName())) {
+        if (pluginConfig.isWorldDisabled(event.getWorld().getName())) {
             return;
         }
 
@@ -49,7 +49,7 @@ public class ChunkListener implements Listener {
 
         addEntityLimits(chunk, chunkCoord);
         try {
-            this.nmsBlockScanner.scanChunk(chunk, chunkCoord);
+            this.nmsBlockScannerV1.scanChunk(chunk, chunkCoord);
         } catch (Exception e) {
             CSLLogger.error("There was a problem trying to add block limits in this chunk.");
         }

@@ -8,12 +8,15 @@ import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterData;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.Checks;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
+import org.bukkit.Chunk;
 import org.bukkit.Material;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
@@ -71,29 +74,66 @@ public class EventListener implements Listener {
             return;
         }
 
-        if (!pluginConfig.hasEntityLimit(event.getEntity())) {
-            CSLLogger.debug("%s entity not in entity limits.".formatted(event.getEntity().getType().name()));
+        // Check spawn reason if this is a CreatureSpawnEvent
+        if (event instanceof CreatureSpawnEvent creatureSpawnEvent) {
+            String spawnReason = creatureSpawnEvent.getSpawnReason().name();
+            if (!pluginConfig.getSpawnReasons().contains(spawnReason)) {
+                CSLLogger.debug("%s entity spawn ignored due to spawn reason: %s".formatted(event.getEntity().getType().name(), spawnReason));
+                return;
+            }
+        }
+
+        final Entity entity = event.getEntity();
+        if (!pluginConfig.hasEntityLimit(entity)) {
+            CSLLogger.debug("%s entity not in entity limits.".formatted(entity.getType().name()));
             return;
         }
 
-        final EntityType entityType = event.getEntity().getType();
-        final ChunkCoord chunkCoord = ChunkCoord.from(event.getEntity().getWorld().getChunkAt(event.getEntity().getLocation()));
+        final Chunk chunk = entity.getLocation().getChunk();
+        if (!chunk.isLoaded()) {
+            CSLLogger.debug("Chunk not loaded for entity spawn: %s".formatted(entity.getType().name()));
+            return;
+        }
+
+        final EntityType entityType = entity.getType();
+        final ChunkCoord chunkCoord = ChunkCoord.from(chunk);
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
-        if (Checks.isUnderOrEqualToLimit(counterData.getEntityCount(entityType), pluginConfig.getEntityLimit(event.getEntity()))) {
-            CSLLogger.debug("%s entity under entity limits (%d/%d)".formatted(entityType.name(), counterData.getEntityCount(entityType), pluginConfig.getEntityLimit(event.getEntity())));
+        // Check both entity type and entity group limits
+        final Integer entityTypeLimit = pluginConfig.getEntityLimit(entityType);
+        final String entityGroup = pluginConfig.getEntityGroup(entity);
+        final Integer entityGroupLimit = entityGroup != null ? pluginConfig.getEntityGroupLimit(entityGroup) : null;
+
+        // Check entity type limit
+        boolean withinTypeLimit = entityTypeLimit == null || 
+            Checks.isUnderOrEqualToLimit(counterData.getEntityCount(entityType), entityTypeLimit);
+        
+        // Check entity group limit
+        boolean withinGroupLimit = entityGroupLimit == null || 
+            Checks.isUnderOrEqualToLimit(counterData.getEntityGroupCount(entityGroup), entityGroupLimit);
+
+        if (withinTypeLimit && withinGroupLimit) {
+            CSLLogger.debug("%s entity under entity limits (type: %d/%s, group: %d/%s)".formatted(
+                entityType.name(), 
+                counterData.getEntityCount(entityType), 
+                entityTypeLimit != null ? String.valueOf(entityTypeLimit) : "unlimited",
+                counterData.getEntityGroupCount(entityGroup),
+                entityGroupLimit != null ? String.valueOf(entityGroupLimit) : "unlimited"
+            ));
+            
+            // Increment both entity type and group counters
             counterData.incrementEntity(entityType);
+            if (entityGroup != null && entityGroupLimit != null) {
+                counterData.incrementEntityGroup(entityGroup);
+            }
             return;
         }
 
         //todo impl broadcast to player
         RemovalMode removalMode = pluginConfig.getRemovalMode();
-        removalMode.handleEntity(event.getEntity(), event);
+        removalMode.handleEntity(entity, event);
     }
 
-    private void messagePlayers() {
-
-    }
 
 // TODO Check that impl works across versions, use reflection.
 // MaterialData was changed at some stage
@@ -120,8 +160,17 @@ public class EventListener implements Listener {
             return;
         }
 
-        final ChunkCoord chunkCoord = ChunkCoord.from(event.getEntity().getWorld().getChunkAt(event.getEntity().getLocation()));
-        counterDataManager.getCounterData(chunkCoord).decrementEntity(event.getEntityType());
+        final Entity entity = event.getEntity();
+        final ChunkCoord chunkCoord = ChunkCoord.from(entity.getLocation());
+        final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
+        
+        // Decrement both entity type and group counters
+        counterData.decrementEntity(entity.getType());
+        
+        final String entityGroup = pluginConfig.getEntityGroup(entity);
+        if (entityGroup != null && pluginConfig.hasEntityLimit(entityGroup)) {
+            counterData.decrementEntityGroup(entityGroup);
+        }
     }
 
 
@@ -131,21 +180,40 @@ public class EventListener implements Listener {
             return;
         }
 
-        if (!pluginConfig.hasEntityLimit(event.getVehicle())) {
+        final Entity vehicle = event.getVehicle();
+        if (!pluginConfig.hasEntityLimit(vehicle)) {
             return;
         }
 
-        final EntityType vehicleType = event.getVehicle().getType();
-        final ChunkCoord chunkCoord = ChunkCoord.from(event.getVehicle().getWorld().getChunkAt(event.getVehicle().getLocation()));
+        final Chunk chunk = vehicle.getLocation().getChunk();
+        if (!chunk.isLoaded()) {
+            return;
+        }
+
+        final EntityType vehicleType = vehicle.getType();
+        final ChunkCoord chunkCoord = ChunkCoord.from(chunk);
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
-        if (Checks.isUnderOrEqualToLimit(counterData.getEntityCount(vehicleType), pluginConfig.getEntityLimit(event.getVehicle()))) {
+        // Check both entity type and entity group limits
+        final Integer vehicleTypeLimit = pluginConfig.getEntityLimit(vehicleType);
+        final String entityGroup = pluginConfig.getEntityGroup(vehicle);
+        final Integer entityGroupLimit = entityGroup != null ? pluginConfig.getEntityGroupLimit(entityGroup) : null;
+
+        boolean withinTypeLimit = vehicleTypeLimit == null || 
+            Checks.isUnderOrEqualToLimit(counterData.getEntityCount(vehicleType), vehicleTypeLimit);
+        boolean withinGroupLimit = entityGroupLimit == null || 
+            Checks.isUnderOrEqualToLimit(counterData.getEntityGroupCount(entityGroup), entityGroupLimit);
+
+        if (withinTypeLimit && withinGroupLimit) {
             counterData.incrementEntity(vehicleType);
+            if (entityGroup != null && entityGroupLimit != null) {
+                counterData.incrementEntityGroup(entityGroup);
+            }
             return;
         }
 
         RemovalMode removalMode = pluginConfig.getRemovalMode();
-        removalMode.handleEntity(event.getVehicle(), null);
+        removalMode.handleEntity(vehicle, null);
     }
 
     @EventHandler
@@ -154,8 +222,17 @@ public class EventListener implements Listener {
             return;
         }
 
-        final ChunkCoord chunkCoord = ChunkCoord.from(event.getVehicle().getWorld().getChunkAt(event.getVehicle().getLocation()));
-        counterDataManager.getCounterData(chunkCoord).decrementEntity(event.getVehicle().getType());
+        final Entity vehicle = event.getVehicle();
+        final ChunkCoord chunkCoord = ChunkCoord.from(vehicle.getLocation());
+        final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
+        
+        // Decrement both entity type and group counters
+        counterData.decrementEntity(vehicle.getType());
+        
+        final String entityGroup = pluginConfig.getEntityGroup(vehicle);
+        if (entityGroup != null && pluginConfig.hasEntityLimit(entityGroup)) {
+            counterData.decrementEntityGroup(entityGroup);
+        }
     }
 
 

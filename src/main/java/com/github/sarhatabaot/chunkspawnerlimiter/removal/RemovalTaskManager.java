@@ -84,6 +84,8 @@ public class RemovalTaskManager {
         if (chunk == null || !chunk.isLoaded()) {
             return;
         }
+        
+        // Check entity type limits
         for (EntityType type : data.getTrackedEntityTypes()) {
             List<Entity> entities = Arrays.stream(chunk.getEntities())
                     .filter(e -> e.getType() == type)
@@ -99,7 +101,7 @@ public class RemovalTaskManager {
                 int toRemove = entities.size() - allowed;
                 for (int i = 0; i < toRemove; i++) {
                     final Entity entity = entities.get(i);
-                    if (!checks(entity)) {
+                    if (checks(entity)) {
                         continue;
                     }
 
@@ -108,10 +110,40 @@ public class RemovalTaskManager {
                 }
             }
         }
+        
+        // Check entity group limits
+        for (String group : data.getTrackedEntityGroups()) {
+            Integer allowed = pluginConfig.getEntityGroupLimit(group);
+            if (allowed == null) {
+                continue;
+            }
+            
+            int currentCount = data.getEntityGroupCount(group);
+            if (currentCount > allowed) {
+                // Find entities in this group that exceed the limit
+                List<Entity> groupEntities = Arrays.stream(chunk.getEntities())
+                        .filter(e -> {
+                            String entityGroup = pluginConfig.getEntityGroup(e);
+                            return group.equals(entityGroup);
+                        })
+                        .toList();
+                
+                int toRemove = groupEntities.size() - allowed;
+                for (int i = 0; i < toRemove && i < groupEntities.size(); i++) {
+                    final Entity entity = groupEntities.get(i);
+                    if (checks(entity)) {
+                        continue;
+                    }
+                    
+                    removalAction.accept(entity);
+                }
+            }
+        }
     }
 
     private boolean checks(final Entity entity) {
-        return Checks.hasCustomName(entity) || Checks.hasMetaData(entity) || ExternalChecks.hasNbtData(entity) || Checks.isPartOfRaid(entity);
+        // Return false (skip removal) if any preservation check passes
+        return !(Checks.hasCustomName(entity) || Checks.hasMetaData(entity) || ExternalChecks.hasNbtData(entity) || Checks.isPartOfRaid(entity));
     }
 
 

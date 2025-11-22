@@ -106,6 +106,15 @@ public class PluginConfig {
         return hasEntityLimit(entity.getType().name()) || getEntityLimits().containsKey(entityGroup);
     }
 
+    //todo, lots of similar code here regarding entity limits and groups, we need to really check what's needed.
+    public Integer getEntityGroupLimit(final String group) {
+        if (!entityGroups.containsKey(group) || !entityLimits.containsKey(group)) {
+            return null;
+        }
+
+        return entityLimits.get(group);
+    }
+
     public Integer getEntityLimit(final Entity entity) {
         final String entityType = entity.getType().name();
         if (getEntityLimits().containsKey(entityType)) {
@@ -305,12 +314,11 @@ public class PluginConfig {
             @NotNull Entity entity
     ) {
         // 1️⃣ Try to find a match in config
-        String fromConfig = getGroupFromConfig(entity.getType(), config);
+        final String fromConfig = getGroupFromConfig(entity.getType(), config);
         if (fromConfig != null) {
             return fromConfig;
         }
 
-        // 2️⃣ Fallback to class-based group
         return getGroupFromInstance(entity);
     }
 
@@ -318,15 +326,15 @@ public class PluginConfig {
             EntityType type,
             @NotNull FileConfiguration config
     ) {
-        ConfigurationSection section = config.getConfigurationSection("entity-groups");
+        ConfigurationSection section = config.getConfigurationSection("entities.entity-groups");
         if (section == null) {
             return null;
         }
 
         for (String group : section.getKeys(false)) {
-            List<String> members = config.getStringList("entity-groups." + group);
+            List<String> members = section.getStringList("group");
             if (members.contains(type.name())) {
-                return group;
+                return group.toUpperCase();
             }
         }
         return null;

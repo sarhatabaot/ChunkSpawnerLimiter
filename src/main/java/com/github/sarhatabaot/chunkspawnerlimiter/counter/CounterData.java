@@ -18,6 +18,10 @@ public class CounterData {
         return entityCounts.keySet();
     }
 
+    public Set<String> getTrackedEntityGroups() {
+        return entityGroupCounts.keySet();
+    }
+
     public int getEntityGroupCount(String group) {
         AtomicInteger count = entityGroupCounts.get(group);
         return count != null ? count.get() : 0;

@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.github.sarhatabaot"
-version = "5.0.0-RC2"
+version = "5.0.0-RC3"
 description = "Limit blocks & entities in chunks."
 
 dependencies {
@@ -43,7 +43,7 @@ tasks {
     runServer {
         //use this to manually test various version load, probably should use docker with ci/cd for the automated version
         //todo amazing 1.13-1.16 breaks with jvm 21, the rest works, lmao, mention this on the website
-        minecraftVersion("1.8.8")
+        minecraftVersion("1.20.1")
         jvmArgs("-Dcom.mojang.eula.agree=true")
     }
 
@@ -88,5 +88,26 @@ tasks {
 
     compileJava {
         options.encoding = "UTF-8"
+    }
+}
+
+testing {
+    suites {
+        val test by getting(JvmTestSuite::class) {
+            useJUnitJupiter()
+
+            dependencies {
+                implementation(libs.junit.api)
+                runtimeOnly(libs.junit.engine)
+            }
+
+            targets {
+                all {
+                    testTask.configure {
+                        useJUnitPlatform()
+                    }
+                }
+            }
+        }
     }
 }
