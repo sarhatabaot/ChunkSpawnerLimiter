@@ -6,6 +6,8 @@ import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterData;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.Kill;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.Remove;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.entity.Entity;
@@ -101,7 +103,7 @@ public class RemovalTaskManager {
                 int toRemove = entities.size() - allowed;
                 for (int i = 0; i < toRemove; i++) {
                     final Entity entity = entities.get(i);
-                    if (checks(entity)) {
+                    if (shouldSkipRemoval(entity)) {
                         continue;
                     }
 
@@ -124,26 +126,25 @@ public class RemovalTaskManager {
                 List<Entity> groupEntities = Arrays.stream(chunk.getEntities())
                         .filter(e -> {
                             String entityGroup = pluginConfig.getEntityGroup(e);
-                            return group.equals(entityGroup);
+                            return entityGroup != null && group.equals(entityGroup);
                         })
                         .toList();
                 
                 int toRemove = groupEntities.size() - allowed;
                 for (int i = 0; i < toRemove && i < groupEntities.size(); i++) {
                     final Entity entity = groupEntities.get(i);
-                    if (checks(entity)) {
+                    if (shouldSkipRemoval(entity)) {
                         continue;
                     }
-                    
                     removalAction.accept(entity);
                 }
             }
         }
     }
 
-    private boolean checks(final Entity entity) {
+    private boolean shouldSkipRemoval(final Entity entity) {
         // Return false (skip removal) if any preservation check passes
-        return !(Checks.hasCustomName(entity) || Checks.hasMetaData(entity) || ExternalChecks.hasNbtData(entity) || Checks.isPartOfRaid(entity));
+        return Checks.hasCustomName(entity) || Checks.hasMetaData(entity) || ExternalChecks.hasNbtData(entity) || Checks.isPartOfRaid(entity);
     }
 
 

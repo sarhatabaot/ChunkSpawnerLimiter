@@ -310,16 +310,10 @@ public class PluginConfig {
         return config.getString("notifications.messages.max-blocks", "&6Cannot place more &4{material}&6. Max amount per chunk &2{amount}.");
     }
 
-    public @NotNull String getEntityGroup(
+    public String getEntityGroup(
             @NotNull Entity entity
     ) {
-        // 1️⃣ Try to find a match in config
-        final String fromConfig = getGroupFromConfig(entity.getType(), config);
-        if (fromConfig != null) {
-            return fromConfig;
-        }
-
-        return getGroupFromInstance(entity);
+        return getGroupFromConfig(entity.getType(), config);
     }
 
     private @Nullable String getGroupFromConfig(
@@ -332,38 +326,12 @@ public class PluginConfig {
         }
 
         for (String group : section.getKeys(false)) {
-            List<String> members = section.getStringList("group");
+            List<String> members = section.getStringList(group);
             if (members.contains(type.name())) {
                 return group.toUpperCase();
             }
         }
         return null;
-    }
-
-
-    private @NotNull String getGroupFromInstance(Entity entity) {
-        if (entity instanceof Animals) {
-            return "ANIMALS";
-        }
-        if (entity instanceof Monster) {
-            return "MONSTER";
-        }
-        if (entity instanceof NPC) {
-            return "NPC";
-        }
-        if (entity instanceof WaterMob) {
-            return "WATER_MOB";
-        }
-        if (entity instanceof Ambient) {
-            return "AMBIENT";
-        }
-        if (entity instanceof Golem) {
-            return "GOLEM";
-        }
-        if (entity instanceof Vehicle) {
-            return "VEHICLE";
-        }
-        return entity.getType().name();
     }
 
     public boolean isWorldDisabled(final String worldName) {

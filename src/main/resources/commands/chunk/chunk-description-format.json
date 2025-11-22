@@ -1,6 +1,0 @@
-{
-  "text": "[{chunk-world}, {chunk-x}, {chunk-z}]",
-  "extra": {
-    "clickEvent": {"action": "run_command", "value": "/csl chunk info {chunk-world},{chunk-x},{chunk-z}"}
-  }
-}
