@@ -82,29 +82,46 @@ public class RemovalTaskManager {
         if (chunk == null || !chunk.isLoaded()) {
             return;
         }
-        
-        // Check entity type limits
-        for (EntityType type : data.getTrackedEntityTypes()) {
-            List<Entity> entities = Arrays.stream(chunk.getEntities())
-                    .filter(e -> e.getType() == type)
-                    .toList();
+
+        // Group entities by tracked type in a single pass
+        Map<EntityType, List<Entity>> entitiesByType = new EnumMap<>(EntityType.class);
+
+        for (Entity entity : chunk.getEntities()) {
+            EntityType type = entity.getType();
+
+            if (!data.getTrackedEntityTypes().contains(type)) {
+                continue;
+            }
+
+            entitiesByType
+                    .computeIfAbsent(type, t -> new ArrayList<>())
+                    .add(entity);
+        }
+
+        // Apply limits per entity type
+        for (Map.Entry<EntityType, List<Entity>> entry : entitiesByType.entrySet()) {
+            EntityType type = entry.getKey();
+            List<Entity> entities = entry.getValue();
 
             Integer allowed = pluginConfig.getEntityLimit(type);
             if (allowed == null) {
-                CSLLogger.debug(() -> "No limit found for entity type: %s, skipping".formatted(type.name()));
+                CSLLogger.debug(() ->
+                        "No limit found for entity type: %s, skipping".formatted(type.name())
+                );
                 continue;
             }
 
             if (entities.size() > allowed) {
                 int toRemove = entities.size() - allowed;
-                for (int i = 0; i < toRemove; i++) {
-                    final Entity entity = entities.get(i);
+
+                for (int i = 0; i < toRemove && i < entities.size(); i++) {
+                    Entity entity = entities.get(i);
+
                     if (shouldSkipRemoval(entity)) {
                         continue;
                     }
 
                     removalAction.accept(entity);
-                    //todo message players, or queue up a task to message players?, I don't want it to block this method
                 }
             }
         }
