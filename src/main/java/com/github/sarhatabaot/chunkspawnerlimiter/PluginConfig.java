@@ -1,6 +1,7 @@
 package com.github.sarhatabaot.chunkspawnerlimiter;
 
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.*;
@@ -18,6 +19,14 @@ public class PluginConfig {
     private final JavaPlugin plugin;
     private FileConfiguration config;
 
+    private Map<EntityType, Integer> directEntityLimits;
+    private Map<EntityType, Integer> resolvedEntityLimits;
+    private Map<EntityType, String> entityToGroup;
+
+    private Map<Material, Integer> directBlockLimits;
+    private Map<Material, Integer> resolvedBlockLimits;
+    private Map<Material, String> blockToGroup;
+
     private Map<String, Integer> entityLimits;
     private Map<String, Integer> blockLimits;
     private Set<String> spawnReasons;
@@ -34,10 +43,13 @@ public class PluginConfig {
         plugin.reloadConfig();
         this.config = plugin.getConfig();
 
-        this.entityLimits = null;
-        this.blockLimits = null;
-        this.spawnReasons = null;
-        this.entityGroups = null;
+        loadEntityGroups();
+        loadEntityLimits();
+
+        loadBlockGroups();
+        loadBlockLimits();
+
+        loadSpawnReasons();
     }
 
     // Main settings
@@ -79,7 +91,124 @@ public class PluginConfig {
         return config.getInt("events.chunk.surrounding-chunks-radius", 1);
     }
 
+    private void loadBlockGroups() {
+        blockToGroup = new EnumMap<>(Material.class);
+
+        ConfigurationSection section = config.getConfigurationSection("blocks.entity-groups");
+        if (section == null) return;
+
+        for (String group: section.getKeys(false)){
+            for (String member : section.getStringList(group)) {
+                Material type = Material.valueOf(member.toUpperCase());
+                blockToGroup.put(type, group.toUpperCase());
+            }
+        }
+    }
+
+    private void loadBlockLimits() {
+        directBlockLimits = new EnumMap<>(Material.class);
+        resolvedBlockLimits = new EnumMap<>(Material.class);
+
+        Map<String, Integer> rawLimits = getEntityLimits();
+
+        // 1️⃣ Direct type limits
+        for (Material type : Material.values()) {
+            Integer limit = rawLimits.get(type.name());
+            if (limit != null) {
+                directBlockLimits.put(type, limit);
+                resolvedBlockLimits.put(type, limit);
+            }
+        }
+
+        // 2️⃣ Group limits (only if no direct limit)
+        for (Map.Entry<Material, String> entry : blockToGroup.entrySet()) {
+            Material type = entry.getKey();
+            String group = entry.getValue();
+
+            if (resolvedBlockLimits.containsKey(type)) {
+                continue; // type limit wins
+            }
+
+            Integer groupLimit = rawLimits.get(group);
+            if (groupLimit != null) {
+                resolvedBlockLimits.put(type, groupLimit);
+            }
+        }
+    }
+    public Integer getResolvedBlockLimit(Material type) {
+        return resolvedBlockLimits.get(type);
+    }
+
+    public boolean hasResolvedBlockLimit(Material type) {
+        return resolvedBlockLimits.containsKey(type);
+    }
+
+    private void loadEntityGroups() {
+        entityToGroup = new EnumMap<>(EntityType.class);
+
+        ConfigurationSection section = config.getConfigurationSection("entities.entity-groups");
+        if (section == null) return;
+
+        for (String group : section.getKeys(false)) {
+            for (String member : section.getStringList(group)) {
+                EntityType type = EntityType.valueOf(member.toUpperCase());
+                entityToGroup.put(type, group.toUpperCase());
+            }
+        }
+    }
+
+    private void loadEntityLimits() {
+        directEntityLimits = new EnumMap<>(EntityType.class);
+        resolvedEntityLimits = new EnumMap<>(EntityType.class);
+
+        Map<String, Integer> rawLimits = getEntityLimits();
+
+        // 1️⃣ Direct type limits
+        for (EntityType type : EntityType.values()) {
+            Integer limit = rawLimits.get(type.name());
+            if (limit != null) {
+                directEntityLimits.put(type, limit);
+                resolvedEntityLimits.put(type, limit);
+            }
+        }
+
+        // 2️⃣ Group limits (only if no direct limit)
+        for (Map.Entry<EntityType, String> entry : entityToGroup.entrySet()) {
+            EntityType type = entry.getKey();
+            String group = entry.getValue();
+
+            if (resolvedEntityLimits.containsKey(type)) {
+                continue; // type limit wins
+            }
+
+            Integer groupLimit = rawLimits.get(group);
+            if (groupLimit != null) {
+                resolvedEntityLimits.put(type, groupLimit);
+            }
+        }
+    }
+
+    public Integer getResolvedEntityLimit(EntityType type) {
+        return resolvedEntityLimits.get(type);
+    }
+
+    public boolean hasResolvedEntityLimit(EntityType type) {
+        return resolvedEntityLimits.containsKey(type);
+    }
+
+    private void loadSpawnReasons() {
+        List<String> reasonsList = config.getStringList("spawn-reasons");
+
+        if (reasonsList == null || reasonsList.isEmpty()) {
+            spawnReasons = getDefaultSpawnReasons();
+        } else {
+            spawnReasons = new HashSet<>(reasonsList);
+        }
+    }
+
+
     // Entity settings
+    @Deprecated
     public Map<String, Integer> getEntityLimits() {
         if (this.entityLimits == null) {
             this.entityLimits = new HashMap<>();
@@ -102,12 +231,14 @@ public class PluginConfig {
      * @param entity The entity being checked
      * @return true if it has a limit or matches a group
      */
+    @Deprecated
     public boolean hasEntityLimit(final Entity entity) {
         final String entityGroup = getEntityGroup(entity);
         return hasEntityLimit(entity.getType().name()) || getEntityLimits().containsKey(entityGroup);
     }
 
     //todo, lots of similar code here regarding entity limits and groups, we need to really check what's needed.
+    @Deprecated
     public Integer getEntityGroupLimit(final String group) {
         if (!entityGroups.containsKey(group) || !entityLimits.containsKey(group)) {
             return null;
@@ -116,16 +247,8 @@ public class PluginConfig {
         return entityLimits.get(group);
     }
 
-    // Checks both per entity & per group
-    public Integer getEntityLimit(final Entity entity) {
-        final String entityType = entity.getType().name();
-        if (getEntityLimits().containsKey(entityType)) {
-            return getEntityLimits().get(entityType);
-        }
 
-        final String entityGroup = getEntityGroup(entity);
-        return getEntityLimits().get(entityGroup);
-    }
+    @Deprecated
     public Integer getEntityLimit(final EntityType entityType) {
         final String entityTypeName = entityType.name();
 
@@ -143,6 +266,7 @@ public class PluginConfig {
         return null;
     }
 
+    @Deprecated
     public String getEntityGroup(final EntityType entityType) {
         Map<String, List<String>> entityGroups = getEntityGroups();
         for (Map.Entry<String, List<String>> entry : entityGroups.entrySet()) {
@@ -153,10 +277,7 @@ public class PluginConfig {
         return null;
     }
 
-    public boolean hasEntityLimit(final EntityType entityType) {
-        return getEntityLimit(entityType) != null;
-    }
-
+    @Deprecated
     public Map<String, List<String>> getEntityGroups() {
         if (this.entityGroups == null) {
             this.entityGroups = new HashMap<>();
@@ -175,12 +296,14 @@ public class PluginConfig {
     }
 
     // group stuff
+    @Deprecated
     public String getEntityGroup(
             @NotNull Entity entity
     ) {
         return getGroupFromConfig(entity.getType(), config);
     }
 
+    @Deprecated
     private @Nullable String getGroupFromConfig(
             EntityType type,
             @NotNull FileConfiguration config
@@ -199,10 +322,12 @@ public class PluginConfig {
         return null;
     }
 
+    @Deprecated
     public boolean hasEntityLimit(final String entityType) {
         return getEntityLimits().containsKey(entityType);
     }
 
+    @Deprecated
     public boolean hasBlockLimit(final String material) {
         return getBlockLimits().containsKey(material);
     }
@@ -243,23 +368,16 @@ public class PluginConfig {
     }
 
     public Set<String> getSpawnReasons() {
-        if (spawnReasons == null) {
-            var reasonsList = config.getStringList("spawn-reasons");
-            if (reasonsList == null || reasonsList.isEmpty()) {
-                return getDefaultSpawnReasons();
-            }
-
-            this.spawnReasons = new HashSet<>(reasonsList);
-        }
-
         return spawnReasons;
     }
 
-    private @NotNull @Unmodifiable Set<String> getDefaultSpawnReasons() {
-        return Arrays.stream(CreatureSpawnEvent.SpawnReason.values()).map(CreatureSpawnEvent.SpawnReason::name).collect(Collectors.toSet());
+    private @NotNull Set<String> getDefaultSpawnReasons() {
+        return Arrays.stream(CreatureSpawnEvent.SpawnReason.values())
+                .map(CreatureSpawnEvent.SpawnReason::name).collect(Collectors.toUnmodifiableSet());
     }
 
     // Block limits
+    @Deprecated
     public Map<String, Integer> getBlockLimits() {
         if (blockLimits == null) {
             var blocksSection = config.getConfigurationSection("blocks.limits");
@@ -286,8 +404,6 @@ public class PluginConfig {
                 List.of()
         );
     }
-    private static final String DEFAULT_STRING = "default";
-
 
     // Notification settings
     public boolean shouldNotifyPlayersInChunk() {

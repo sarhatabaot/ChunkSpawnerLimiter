@@ -53,6 +53,11 @@ public class RemovalTaskManager {
         }
     }
 
+    public void removeChunkRecheck(ChunkCoord coord) {
+        scheduledRechecks.entrySet().removeIf(entry ->
+                entry.getKey().coord.equals(coord));
+    }
+
     private void startProcessingTask() {
         Bukkit.getScheduler().runTaskTimer(plugin, this::processQueue, TICKS_PER_SECOND, TICKS_PER_SECOND); // every 1 second
     }
@@ -79,9 +84,7 @@ public class RemovalTaskManager {
         if (data == null) return;
 
         Chunk chunk = coord.getChunk();
-        if (chunk == null || !chunk.isLoaded()) {
-            return;
-        }
+        if (chunk == null || !chunk.isLoaded()) return;
 
         // Group entities by tracked type in a single pass
         Map<EntityType, List<Entity>> entitiesByType = new EnumMap<>(EntityType.class);
@@ -89,21 +92,19 @@ public class RemovalTaskManager {
         for (Entity entity : chunk.getEntities()) {
             EntityType type = entity.getType();
 
-            if (!data.getTrackedEntityTypes().contains(type)) {
-                continue;
-            }
+            if (!data.getTrackedEntityTypes().contains(type)) continue;
 
             entitiesByType
                     .computeIfAbsent(type, t -> new ArrayList<>())
                     .add(entity);
         }
 
-        // Apply limits per entity type
+        // Apply resolved limits per entity type (includes group limits already)
         for (Map.Entry<EntityType, List<Entity>> entry : entitiesByType.entrySet()) {
             EntityType type = entry.getKey();
             List<Entity> entities = entry.getValue();
 
-            Integer allowed = pluginConfig.getEntityLimit(type);
+            Integer allowed = pluginConfig.getResolvedEntityLimit(type);
             if (allowed == null) {
                 CSLLogger.debug(() ->
                         "No limit found for entity type: %s, skipping".formatted(type.name())
@@ -111,46 +112,13 @@ public class RemovalTaskManager {
                 continue;
             }
 
-            if (entities.size() > allowed) {
-                int toRemove = entities.size() - allowed;
+            int toRemove = entities.size() - allowed;
+            if (toRemove <= 0) continue;
 
-                for (int i = 0; i < toRemove && i < entities.size(); i++) {
-                    Entity entity = entities.get(i);
-
-                    if (shouldSkipRemoval(entity)) {
-                        continue;
-                    }
-
-                    removalAction.accept(entity);
-                }
-            }
-        }
-        
-        // Check entity group limits
-        for (String group : data.getTrackedEntityGroups()) {
-            Integer allowed = pluginConfig.getEntityGroupLimit(group);
-            if (allowed == null) {
-                continue;
-            }
-            
-            int currentCount = data.getEntityGroupCount(group);
-            if (currentCount > allowed) {
-                // Find entities in this group that exceed the limit
-                List<Entity> groupEntities = Arrays.stream(chunk.getEntities())
-                        .filter(e -> {
-                            String entityGroup = pluginConfig.getEntityGroup(e);
-                            return entityGroup != null && group.equals(entityGroup);
-                        })
-                        .toList();
-                
-                int toRemove = groupEntities.size() - allowed;
-                for (int i = 0; i < toRemove && i < groupEntities.size(); i++) {
-                    final Entity entity = groupEntities.get(i);
-                    if (shouldSkipRemoval(entity)) {
-                        continue;
-                    }
-                    removalAction.accept(entity);
-                }
+            for (int i = 0; i < toRemove && i < entities.size(); i++) {
+                Entity entity = entities.get(i);
+                if (shouldSkipRemoval(entity)) continue;
+                removalAction.accept(entity);
             }
         }
     }
