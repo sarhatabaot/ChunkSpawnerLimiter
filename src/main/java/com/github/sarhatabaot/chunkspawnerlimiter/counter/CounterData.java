@@ -43,7 +43,7 @@ public class CounterData {
     public void decrementBlock(Material type) {
         AtomicInteger count = blockCounts.get(type);
         if (count != null) {
-            count.decrementAndGet();
+            count.updateAndGet(current -> Math.max(0, current - 1));
         }
     }
 
@@ -54,7 +54,7 @@ public class CounterData {
     public void decrementEntity(EntityType type) {
         AtomicInteger count = entityCounts.get(type);
         if (count != null) {
-            count.decrementAndGet();
+            count.updateAndGet(current -> Math.max(0, current - 1));
         }
     }
 
@@ -65,7 +65,7 @@ public class CounterData {
     public void decrementEntityGroup(final String group) {
         AtomicInteger count = entityGroupCounts.get(group);
         if (count != null) {
-            count.decrementAndGet();
+            count.updateAndGet(current -> Math.max(0, current - 1));
         }
     }
 

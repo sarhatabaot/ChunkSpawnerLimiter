@@ -40,7 +40,7 @@ public class EventListener implements Listener {
         }
 
         if (!pluginConfig.getBlockLimits().containsKey(event.getBlock().getType().name())) {
-            CSLLogger.debug("%s block not in block limits.".formatted(event.getBlock().getType().name()));
+            CSLLogger.debug(() -> "%s block not in block limits.".formatted(event.getBlock().getType().name()));
             return;
         }
 
@@ -49,7 +49,7 @@ public class EventListener implements Listener {
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
         if (Checks.isUnderOrEqualToLimit(counterData.getBlockCount(material),  pluginConfig.getBlockLimits().get(material.name()))) {
-            CSLLogger.debug("%s block under block limits (%d/%d)".formatted(material.name(), counterData.getBlockCount(material), pluginConfig.getBlockLimits().get(material.name())));
+            CSLLogger.debug(() -> "%s block under block limits (%d/%d)".formatted(material.name(), counterData.getBlockCount(material), pluginConfig.getBlockLimits().get(material.name())));
             counterData.incrementBlock(material);
             return;
         }
@@ -78,20 +78,20 @@ public class EventListener implements Listener {
         if (event instanceof CreatureSpawnEvent creatureSpawnEvent) {
             String spawnReason = creatureSpawnEvent.getSpawnReason().name();
             if (!pluginConfig.getSpawnReasons().contains(spawnReason)) {
-                CSLLogger.debug("%s entity spawn ignored due to spawn reason: %s".formatted(event.getEntity().getType().name(), spawnReason));
+                CSLLogger.debug(() -> "%s entity spawn ignored due to spawn reason: %s".formatted(event.getEntity().getType().name(), spawnReason));
                 return;
             }
         }
 
         final Entity entity = event.getEntity();
         if (!pluginConfig.hasEntityLimit(entity)) {
-            CSLLogger.debug("%s entity not in entity limits.".formatted(entity.getType().name()));
+            CSLLogger.debug(() -> "%s entity not in entity limits.".formatted(entity.getType().name()));
             return;
         }
 
         final Chunk chunk = entity.getLocation().getChunk();
         if (!chunk.isLoaded()) {
-            CSLLogger.debug("Chunk not loaded for entity spawn: %s".formatted(entity.getType().name()));
+            CSLLogger.debug(() -> "Chunk not loaded for entity spawn: %s".formatted(entity.getType().name()));
             return;
         }
 
@@ -113,7 +113,7 @@ public class EventListener implements Listener {
             Checks.isUnderOrEqualToLimit(counterData.getEntityGroupCount(entityGroup), entityGroupLimit);
 
         if (withinTypeLimit && withinGroupLimit) {
-            CSLLogger.debug("%s entity under entity limits (type: %d/%s, group: %d/%s)".formatted(
+            CSLLogger.debug(() -> "%s entity under entity limits (type: %d/%s, group: %d/%s)".formatted(
                 entityType.name(), 
                 counterData.getEntityCount(entityType), 
                 entityTypeLimit != null ? String.valueOf(entityTypeLimit) : "unlimited",

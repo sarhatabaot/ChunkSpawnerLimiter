@@ -4,6 +4,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.*;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -115,6 +116,7 @@ public class PluginConfig {
         return entityLimits.get(group);
     }
 
+    // Checks both per entity & per group
     public Integer getEntityLimit(final Entity entity) {
         final String entityType = entity.getType().name();
         if (getEntityLimits().containsKey(entityType)) {
@@ -170,6 +172,31 @@ public class PluginConfig {
             }
         }
         return entityGroups;
+    }
+
+    // group stuff
+    public String getEntityGroup(
+            @NotNull Entity entity
+    ) {
+        return getGroupFromConfig(entity.getType(), config);
+    }
+
+    private @Nullable String getGroupFromConfig(
+            EntityType type,
+            @NotNull FileConfiguration config
+    ) {
+        ConfigurationSection section = config.getConfigurationSection("entities.entity-groups");
+        if (section == null) {
+            return null;
+        }
+
+        for (String group : section.getKeys(false)) {
+            List<String> members = section.getStringList(group);
+            if (members.contains(type.name())) {
+                return group.toUpperCase();
+            }
+        }
+        return null;
     }
 
     public boolean hasEntityLimit(final String entityType) {
@@ -229,36 +256,13 @@ public class PluginConfig {
     }
 
     private @NotNull @Unmodifiable Set<String> getDefaultSpawnReasons() {
-        return Set.of(
-                "BREEDING",
-                "BUILD_IRONGOLEM",
-                "BUILD_SNOWMAN",
-                "BUILD_WITHER",
-                "CHUNK_GEN",
-                "DEFAULT",
-                "DISPENSE_EGG",
-                "DROWNED",
-                "EGG",
-                "JOCKEY",
-                "LIGHTNING",
-                "MOUNT",
-                "NATURAL",
-                "NETHER_PORTAL",
-                "OCELOT_BABY",
-                "REINFORCEMENTS",
-                "SILVERFISH_BLOCK",
-                "SPAWNER",
-                "SPAWNER_EGG",
-                "TRAP",
-                "VILLAGE_DEFENSE",
-                "VILLAGE_INVASION"
-        );
+        return Arrays.stream(CreatureSpawnEvent.SpawnReason.values()).map(CreatureSpawnEvent.SpawnReason::name).collect(Collectors.toSet());
     }
 
     // Block limits
     public Map<String, Integer> getBlockLimits() {
         if (blockLimits == null) {
-            var blocksSection = config.getConfigurationSection("blocks");
+            var blocksSection = config.getConfigurationSection("blocks.limits");
             if (blocksSection == null) return Collections.emptyMap();
 
             this.blockLimits = blocksSection.getKeys(false).stream()
@@ -310,29 +314,7 @@ public class PluginConfig {
         return config.getString("notifications.messages.max-blocks", "&6Cannot place more &4{material}&6. Max amount per chunk &2{amount}.");
     }
 
-    public String getEntityGroup(
-            @NotNull Entity entity
-    ) {
-        return getGroupFromConfig(entity.getType(), config);
-    }
 
-    private @Nullable String getGroupFromConfig(
-            EntityType type,
-            @NotNull FileConfiguration config
-    ) {
-        ConfigurationSection section = config.getConfigurationSection("entities.entity-groups");
-        if (section == null) {
-            return null;
-        }
-
-        for (String group : section.getKeys(false)) {
-            List<String> members = section.getStringList(group);
-            if (members.contains(type.name())) {
-                return group.toUpperCase();
-            }
-        }
-        return null;
-    }
 
     public boolean isWorldDisabled(final String worldName) {
         if (getWorldsMode().equalsIgnoreCase("exclude")) {

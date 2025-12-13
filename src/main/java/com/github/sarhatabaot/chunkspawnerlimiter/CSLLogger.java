@@ -1,6 +1,7 @@
 package com.github.sarhatabaot.chunkspawnerlimiter;
 
 
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,9 +28,9 @@ public final class CSLLogger {
         LOGGER.log(Level.SEVERE, message);
     }
 
-    public static void debug(String message) {
+    public static void debug(Supplier<String> messageSupplier) {
         if (pluginConfig.isDebugMessages()) {
-            log("DEBUG " + message);
+            log("DEBUG " + messageSupplier.get());
         }
     }
 

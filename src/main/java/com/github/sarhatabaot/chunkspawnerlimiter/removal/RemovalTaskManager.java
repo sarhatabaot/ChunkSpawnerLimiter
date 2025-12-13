@@ -6,8 +6,6 @@ import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterData;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
-import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.Kill;
-import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.Remove;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.entity.Entity;
@@ -19,6 +17,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
 public class RemovalTaskManager {
+    private final static long TICKS_PER_SECOND = 20L;
     private final Queue<QueuedCheck> pendingChunks = new ConcurrentLinkedQueue<>();
     private final Set<ChunkCoord> queuedChunks =
             Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -44,8 +43,9 @@ public class RemovalTaskManager {
         long nextCheck = System.currentTimeMillis() + (delaySeconds * 1000L);
         final QueuedCheck check = new QueuedCheck(coord, action);
         scheduledRechecks.put(check, nextCheck);
-        CSLLogger.debug("Scheduled recheck for chunk %s in %d seconds".formatted(coord, delaySeconds));
+        CSLLogger.debug(() -> "Scheduled recheck for chunk %s in %d seconds".formatted(coord, delaySeconds));
     }
+
 
     public void queueChunkCheck(ChunkCoord coord, Consumer<Entity> action) {
         if (queuedChunks.add(coord)) {
@@ -54,7 +54,7 @@ public class RemovalTaskManager {
     }
 
     private void startProcessingTask() {
-        Bukkit.getScheduler().runTaskTimer(plugin, this::processQueue, 20L, 20L); // every 1 second
+        Bukkit.getScheduler().runTaskTimer(plugin, this::processQueue, TICKS_PER_SECOND, TICKS_PER_SECOND); // every 1 second
     }
 
     private void processQueue() {
@@ -74,10 +74,6 @@ public class RemovalTaskManager {
         }
     }
 
-    private Consumer<Entity> getDefaultAction() {
-        return pluginConfig.getRemovalMode().getEntityRemovalAction();
-    }
-
     public void processChunk(ChunkCoord coord, Consumer<Entity> removalAction) {
         CounterData data = counterDataManager.getCounterData(coord);
         if (data == null) return;
@@ -95,7 +91,7 @@ public class RemovalTaskManager {
 
             Integer allowed = pluginConfig.getEntityLimit(type);
             if (allowed == null) {
-                CSLLogger.debug("No limit found for entity type: %s, skipping".formatted(type.name()));
+                CSLLogger.debug(() -> "No limit found for entity type: %s, skipping".formatted(type.name()));
                 continue;
             }
 

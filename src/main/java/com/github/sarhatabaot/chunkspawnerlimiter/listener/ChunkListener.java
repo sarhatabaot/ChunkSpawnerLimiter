@@ -67,6 +67,7 @@ public class ChunkListener implements Listener {
 
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getChunk());
         counterDataManager.removeCounterData(chunkCoord);
+        removalTaskManager.removeChunkRecheck(chunkCoord);
     }
 
     private void addEntityLimits(final @NotNull Chunk chunk, final ChunkCoord chunkCoord) {
