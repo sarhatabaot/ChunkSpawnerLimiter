@@ -270,7 +270,7 @@ public class NmsBlockScanner {
 
                     Material type = getMaterialAt(world, startX + x, y, startZ + z);
 
-                    if (type != null && pluginConfig.hasBlockLimit(type.name())) {
+                    if (type != null && pluginConfig.hasResolvedBlockLimit(type)) {
                         counterDataManager.getCounterData(chunkCoord).incrementBlock(type);
                     }
                 }
