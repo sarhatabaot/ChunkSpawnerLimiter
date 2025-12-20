@@ -5,6 +5,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.reflection.scanner.NmsBlockScanner;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.Checks;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import org.bukkit.Chunk;
@@ -73,8 +74,7 @@ public class ChunkListener implements Listener {
     private void addEntityLimits(final @NotNull Chunk chunk, final ChunkCoord chunkCoord) {
         final Entity[] entities = chunk.getEntities();
         for (Entity entity: entities) {
-            if (entity instanceof Player && !pluginConfig.isKillPlayers()) {
-                //is player & kill players is disabled
+            if (Checks.shouldSkipPlayers(entity)) {
                 continue;
             }
 

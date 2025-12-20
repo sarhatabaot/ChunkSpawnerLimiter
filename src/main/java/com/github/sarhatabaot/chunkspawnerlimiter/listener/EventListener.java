@@ -49,8 +49,8 @@ public class EventListener implements Listener {
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getBlock().getLocation());
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
-        if (Checks.isUnderOrEqualToLimit(counterData.getBlockCount(material),  pluginConfig.getBlockLimits().get(material.name()))) {
-            CSLLogger.debug(() -> "%s block under block limits (%d/%d)".formatted(material.name(), counterData.getBlockCount(material), pluginConfig.getBlockLimits().get(material.name())));
+        if (Checks.isUnderOrEqualToLimit(counterData.getBlockCount(material),  pluginConfig.getResolvedBlockLimit(material))) {
+            CSLLogger.debug(() -> "%s block under block limits (%d/%d)".formatted(material.name(), counterData.getBlockCount(material), pluginConfig.getResolvedBlockLimit(material)));
             counterData.incrementBlock(material);
             return;
         }
@@ -88,6 +88,10 @@ public class EventListener implements Listener {
         final EntityType entityType = entity.getType();
         if (!pluginConfig.hasResolvedEntityLimit(entityType)) {
             CSLLogger.debug(() -> "%s entity not in entity limits.".formatted(entityType.name()));
+            return;
+        }
+
+        if (Checks.shouldSkipPlayers(entity)) {
             return;
         }
 

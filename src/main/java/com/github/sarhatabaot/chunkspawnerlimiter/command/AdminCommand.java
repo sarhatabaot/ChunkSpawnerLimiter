@@ -1,6 +1,11 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.command;
 
 import com.github.sarhatabaot.chunkspawnerlimiter.ChunkSpawnerLimiter;
+import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.Checks;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.ExternalChecks;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import me.despical.commandframework.CommandArguments;
 import me.despical.commandframework.annotations.Command;
 import me.despical.commandframework.annotations.Completer;
@@ -17,9 +22,13 @@ public class AdminCommand {
 
 
     private final ChunkSpawnerLimiter plugin;
+    private final RemovalTaskManager removalTaskManager;
+    private final PluginConfig pluginConfig;
 
-    public AdminCommand(ChunkSpawnerLimiter plugin) {
+    public AdminCommand(ChunkSpawnerLimiter plugin, RemovalTaskManager removalTaskManager, PluginConfig pluginConfig) {
         this.plugin = plugin;
+        this.removalTaskManager = removalTaskManager;
+        this.pluginConfig = pluginConfig;
     }
 
     @Command(
@@ -66,11 +75,6 @@ public class AdminCommand {
                 "Use /csl help " + (page % maxPage + 1) + " for next page");
     }
 
-    /*
-    TODO
-    The reload command should reload the config settings, and update the caches with the correct limits, if they exist.
-    i.e. config settings should change. Counters won't be rebuilt unless specified with onRebuild.
-     */
     @Command(
             name = "csl.reload",
             permission = "csl.reload"
@@ -78,7 +82,11 @@ public class AdminCommand {
     public void onReload(@NotNull CommandArguments arguments) {
         this.plugin.onReload();
 
-        arguments.getSender().sendMessage("Reloaded config.");
+        RemovalMode.reload(removalTaskManager);
+        Checks.setup(pluginConfig);
+        ExternalChecks.setup(pluginConfig);
+
+        arguments.getSender().sendMessage("Reloaded config and updated all systems.");
     }
 
     /*

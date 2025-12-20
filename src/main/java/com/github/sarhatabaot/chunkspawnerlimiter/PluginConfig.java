@@ -13,31 +13,56 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
+/**
+ * Manages configuration settings for the ChunkSpawnerLimiter plugin.
+ * This class handles loading, caching, and providing access to all plugin configuration
+ * values including entity limits, block limits, spawn reasons, and various behavior settings.
+ *
+ * <p>The configuration supports both direct type limits and group-based limits,
+ * with direct limits taking precedence over group limits.</p>
+ *
+ * @author sarhatabaot
+ * @version 1.0
+ * @see JavaPlugin
+ * @see FileConfiguration
+ */
 public class PluginConfig {
     private final JavaPlugin plugin;
     private FileConfiguration config;
 
+    // Entity limit mappings
     private Map<EntityType, Integer> directEntityLimits;
     private Map<EntityType, Integer> resolvedEntityLimits;
     private Map<EntityType, String> entityToGroup;
 
+    // Block limit mappings
     private Map<Material, Integer> directBlockLimits;
     private Map<Material, Integer> resolvedBlockLimits;
     private Map<Material, String> blockToGroup;
 
+    // Raw configuration data
     private Map<String, Integer> entityLimits;
     private Map<String, Integer> blockLimits;
     private Set<String> spawnReasons;
     private Map<String, List<String>> entityGroups;
 
-
+    /**
+     * Constructs a new PluginConfig instance and loads the initial configuration.
+     *
+     * @param plugin the JavaPlugin instance, must not be null
+     * @throws NullPointerException if plugin is null
+     */
     public PluginConfig(JavaPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin, "Plugin cannot be null");
         this.plugin.saveDefaultConfig();
         reload();
     }
 
+    /**
+     * Reloads the configuration from disk and updates all cached values.
+     * This method should be called when the configuration file is modified externally
+     * or when a reload command is executed.
+     */
     public void reload() {
         plugin.reloadConfig();
         this.config = plugin.getConfig();
@@ -51,45 +76,92 @@ public class PluginConfig {
         loadSpawnReasons();
     }
 
-    // Main settings
+    /**
+     * Checks if the plugin is enabled.
+     *
+     * @return true if the plugin is enabled, false otherwise
+     */
     public boolean isEnabled() {
         return config.getBoolean("enabled", false);
     }
 
+    /**
+     * Checks if debug messages are enabled.
+     *
+     * @return true if debug messages should be printed, false otherwise
+     */
     public boolean isDebugMessages() {
         return config.getBoolean("debug-messages", false);
     }
 
+    /**
+     * Checks if metrics collection is enabled.
+     *
+     * @return true if metrics should be collected, false otherwise
+     */
     public boolean isMetrics() {
         return config.getBoolean("metrics", true);
     }
 
-
-    // In theory, this is covered by EntitySpawnEvent, so why do we need this? todo
+    /**
+     * Checks if creature spawn events should be watched.
+     * Note: This is theoretically covered by EntitySpawnEvent.
+     *
+     * @return true if creature spawn events should be watched, false otherwise
+     */
     public boolean isCreatureSpawnWatch() {
         return config.getBoolean("events.spawn.creature", true);
     }
 
+    /**
+     * Checks if vehicle spawn events should be watched.
+     *
+     * @return true if vehicle spawn events should be watched, false otherwise
+     */
     public boolean isVehicleSpawnWatch() {
         return config.getBoolean("events.spawn.vehicle", true);
     }
 
+    /**
+     * Checks if entity spawn events should be watched.
+     *
+     * @return true if entity spawn events should be watched, false otherwise
+     */
     public boolean isEntitySpawnWatch() {
         return config.getBoolean("events.spawn.entity", true);
     }
 
+    /**
+     * Checks if periodic chunk inspections are enabled.
+     *
+     * @return true if inspections should run periodically, false otherwise
+     */
     public boolean isActiveInspections() {
         return config.getBoolean("events.inspections.enabled", true);
     }
 
+    /**
+     * Gets the frequency (in ticks) at which chunk inspections should occur.
+     *
+     * @return the inspection frequency in ticks
+     */
     public int getInspectionFrequency() {
         return config.getInt("events.inspections.frequency", 300);
     }
 
+    /**
+     * Gets the radius (in chunks) around a target chunk to include in inspections.
+     *
+     * @return the surrounding chunks radius
+     */
     public int getSurroundingChunksRadius() {
         return config.getInt("events.chunk.surrounding-chunks-radius", 1);
     }
 
+    /**
+     * Loads block groups from the configuration.
+     * Block groups allow multiple block types to share a common limit.
+     */
     private void loadBlockGroups() {
         blockToGroup = new EnumMap<>(Material.class);
 
@@ -104,6 +176,10 @@ public class PluginConfig {
         }
     }
 
+    /**
+     * Loads block limits from the configuration, resolving direct limits and group limits.
+     * Direct limits take precedence over group limits.
+     */
     private void loadBlockLimits() {
         directBlockLimits = new EnumMap<>(Material.class);
         resolvedBlockLimits = new EnumMap<>(Material.class);
@@ -134,14 +210,32 @@ public class PluginConfig {
             }
         }
     }
+
+    /**
+     * Gets the resolved limit for a specific block material.
+     * The resolved limit considers both direct limits and group limits.
+     *
+     * @param type the block material to check
+     * @return the limit for the block material, or null if no limit is defined
+     */
     public Integer getResolvedBlockLimit(Material type) {
         return resolvedBlockLimits.get(type);
     }
 
+    /**
+     * Checks if a resolved limit exists for a specific block material.
+     *
+     * @param type the block material to check
+     * @return true if a limit exists for the block material, false otherwise
+     */
     public boolean hasResolvedBlockLimit(Material type) {
         return resolvedBlockLimits.containsKey(type);
     }
 
+    /**
+     * Loads entity groups from the configuration.
+     * Entity groups allow multiple entity types to share a common limit.
+     */
     private void loadEntityGroups() {
         entityToGroup = new EnumMap<>(EntityType.class);
 
@@ -156,7 +250,12 @@ public class PluginConfig {
         }
     }
 
-    public Map<String, Integer> getEntityLimits() {
+    /**
+     * Gets the raw entity limits from the configuration.
+     *
+     * @return a map of entity names/groups to their limits
+     */
+    private Map<String, Integer> getEntityLimits() {
         if (this.entityLimits == null) {
             this.entityLimits = new HashMap<>();
 
@@ -172,6 +271,11 @@ public class PluginConfig {
 
         return entityLimits;
     }
+
+    /**
+     * Loads entity limits from the configuration, resolving direct limits and group limits.
+     * Direct limits take precedence over group limits.
+     */
     private void loadEntityLimits() {
         directEntityLimits = new EnumMap<>(EntityType.class);
         resolvedEntityLimits = new EnumMap<>(EntityType.class);
@@ -203,14 +307,31 @@ public class PluginConfig {
         }
     }
 
+    /**
+     * Gets the resolved limit for a specific entity type.
+     * The resolved limit considers both direct limits and group limits.
+     *
+     * @param type the entity type to check
+     * @return the limit for the entity type, or null if no limit is defined
+     */
     public Integer getResolvedEntityLimit(EntityType type) {
         return resolvedEntityLimits.get(type);
     }
 
+    /**
+     * Checks if a resolved limit exists for a specific entity type.
+     *
+     * @param type the entity type to check
+     * @return true if a limit exists for the entity type, false otherwise
+     */
     public boolean hasResolvedEntityLimit(EntityType type) {
         return resolvedEntityLimits.containsKey(type);
     }
 
+    /**
+     * Loads spawn reasons from the configuration.
+     * If no spawn reasons are configured, defaults to all spawn reasons.
+     */
     private void loadSpawnReasons() {
         List<String> reasonsList = config.getStringList("spawn-reasons");
 
@@ -221,27 +342,59 @@ public class PluginConfig {
         }
     }
 
+    /**
+     * Gets the removal mode for entities that exceed limits.
+     *
+     * @return the removal mode, defaults to "enforce"
+     * @see RemovalMode
+     */
     public RemovalMode getRemovalMode() {
         var mode = config.getString("entities.removal.mode", "enforce");
         return RemovalMode.fromString(mode);
     }
 
+    /**
+     * Checks if items should be dropped when armor stands are removed.
+     *
+     * @return true if armor stand items should be dropped, false otherwise
+     */
     public boolean shouldDropArmorStandItems() {
         return config.getBoolean("entities.removal.armor-stand.drop", false);
     }
 
+    /**
+     * Checks if warnings should be logged when armor stands are removed.
+     *
+     * @return true if armor stand removal warnings should be logged, false otherwise
+     */
     public boolean shouldLogArmorStandWarnings() {
         return config.getBoolean("entities.removal.armor-stand.log-warnings", true);
     }
 
+    /**
+     * Checks if named entities should be preserved from removal.
+     *
+     * @return true if named entities should be preserved, false otherwise
+     */
     public boolean shouldPreserveNamedEntities() {
         return config.getBoolean("entities.preservation.named-entities", true);
     }
 
+    /**
+     * Checks if raid-related entities should be preserved from removal.
+     *
+     * @return true if raid entities should be preserved, false otherwise
+     */
     public boolean shouldPreserveRaidEntities() {
         return config.getBoolean("entities.preservation.raid-entities", true);
     }
 
+    /**
+     * Gets the list of metadata keys that should be ignored when checking entities.
+     * Entities with any of these metadata keys will not be counted or removed.
+     *
+     * @return list of metadata keys to ignore
+     */
     public List<String> getIgnoreMetadata() {
         return Objects.requireNonNullElse(
                 config.getStringList("entities.ignore.metadata"),
@@ -249,6 +402,12 @@ public class PluginConfig {
         );
     }
 
+    /**
+     * Gets the list of NBT tags that should be ignored when checking entities.
+     * Entities with any of these NBT tags will not be counted or removed.
+     *
+     * @return list of NBT tags to ignore
+     */
     public List<String> getIgnoreNbt() {
         return Objects.requireNonNullElse(
                 config.getStringList("entities.ignore.nbt"),
@@ -256,16 +415,31 @@ public class PluginConfig {
         );
     }
 
+    /**
+     * Gets the set of spawn reasons that should be monitored.
+     *
+     * @return set of spawn reason names
+     */
     public Set<String> getSpawnReasons() {
         return spawnReasons;
     }
 
+    /**
+     * Gets the default set of spawn reasons (all possible spawn reasons).
+     *
+     * @return an unmodifiable set of all spawn reason names
+     */
     private @NotNull Set<String> getDefaultSpawnReasons() {
         return Arrays.stream(CreatureSpawnEvent.SpawnReason.values())
                 .map(CreatureSpawnEvent.SpawnReason::name).collect(Collectors.toUnmodifiableSet());
     }
 
-    public Map<String, Integer> getBlockLimits() {
+    /**
+     * Gets the raw block limits from the configuration.
+     *
+     * @return a map of block names/groups to their limits
+     */
+    private Map<String, Integer> getBlockLimits() {
         if (blockLimits == null) {
             var blocksSection = config.getConfigurationSection("blocks.limits");
             if (blocksSection == null) return Collections.emptyMap();
@@ -280,11 +454,20 @@ public class PluginConfig {
         return blockLimits;
     }
 
-    // World settings
+    /**
+     * Gets the worlds mode configuration.
+     *
+     * @return "excluded" or "included" depending on the mode
+     */
     public String getWorldsMode() {
         return config.getString("worlds.mode", "excluded");
     }
 
+    /**
+     * Gets the list of worlds configured for the current mode.
+     *
+     * @return list of world names
+     */
     public List<String> getWorldsList() {
         return Objects.requireNonNullElse(
                 config.getStringList("worlds.list"),
@@ -292,32 +475,66 @@ public class PluginConfig {
         );
     }
 
-    // Notification settings
+    /**
+     * Checks if players in a chunk should be notified when entities are removed.
+     *
+     * @return true if players should be notified, false otherwise
+     */
     public boolean shouldNotifyPlayersInChunk() {
         return config.getBoolean("notifications.players-in-chunk", false);
     }
 
+    /**
+     * Checks if title notifications should be used.
+     *
+     * @return true if title notifications are enabled, false otherwise
+     */
     public boolean shouldUseTitleNotifications() {
         return config.getBoolean("notifications.method.title", true);
     }
 
+    /**
+     * Checks if chat message notifications should be used.
+     *
+     * @return true if message notifications are enabled, false otherwise
+     */
     public boolean shouldUseMessageNotifications() {
         return config.getBoolean("notifications.method.message", false);
     }
 
+    /**
+     * Gets the message to display when entities are removed.
+     *
+     * @return the entities removed message with placeholders
+     */
     public String getEntitiesRemovedMessage() {
         return config.getString("notifications.messages.entities-removed", "&7Removed %s %s in your chunk.");
     }
 
+    /**
+     * Gets the message to display when configuration reload is complete.
+     *
+     * @return the reload complete message
+     */
     public String getReloadCompleteMessage() {
         return config.getString("notifications.messages.reload-complete", "&cReloaded csl config.");
     }
 
+    /**
+     * Gets the message to display when a player tries to place more blocks than allowed.
+     *
+     * @return the max blocks message with placeholders
+     */
     public String getMaxBlocksMessage() {
         return config.getString("notifications.messages.max-blocks", "&6Cannot place more &4{material}&6. Max amount per chunk &2{amount}.");
     }
 
-
+    /**
+     * Checks if a world is disabled based on the current world's mode.
+     *
+     * @param worldName the name of the world to check
+     * @return true if the world is disabled, false if it's enabled
+     */
     public boolean isWorldDisabled(final String worldName) {
         if (getWorldsMode().equalsIgnoreCase("exclude")) {
             return getWorldsList().contains(worldName);
@@ -325,8 +542,13 @@ public class PluginConfig {
         return !getWorldsList().contains(worldName);
     }
 
+    /**
+     * Checks if players should be killed when they exceed entity limits.
+     * Warning: This is a dangerous setting and should be used with caution.
+     *
+     * @return true if players should be killed, false otherwise
+     */
     public boolean isKillPlayers() {
         return config.getBoolean("entities.removal.kill-players", false);
     }
-
 }

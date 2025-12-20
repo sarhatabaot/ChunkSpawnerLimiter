@@ -15,6 +15,7 @@ dependencyResolutionManagement {
             library("annotations", "org.jetbrains:annotations:26.0.2-1")
             library("commands", "com.github.despical:command-framework:1.5.3")
             library("nbt-api", "de.tr7zw:item-nbt-api-plugin:2.15.3")
+            library("jcip", "com.google.code.findbugs:jsr305:3.0.2")
 
             library("junit-api", "org.junit.jupiter:junit-jupiter-api:5.14.0")
             library("junit-engine", "org.junit.jupiter:junit-jupiter-engine:5.14.0")
@@ -22,6 +23,8 @@ dependencyResolutionManagement {
             plugin("run-paper", "xyz.jpenilla.run-paper").version("2.3.1")
             plugin("shadow", "com.gradleup.shadow").version("9.2.2")
             plugin("plugin-yml", "de.eldoria.plugin-yml.bukkit").version("0.8.0")
+
+
         }
     }
 }

@@ -29,11 +29,11 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         Checks.setup(pluginConfig);
         ExternalChecks.setup(this.pluginConfig);
 
-        CommandFramework commandFramework = new CommandFramework(this);
-        commandFramework.registerCommands(new AdminCommand(this));
-
         this.counterDataManager = new CounterDataManager();
         this.removalTaskManager = new RemovalTaskManager(this, counterDataManager, pluginConfig);
+
+        CommandFramework commandFramework = new CommandFramework(this);
+        commandFramework.registerCommands(new AdminCommand(this, removalTaskManager, pluginConfig));
 
         RemovalMode.setup(removalTaskManager);
 

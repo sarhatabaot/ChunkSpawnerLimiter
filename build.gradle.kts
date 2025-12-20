@@ -17,6 +17,7 @@ dependencies {
 
     implementation(libs.bstats)
     implementation(libs.annotations)
+    implementation(libs.jcip)
 
     implementation(libs.commands)
 }
