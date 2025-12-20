@@ -32,7 +32,7 @@ entities:
     VEHICLE:
       - MINECART
   limits:
-    ANIMAL: 50
+    ANIMALS: 50
     MONSTERS: 50
     NPC: 50
     OTHER: 500

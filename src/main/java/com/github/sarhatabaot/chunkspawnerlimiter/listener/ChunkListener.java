@@ -84,7 +84,7 @@ public class ChunkListener implements Listener {
 
             final String entityGroup = pluginConfig.getEntityGroup(entity);
             if (pluginConfig.hasEntityLimit(entityGroup)) {
-                counterDataManager.getCounterData(chunkCoord).incrementEntityGroup(entityGroup);
+                counterDataManager.getCounterData(chunkCoord).incrementEntityGroup(entityGroup, pluginConfig);
             }
         }
     }

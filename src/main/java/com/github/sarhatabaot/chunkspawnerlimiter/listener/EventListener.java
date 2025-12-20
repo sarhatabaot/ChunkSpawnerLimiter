@@ -110,21 +110,21 @@ public class EventListener implements Listener {
         
         // Check entity group limit
         boolean withinGroupLimit = entityGroupLimit == null || 
-            Checks.isUnderOrEqualToLimit(counterData.getEntityGroupCount(entityGroup), entityGroupLimit);
+            Checks.isUnderOrEqualToLimit(counterData.getEntityGroupCount(entityGroup, pluginConfig), entityGroupLimit);
 
         if (withinTypeLimit && withinGroupLimit) {
             CSLLogger.debug(() -> "%s entity under entity limits (type: %d/%s, group: %d/%s)".formatted(
                 entityType.name(), 
                 counterData.getEntityCount(entityType), 
                 entityTypeLimit != null ? String.valueOf(entityTypeLimit) : "unlimited",
-                counterData.getEntityGroupCount(entityGroup),
+                counterData.getEntityGroupCount(entityGroup, pluginConfig),
                 entityGroupLimit != null ? String.valueOf(entityGroupLimit) : "unlimited"
             ));
             
             // Increment both entity type and group counters
             counterData.incrementEntity(entityType);
             if (entityGroup != null && entityGroupLimit != null) {
-                counterData.incrementEntityGroup(entityGroup);
+                counterData.incrementEntityGroup(entityGroup, pluginConfig);
             }
             return;
         }
@@ -169,7 +169,7 @@ public class EventListener implements Listener {
         
         final String entityGroup = pluginConfig.getEntityGroup(entity);
         if (entityGroup != null && pluginConfig.hasEntityLimit(entityGroup)) {
-            counterData.decrementEntityGroup(entityGroup);
+            counterData.decrementEntityGroup(entityGroup, pluginConfig);
         }
     }
 
@@ -202,12 +202,12 @@ public class EventListener implements Listener {
         boolean withinTypeLimit = vehicleTypeLimit == null || 
             Checks.isUnderOrEqualToLimit(counterData.getEntityCount(vehicleType), vehicleTypeLimit);
         boolean withinGroupLimit = entityGroupLimit == null || 
-            Checks.isUnderOrEqualToLimit(counterData.getEntityGroupCount(entityGroup), entityGroupLimit);
+            Checks.isUnderOrEqualToLimit(counterData.getEntityGroupCount(entityGroup, pluginConfig), entityGroupLimit);
 
         if (withinTypeLimit && withinGroupLimit) {
             counterData.incrementEntity(vehicleType);
             if (entityGroup != null && entityGroupLimit != null) {
-                counterData.incrementEntityGroup(entityGroup);
+                counterData.incrementEntityGroup(entityGroup, pluginConfig);
             }
             return;
         }
@@ -231,7 +231,7 @@ public class EventListener implements Listener {
         
         final String entityGroup = pluginConfig.getEntityGroup(vehicle);
         if (entityGroup != null && pluginConfig.hasEntityLimit(entityGroup)) {
-            counterData.decrementEntityGroup(entityGroup);
+            counterData.decrementEntityGroup(entityGroup, pluginConfig);
         }
     }
 

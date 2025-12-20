@@ -9,7 +9,6 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -94,7 +93,7 @@ public class PluginConfig {
     private void loadBlockGroups() {
         blockToGroup = new EnumMap<>(Material.class);
 
-        ConfigurationSection section = config.getConfigurationSection("blocks.entity-groups");
+        ConfigurationSection section = config.getConfigurationSection("blocks.block-groups");
         if (section == null) return;
 
         for (String group: section.getKeys(false)){
