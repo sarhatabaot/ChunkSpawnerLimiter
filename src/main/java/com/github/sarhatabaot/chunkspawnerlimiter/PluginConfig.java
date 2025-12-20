@@ -108,7 +108,7 @@ public class PluginConfig {
         directBlockLimits = new EnumMap<>(Material.class);
         resolvedBlockLimits = new EnumMap<>(Material.class);
 
-        Map<String, Integer> rawLimits = getEntityLimits();
+        Map<String, Integer> rawLimits = getBlockLimits();
 
         // 1️⃣ Direct type limits
         for (Material type : Material.values()) {
@@ -156,6 +156,22 @@ public class PluginConfig {
         }
     }
 
+    public Map<String, Integer> getEntityLimits() {
+        if (this.entityLimits == null) {
+            this.entityLimits = new HashMap<>();
+
+            var limitsSection = config.getConfigurationSection("entities.limits");
+            if (limitsSection == null) return Collections.emptyMap();
+
+            this.entityLimits = limitsSection.getKeys(false).stream()
+                    .collect(Collectors.toMap(
+                            key -> key,
+                            limitsSection::getInt
+                    ));
+        }
+
+        return entityLimits;
+    }
     private void loadEntityLimits() {
         directEntityLimits = new EnumMap<>(EntityType.class);
         resolvedEntityLimits = new EnumMap<>(EntityType.class);
@@ -205,132 +221,6 @@ public class PluginConfig {
         }
     }
 
-
-    // Entity settings
-    @Deprecated
-    public Map<String, Integer> getEntityLimits() {
-        if (this.entityLimits == null) {
-            this.entityLimits = new HashMap<>();
-
-            var limitsSection = config.getConfigurationSection("entities.limits");
-            if (limitsSection == null) return Collections.emptyMap();
-
-            this.entityLimits = limitsSection.getKeys(false).stream()
-                    .collect(Collectors.toMap(
-                            key -> key,
-                            limitsSection::getInt
-                    ));
-        }
-
-        return entityLimits;
-    }
-
-    /**
-     * Checks for both entity limits & entity group
-     * @param entity The entity being checked
-     * @return true if it has a limit or matches a group
-     */
-    @Deprecated
-    public boolean hasEntityLimit(final Entity entity) {
-        final String entityGroup = getEntityGroup(entity);
-        return hasEntityLimit(entity.getType().name()) || getEntityLimits().containsKey(entityGroup);
-    }
-
-    //todo, lots of similar code here regarding entity limits and groups, we need to really check what's needed.
-    @Deprecated
-    public Integer getEntityGroupLimit(final String group) {
-        if (!entityGroups.containsKey(group) || !entityLimits.containsKey(group)) {
-            return null;
-        }
-
-        return entityLimits.get(group);
-    }
-
-
-    @Deprecated
-    public Integer getEntityLimit(final EntityType entityType) {
-        final String entityTypeName = entityType.name();
-
-        // First check if the entity type has a direct limit
-        if (getEntityLimits().containsKey(entityTypeName)) {
-            return getEntityLimits().get(entityTypeName);
-        }
-
-        // Then check if it belongs to a group that has a limit
-        final String entityGroup = getEntityGroup(entityType);
-        if (entityGroup != null && getEntityLimits().containsKey(entityGroup)) {
-            return getEntityLimits().get(entityGroup);
-        }
-
-        return null;
-    }
-
-    @Deprecated
-    public String getEntityGroup(final EntityType entityType) {
-        Map<String, List<String>> entityGroups = getEntityGroups();
-        for (Map.Entry<String, List<String>> entry : entityGroups.entrySet()) {
-            if (entry.getValue().contains(entityType.name())) {
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
-
-    @Deprecated
-    public Map<String, List<String>> getEntityGroups() {
-        if (this.entityGroups == null) {
-            this.entityGroups = new HashMap<>();
-
-            var groupsSection = config.getConfigurationSection("entities.entity-groups");
-            if (groupsSection == null) return Collections.emptyMap();
-
-            for (String groupName : groupsSection.getKeys(false)) {
-                List<String> entities = groupsSection.getStringList(groupName);
-                this.entityGroups.put(groupName.toUpperCase(), entities.stream()
-                        .map(String::toUpperCase)
-                        .collect(Collectors.toList()));
-            }
-        }
-        return entityGroups;
-    }
-
-    // group stuff
-    @Deprecated
-    public String getEntityGroup(
-            @NotNull Entity entity
-    ) {
-        return getGroupFromConfig(entity.getType(), config);
-    }
-
-    @Deprecated
-    private @Nullable String getGroupFromConfig(
-            EntityType type,
-            @NotNull FileConfiguration config
-    ) {
-        ConfigurationSection section = config.getConfigurationSection("entities.entity-groups");
-        if (section == null) {
-            return null;
-        }
-
-        for (String group : section.getKeys(false)) {
-            List<String> members = section.getStringList(group);
-            if (members.contains(type.name())) {
-                return group.toUpperCase();
-            }
-        }
-        return null;
-    }
-
-    @Deprecated
-    public boolean hasEntityLimit(final String entityType) {
-        return getEntityLimits().containsKey(entityType);
-    }
-
-    @Deprecated
-    public boolean hasBlockLimit(final String material) {
-        return getBlockLimits().containsKey(material);
-    }
-
     public RemovalMode getRemovalMode() {
         var mode = config.getString("entities.removal.mode", "enforce");
         return RemovalMode.fromString(mode);
@@ -375,8 +265,6 @@ public class PluginConfig {
                 .map(CreatureSpawnEvent.SpawnReason::name).collect(Collectors.toUnmodifiableSet());
     }
 
-    // Block limits
-    @Deprecated
     public Map<String, Integer> getBlockLimits() {
         if (blockLimits == null) {
             var blocksSection = config.getConfigurationSection("blocks.limits");
@@ -428,7 +316,6 @@ public class PluginConfig {
     public String getMaxBlocksMessage() {
         return config.getString("notifications.messages.max-blocks", "&6Cannot place more &4{material}&6. Max amount per chunk &2{amount}.");
     }
-
 
 
     public boolean isWorldDisabled(final String worldName) {

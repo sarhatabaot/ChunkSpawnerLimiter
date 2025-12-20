@@ -83,39 +83,4 @@ public class CounterData {
     public Set<EntityType> getTrackedEntityTypes() {
         return Collections.unmodifiableSet(entityCounts.keySet());
     }
-
-    // -------------------------
-    // Entity group counts (on-demand)
-    // -------------------------
-    /**
-     * Compute current count of all entities in a given group.
-     * This avoids maintaining a separate map for groups.
-     */
-    public int getEntityGroupCount(String group, PluginConfig config) {
-        if (group == null) return 0;
-
-        return entityCounts.entrySet().stream()
-                .filter(e -> group.equals(config.getEntityGroup(e.getKey())))
-                .mapToInt(e -> e.getValue().get())
-                .sum();
-    }
-
-    /**
-     * Convenience: increment group counts (increments underlying EntityType counts)
-     * Requires that PluginConfig resolves a representative EntityType for the group.
-     */
-    public void incrementEntityGroup(String group, PluginConfig config) {
-        // Increment each EntityType in the group
-        config.getEntityGroups().getOrDefault(group, Collections.emptyList())
-                .stream()
-                .map(EntityType::valueOf)
-                .forEach(this::incrementEntity);
-    }
-
-    public void decrementEntityGroup(String group, PluginConfig config) {
-        config.getEntityGroups().getOrDefault(group, Collections.emptyList())
-                .stream()
-                .map(EntityType::valueOf)
-                .forEach(this::decrementEntity);
-    }
 }

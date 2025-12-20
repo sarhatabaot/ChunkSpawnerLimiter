@@ -39,12 +39,13 @@ public class EventListener implements Listener {
             return;
         }
 
-        if (!pluginConfig.getBlockLimits().containsKey(event.getBlock().getType().name())) {
-            CSLLogger.debug(() -> "%s block not in block limits.".formatted(event.getBlock().getType().name()));
+        final Material material = event.getBlock().getType();
+        if (!pluginConfig.hasResolvedBlockLimit(material)) {
+            CSLLogger.debug(() -> "%s block not in block limits.".formatted(material.name()));
             return;
         }
 
-        final Material material = event.getBlock().getType();
+
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getBlock().getLocation());
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
@@ -84,48 +85,37 @@ public class EventListener implements Listener {
         }
 
         final Entity entity = event.getEntity();
-        if (!pluginConfig.hasEntityLimit(entity)) {
-            CSLLogger.debug(() -> "%s entity not in entity limits.".formatted(entity.getType().name()));
+        final EntityType entityType = entity.getType();
+        if (!pluginConfig.hasResolvedEntityLimit(entityType)) {
+            CSLLogger.debug(() -> "%s entity not in entity limits.".formatted(entityType.name()));
             return;
         }
 
         final Chunk chunk = entity.getLocation().getChunk();
         if (!chunk.isLoaded()) {
-            CSLLogger.debug(() -> "Chunk not loaded for entity spawn: %s".formatted(entity.getType().name()));
+            CSLLogger.debug(() -> "Chunk not loaded for entity spawn: %s".formatted(entityType.name()));
             return;
         }
 
-        final EntityType entityType = entity.getType();
         final ChunkCoord chunkCoord = ChunkCoord.from(chunk);
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
         // Check both entity type and entity group limits
-        final Integer entityTypeLimit = pluginConfig.getEntityLimit(entityType);
-        final String entityGroup = pluginConfig.getEntityGroup(entity);
-        final Integer entityGroupLimit = entityGroup != null ? pluginConfig.getEntityGroupLimit(entityGroup) : null;
+        final Integer entityTypeLimit = pluginConfig.getResolvedEntityLimit(entityType);
 
         // Check entity type limit
         boolean withinTypeLimit = entityTypeLimit == null || 
             Checks.isUnderOrEqualToLimit(counterData.getEntityCount(entityType), entityTypeLimit);
-        
-        // Check entity group limit
-        boolean withinGroupLimit = entityGroupLimit == null || 
-            Checks.isUnderOrEqualToLimit(counterData.getEntityGroupCount(entityGroup, pluginConfig), entityGroupLimit);
 
-        if (withinTypeLimit && withinGroupLimit) {
-            CSLLogger.debug(() -> "%s entity under entity limits (type: %d/%s, group: %d/%s)".formatted(
+        if (withinTypeLimit) {
+            CSLLogger.debug(() -> "%s entity under entity limits (type: %d/%s)".formatted(
                 entityType.name(), 
                 counterData.getEntityCount(entityType), 
-                entityTypeLimit != null ? String.valueOf(entityTypeLimit) : "unlimited",
-                counterData.getEntityGroupCount(entityGroup, pluginConfig),
-                entityGroupLimit != null ? String.valueOf(entityGroupLimit) : "unlimited"
+                entityTypeLimit != null ? String.valueOf(entityTypeLimit) : "unlimited"
             ));
             
             // Increment both entity type and group counters
             counterData.incrementEntity(entityType);
-            if (entityGroup != null && entityGroupLimit != null) {
-                counterData.incrementEntityGroup(entityGroup, pluginConfig);
-            }
             return;
         }
 
@@ -163,14 +153,8 @@ public class EventListener implements Listener {
         final Entity entity = event.getEntity();
         final ChunkCoord chunkCoord = ChunkCoord.from(entity.getLocation());
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
-        
-        // Decrement both entity type and group counters
+
         counterData.decrementEntity(entity.getType());
-        
-        final String entityGroup = pluginConfig.getEntityGroup(entity);
-        if (entityGroup != null && pluginConfig.hasEntityLimit(entityGroup)) {
-            counterData.decrementEntityGroup(entityGroup, pluginConfig);
-        }
     }
 
 
@@ -181,7 +165,8 @@ public class EventListener implements Listener {
         }
 
         final Entity vehicle = event.getVehicle();
-        if (!pluginConfig.hasEntityLimit(vehicle)) {
+        final EntityType vehicleType = vehicle.getType();
+        if (!pluginConfig.hasResolvedEntityLimit(vehicleType)) {
             return;
         }
 
@@ -190,25 +175,17 @@ public class EventListener implements Listener {
             return;
         }
 
-        final EntityType vehicleType = vehicle.getType();
+
         final ChunkCoord chunkCoord = ChunkCoord.from(chunk);
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
         // Check both entity type and entity group limits
-        final Integer vehicleTypeLimit = pluginConfig.getEntityLimit(vehicleType);
-        final String entityGroup = pluginConfig.getEntityGroup(vehicle);
-        final Integer entityGroupLimit = entityGroup != null ? pluginConfig.getEntityGroupLimit(entityGroup) : null;
-
+        final Integer vehicleTypeLimit = pluginConfig.getResolvedEntityLimit(vehicleType);
         boolean withinTypeLimit = vehicleTypeLimit == null || 
             Checks.isUnderOrEqualToLimit(counterData.getEntityCount(vehicleType), vehicleTypeLimit);
-        boolean withinGroupLimit = entityGroupLimit == null || 
-            Checks.isUnderOrEqualToLimit(counterData.getEntityGroupCount(entityGroup, pluginConfig), entityGroupLimit);
 
-        if (withinTypeLimit && withinGroupLimit) {
+        if (withinTypeLimit) {
             counterData.incrementEntity(vehicleType);
-            if (entityGroup != null && entityGroupLimit != null) {
-                counterData.incrementEntityGroup(entityGroup, pluginConfig);
-            }
             return;
         }
 
@@ -225,14 +202,8 @@ public class EventListener implements Listener {
         final Entity vehicle = event.getVehicle();
         final ChunkCoord chunkCoord = ChunkCoord.from(vehicle.getLocation());
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
-        
-        // Decrement both entity type and group counters
+
         counterData.decrementEntity(vehicle.getType());
-        
-        final String entityGroup = pluginConfig.getEntityGroup(vehicle);
-        if (entityGroup != null && pluginConfig.hasEntityLimit(entityGroup)) {
-            counterData.decrementEntityGroup(entityGroup, pluginConfig);
-        }
     }
 
 
