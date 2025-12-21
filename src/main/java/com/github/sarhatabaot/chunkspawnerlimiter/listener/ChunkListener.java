@@ -4,7 +4,8 @@ import com.github.sarhatabaot.chunkspawnerlimiter.CSLLogger;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
-import com.github.sarhatabaot.chunkspawnerlimiter.reflection.scanner.NmsBlockScanner;
+import com.github.sarhatabaot.chunkspawnerlimiter.reflection.scanner.BlockScanner;
+import com.github.sarhatabaot.chunkspawnerlimiter.reflection.scanner.BlockScannerFactory;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.Checks;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
@@ -14,6 +15,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
 
@@ -21,19 +23,13 @@ public class ChunkListener implements Listener {
     private final PluginConfig pluginConfig;
     private final CounterDataManager counterDataManager;
     private final RemovalTaskManager removalTaskManager;
-    private final NmsBlockScanner nmsBlockScanner;
+    private final BlockScanner blockScanner;
 
-    public ChunkListener(PluginConfig pluginConfig, CounterDataManager counterDataManager, RemovalTaskManager removalTaskManager) {
+    public ChunkListener(Plugin plugin, PluginConfig pluginConfig, CounterDataManager counterDataManager, RemovalTaskManager removalTaskManager) {
         this.pluginConfig = pluginConfig;
         this.counterDataManager = counterDataManager;
         this.removalTaskManager = removalTaskManager;
-        try {
-            this.nmsBlockScanner = new NmsBlockScanner(pluginConfig, counterDataManager);
-        } catch (Exception e) {
-            CSLLogger.error("Failed to initialize NMS Block Scanner: " + e.getMessage());
-            throw new RuntimeException(e);
-        }
-
+        this.blockScanner = BlockScannerFactory.create(plugin, pluginConfig, counterDataManager);
     }
 
     @EventHandler
@@ -46,11 +42,9 @@ public class ChunkListener implements Listener {
         final ChunkCoord chunkCoord = ChunkCoord.from(chunk);
 
         addEntityLimits(chunk, chunkCoord);
-        try {
-            this.nmsBlockScanner.scanChunk(chunk, chunkCoord);
-        } catch (Exception e) {
-            CSLLogger.error("There was a problem trying to add block limits in this chunk.");
-        }
+        
+        // Scan blocks asynchronously on chunk load
+        blockScanner.scanChunk(chunk, chunkCoord, true);
 
         RemovalMode removalMode = pluginConfig.getRemovalMode();
         removalTaskManager.queueChunkCheck(chunkCoord, removalMode.getEntityRemovalAction());

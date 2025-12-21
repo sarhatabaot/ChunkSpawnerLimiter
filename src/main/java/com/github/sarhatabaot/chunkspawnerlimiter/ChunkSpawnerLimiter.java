@@ -41,7 +41,7 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         RemovalMode.setup(removalTaskManager);
 
         PluginManager pluginManager = Bukkit.getPluginManager();
-        pluginManager.registerEvents(new ChunkListener(pluginConfig, counterDataManager, removalTaskManager), this);
+        pluginManager.registerEvents(new ChunkListener(this, pluginConfig, counterDataManager, removalTaskManager), this);
         pluginManager.registerEvents(new EventListener(pluginConfig, counterDataManager, notificationService), this);
 
         if (pluginConfig.isMetrics()) {
