@@ -5,6 +5,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.command.AdminCommand;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.listener.ChunkListener;
 import com.github.sarhatabaot.chunkspawnerlimiter.listener.EventListener;
+import com.github.sarhatabaot.chunkspawnerlimiter.notification.NotificationService;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.Checks;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.ExternalChecks;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
@@ -20,6 +21,7 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
     private RemovalTaskManager removalTaskManager;
     private CounterDataManager counterDataManager;
     private PluginConfig pluginConfig;
+    private NotificationService notificationService;
 
     @Override
     public void onEnable() {
@@ -31,6 +33,7 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
 
         this.counterDataManager = new CounterDataManager();
         this.removalTaskManager = new RemovalTaskManager(this, counterDataManager, pluginConfig);
+        this.notificationService = new NotificationService(this, pluginConfig);
 
         CommandFramework commandFramework = new CommandFramework(this);
         commandFramework.registerCommands(new AdminCommand(this, removalTaskManager, pluginConfig));
@@ -39,7 +42,7 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
 
         PluginManager pluginManager = Bukkit.getPluginManager();
         pluginManager.registerEvents(new ChunkListener(pluginConfig, counterDataManager, removalTaskManager), this);
-        pluginManager.registerEvents(new EventListener(pluginConfig, counterDataManager), this);
+        pluginManager.registerEvents(new EventListener(pluginConfig, counterDataManager, notificationService), this);
 
         if (pluginConfig.isMetrics()) {
             Metrics metrics = new Metrics(this, 4195);
@@ -55,11 +58,26 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         this.counterDataManager = null;
         this.removalTaskManager = null;
         this.pluginConfig = null;
+        this.notificationService = null;
     }
 
     public void onReload() {
         this.pluginConfig.reload();
     }
 
+    public CounterDataManager getCounterDataManager() {
+        return counterDataManager;
+    }
 
+    public PluginConfig getPluginConfig() {
+        return pluginConfig;
+    }
+
+    public NotificationService getNotificationService() {
+        return notificationService;
+    }
+
+    public RemovalTaskManager getRemovalTaskManager() {
+        return removalTaskManager;
+    }
 }

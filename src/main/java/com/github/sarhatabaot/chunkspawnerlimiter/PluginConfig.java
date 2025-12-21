@@ -481,7 +481,16 @@ public class PluginConfig {
      * @return true if players should be notified, false otherwise
      */
     public boolean shouldNotifyPlayersInChunk() {
-        return config.getBoolean("notifications.players-in-chunk", false);
+        return config.getBoolean("notifications.enabled", false);
+    }
+
+    /**
+     * Gets the cooldown time (in seconds) between notifications to the same player.
+     *
+     * @return the notification cooldown in seconds, defaults to 3
+     */
+    public int getNotificationCooldownSeconds() {
+        return config.getInt("notifications.cooldown-seconds", 3);
     }
 
     /**
@@ -503,12 +512,23 @@ public class PluginConfig {
     }
 
     /**
+     * Gets the message to display when entities are blocked from spawning.
+     *
+     * @return the entities blocked message with placeholders {count} and {type}
+     */
+    public String getEntitiesBlockedMessage() {
+        return config.getString("notifications.messages.entities-blocked", 
+            "&7Blocked {count} {type} from spawning in your chunk.");
+    }
+
+    /**
      * Gets the message to display when entities are removed.
      *
-     * @return the entities removed message with placeholders
+     * @return the entities removed message with placeholders {count} and {type}
      */
     public String getEntitiesRemovedMessage() {
-        return config.getString("notifications.messages.entities-removed", "&7Removed %s %s in your chunk.");
+        return config.getString("notifications.messages.entities-removed", 
+            "&7Removed {count} {type} in your chunk.");
     }
 
     /**
@@ -527,6 +547,24 @@ public class PluginConfig {
      */
     public String getMaxBlocksMessage() {
         return config.getString("notifications.messages.max-blocks", "&6Cannot place more &4{material}&6. Max amount per chunk &2{amount}.");
+    }
+
+    /**
+     * Gets the title to display when a player tries to place more blocks than allowed.
+     *
+     * @return the max blocks title with placeholders
+     */
+    public String getMaxBlocksTitle() {
+        return config.getString("notifications.messages.max-blocks-title", "&6Cannot place more &4{material}&6.");
+    }
+
+    /**
+     * Gets the subtitle to display when a player tries to place more blocks than allowed.
+     *
+     * @return the max blocks subtitle with placeholders
+     */
+    public String getMaxBlocksSubtitle() {
+        return config.getString("notifications.messages.max-blocks-subtitle", "&6Max amount per chunk &2{amount}.");
     }
 
     /**

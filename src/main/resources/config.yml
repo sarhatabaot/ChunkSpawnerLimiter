@@ -107,12 +107,13 @@ worlds:
 # todo This should probably be configured, per user, with a permission to toggle.
 notifications:
   enabled: false
+  cooldown-seconds: 3
   method:
     title: false
     message: false
   messages:
-    entities-blocked: "&7Blocked %s from spawning in your chunk."
-    entities-removed: "&7Removed %s %s in your chunk."
+    entities-blocked: "&7Blocked {count} {type} from spawning in your chunk."
+    entities-removed: "&7Removed {count} {type} in your chunk."
     reload-complete: "&cReloaded csl config."
     max-blocks: "&6Cannot place more &4{material}&6. Max amount per chunk &2{amount}."
     max-blocks-title: "&6Cannot place more &4{material}&6."

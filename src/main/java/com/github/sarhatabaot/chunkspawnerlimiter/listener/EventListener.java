@@ -6,6 +6,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterData;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
+import com.github.sarhatabaot.chunkspawnerlimiter.notification.NotificationService;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.Checks;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import org.bukkit.Chunk;
@@ -27,10 +28,12 @@ import org.jetbrains.annotations.NotNull;
 public class EventListener implements Listener {
     private final PluginConfig pluginConfig;
     private final CounterDataManager counterDataManager;
+    private final NotificationService notificationService;
 
-    public EventListener(PluginConfig pluginConfig, CounterDataManager counterDataManager) {
+    public EventListener(PluginConfig pluginConfig, CounterDataManager counterDataManager, NotificationService notificationService) {
         this.pluginConfig = pluginConfig;
         this.counterDataManager = counterDataManager;
+        this.notificationService = notificationService;
     }
 
     @EventHandler
@@ -54,6 +57,13 @@ public class EventListener implements Listener {
             counterData.incrementBlock(material);
             return;
         }
+
+        // Notify player about block limit
+        notificationService.notifyBlockLimitReached(
+            event.getPlayer(), 
+            material, 
+            pluginConfig.getResolvedBlockLimit(material)
+        );
 
         RemovalMode removalMode = pluginConfig.getRemovalMode();
         removalMode.handleBlock(event.getBlock(), event);
@@ -118,12 +128,13 @@ public class EventListener implements Listener {
                 entityTypeLimit != null ? String.valueOf(entityTypeLimit) : "unlimited"
             ));
             
-            // Increment both entity type and group counters
             counterData.incrementEntity(entityType);
             return;
         }
 
-        //todo impl broadcast to player
+        // Notify players in chunk about blocked entity
+        notificationService.notifyEntitiesBlocked(chunk, entityType, 1);
+
         RemovalMode removalMode = pluginConfig.getRemovalMode();
         removalMode.handleEntity(entity, event);
     }
