@@ -1,6 +1,9 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.reflection.scanner.util;
 
 import org.bukkit.Bukkit;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,7 +30,7 @@ public class MinecraftVersion implements Comparable<MinecraftVersion> {
     /**
      * Detect the current Minecraft version from the running server.
      */
-    public static MinecraftVersion detect() {
+    public static @NotNull MinecraftVersion detect() {
         try {
             String version = Bukkit.getVersion();
             return parse(version);
@@ -40,7 +43,8 @@ public class MinecraftVersion implements Comparable<MinecraftVersion> {
     /**
      * Parse a version string like "1.20.4" or "git-Paper-448 (MC: 1.20.4)"
      */
-    public static MinecraftVersion parse(String versionString) {
+    @Contract("null -> new")
+    public static @NotNull MinecraftVersion parse(String versionString) {
         if (versionString == null || versionString.isEmpty()) {
             return new MinecraftVersion(1, 0, 0, versionString);
         }
@@ -108,7 +112,7 @@ public class MinecraftVersion implements Comparable<MinecraftVersion> {
      * Get the version suffix from the CraftBukkit package (e.g., "v1_20_R3").
      * Returns null if not in legacy/spigot format.
      */
-    public static String detectVersionSuffix() {
+    public static @Nullable String detectVersionSuffix() {
         try {
             String packageName = Bukkit.getServer().getClass().getPackage().getName();
             // e.g. "org.bukkit.craftbukkit.v1_20_R3"
@@ -119,7 +123,7 @@ public class MinecraftVersion implements Comparable<MinecraftVersion> {
                 if (after.startsWith(".")) {
                     after = after.substring(1);
                 }
-                if (!after.isEmpty() && after.startsWith("v")) {
+                if (after.startsWith("v")) {
                     return after;
                 }
             }
@@ -164,8 +168,7 @@ public class MinecraftVersion implements Comparable<MinecraftVersion> {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof MinecraftVersion)) return false;
-        MinecraftVersion that = (MinecraftVersion) o;
+        if (!(o instanceof MinecraftVersion that)) return false;
         return major == that.major && minor == that.minor && patch == that.patch;
     }
 

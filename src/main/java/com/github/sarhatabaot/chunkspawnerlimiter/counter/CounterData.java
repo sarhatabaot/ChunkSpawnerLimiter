@@ -44,7 +44,7 @@ public class CounterData {
      * @param map the map containing counters
      * @param key the key whose counter should be incremented
      */
-    private static void safeIncrement(Map<?, AtomicInteger> map, Object key) {
+    private static <K> void safeIncrement(Map<K, AtomicInteger> map, K key) {
         map.computeIfAbsent(key, k -> new AtomicInteger(0)).incrementAndGet();
     }
 
@@ -57,7 +57,7 @@ public class CounterData {
      * @param map the map containing counters
      * @param key the key whose counter should be decremented
      */
-    private static void safeDecrement(Map<?, AtomicInteger> map, Object key) {
+    private static <K> void safeDecrement(Map<K, AtomicInteger> map, K key) {
         AtomicInteger count = map.get(key);
         if (count != null) {
             count.updateAndGet(c -> Math.max(0, c - 1));
@@ -73,7 +73,7 @@ public class CounterData {
      *
      * @throws IllegalArgumentException if {@code value} is negative
      */
-    private static void safeSet(Map<?, AtomicInteger> map, Object key, int value) {
+    private static <K> void safeSet(Map<K, AtomicInteger> map, K key, int value) {
         if (value < 0) {
             throw new IllegalArgumentException("Count cannot be negative");
         }

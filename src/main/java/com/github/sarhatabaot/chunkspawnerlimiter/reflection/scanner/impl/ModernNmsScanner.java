@@ -91,9 +91,13 @@ public class ModernNmsScanner extends AbstractBlockScanner {
 
                 // Fallback: getBlock() method
                 try {
-                    getBlock = blockStateClass.getMethod("getBlock", "b");
+                    getBlock = blockStateClass.getMethod("getBlock");
                 } catch (NoSuchMethodException e) {
-                    getBlock = null;
+                    try {
+                        getBlock = blockStateClass.getMethod("b");
+                    } catch (NoSuchMethodException e2) {
+                        getBlock = null;
+                    }
                 }
             }
 

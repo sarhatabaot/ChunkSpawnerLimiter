@@ -71,8 +71,7 @@ public class NotificationService {
             
             player.sendTitle(
                 ChatColor.translateAlternateColorCodes('&', title),
-                ChatColor.translateAlternateColorCodes('&', subtitle),
-                10, 40, 10
+                ChatColor.translateAlternateColorCodes('&', subtitle)
             );
         }
         
@@ -107,7 +106,7 @@ public class NotificationService {
         String colored = ChatColor.translateAlternateColorCodes('&', message);
         
         if (config.shouldUseTitleNotifications()) {
-            player.sendTitle("", colored, 10, 40, 10);
+            player.sendTitle("", colored);
         }
         
         if (config.shouldUseMessageNotifications()) {

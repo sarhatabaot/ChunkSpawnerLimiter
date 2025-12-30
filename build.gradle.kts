@@ -20,6 +20,9 @@ dependencies {
     implementation(libs.jcip)
 
     implementation(libs.commands)
+
+    testImplementation(libs.mockbukkit)
+    testImplementation(libs.assertj.core)
 }
 
 java {
@@ -94,18 +97,73 @@ tasks {
 
 testing {
     suites {
+        // Unit tests - version agnostic
         val test by getting(JvmTestSuite::class) {
             useJUnitJupiter()
 
             dependencies {
+                implementation(libs.spigot.api)
                 implementation(libs.junit.api)
                 runtimeOnly(libs.junit.engine)
+                implementation(libs.mockito.core)
+                implementation(libs.mockito.junit.jupiter)
+                implementation(libs.assertj.core)
             }
 
             targets {
                 all {
                     testTask.configure {
                         useJUnitPlatform()
+                    }
+                }
+            }
+        }
+
+        // Legacy integration tests (1.8-1.12)
+        val testLegacy by creating(JvmTestSuite::class) {
+            useJUnitJupiter()
+
+            dependencies {
+                implementation(libs.spigot.api)
+                implementation(libs.junit.api)
+                runtimeOnly(libs.junit.engine)
+                implementation(libs.mockito.core)
+                implementation(libs.mockito.junit.jupiter)
+                implementation(libs.assertj.core)
+                implementation(libs.mockbukkit.legacy)
+            }
+
+            targets {
+                all {
+                    testTask.configure {
+                        useJUnitPlatform()
+                        group = "verification"
+                        description = "Runs legacy integration tests for Minecraft 1.8-1.12"
+                    }
+                }
+            }
+        }
+
+        // Modern integration tests (1.17+)
+        val testModern by creating(JvmTestSuite::class) {
+            useJUnitJupiter()
+
+            dependencies {
+                implementation(libs.spigot.api)
+                implementation(libs.junit.api)
+                runtimeOnly(libs.junit.engine)
+                implementation(libs.mockito.core)
+                implementation(libs.mockito.junit.jupiter)
+                implementation(libs.assertj.core)
+                implementation(libs.mockbukkit)
+            }
+
+            targets {
+                all {
+                    testTask.configure {
+                        useJUnitPlatform()
+                        group = "verification"
+                        description = "Runs modern integration tests for Minecraft 1.17+"
                     }
                 }
             }

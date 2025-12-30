@@ -6,6 +6,7 @@ dependencyResolutionManagement {
         maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
         maven("https://repo.loohpjames.com/repository/")
         maven("https://repo.codemc.io/repository/maven-public/")
+        maven  ("https://jitpack.io")
     }
 
     versionCatalogs {
@@ -19,6 +20,12 @@ dependencyResolutionManagement {
 
             library("junit-api", "org.junit.jupiter:junit-jupiter-api:5.14.0")
             library("junit-engine", "org.junit.jupiter:junit-jupiter-engine:5.14.0")
+            library("mockito-core", "org.mockito:mockito-core:5.14.0")
+            library("mockito-junit-jupiter", "org.mockito:mockito-junit-jupiter:5.14.0")
+            library("assertj-core", "org.assertj:assertj-core:3.26.3")
+
+            library("mockbukkit", "org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.98.0")
+            library("mockbukkit-legacy", "com.github.MockBukkit:MockBukkit:v1.8-SNAPSHOT")
 
             plugin("run-paper", "xyz.jpenilla.run-paper").version("2.3.1")
             plugin("shadow", "com.gradleup.shadow").version("9.2.2")
