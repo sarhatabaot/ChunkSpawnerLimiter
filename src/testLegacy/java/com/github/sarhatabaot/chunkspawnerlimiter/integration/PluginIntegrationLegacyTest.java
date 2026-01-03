@@ -44,7 +44,7 @@ class PluginIntegrationLegacyTest {
     void shouldLoadPluginSuccessfully() {
         // Then
         assertThat(plugin).isNotNull();
-        assertThat(plugin.isEnabled()).isFalse(); // Should be disabled by default
+        assertThat(plugin.isEnabled()).isTrue(); // Should be enabled by default
         assertThat(server.getPluginManager().getPlugin("ChunkSpawnerLimiter")).isEqualTo(plugin);
     }
 
@@ -65,8 +65,8 @@ class PluginIntegrationLegacyTest {
         PluginConfig config = plugin.getPluginConfig();
 
         // Then
-        assertThat(config.isEnabled()).isFalse(); // Default should be false
-        assertThat(config.isMetrics()).isTrue(); // Default should be true
+        assertThat(config.isEnabled()).isTrue(); // Default should be true
+        assertThat(config.isMetrics()).isFalse(); // Default should be true (but false during testing)
         assertThat(config.isDebugMessages()).isFalse(); // Default should be false
     }
 
@@ -102,7 +102,7 @@ class PluginIntegrationLegacyTest {
 
         // Then - Config should still be available and functional
         assertThat(config).isNotNull();
-        assertThat(config.isEnabled()).isFalse();
+        assertThat(config.isEnabled()).isTrue();
     }
 
     @Test

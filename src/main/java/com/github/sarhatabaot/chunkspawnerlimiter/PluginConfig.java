@@ -82,7 +82,7 @@ public class PluginConfig {
      * @return true if the plugin is enabled, false otherwise
      */
     public boolean isEnabled() {
-        return config.getBoolean("enabled", false);
+        return config.getBoolean("enabled", true);
     }
 
     /**
