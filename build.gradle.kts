@@ -23,7 +23,6 @@ dependencies {
 
     testImplementation(libs.mockbukkit)
     testImplementation(libs.assertj.core)
-    testImplementation("net.kyori:adventure-api:4.14.0")
 }
 
 java {
