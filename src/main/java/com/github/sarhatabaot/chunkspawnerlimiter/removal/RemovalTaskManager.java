@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
 public class RemovalTaskManager {
+    private final static long TICKS_PER_SECOND = 20L;
     private final Queue<QueuedCheck> pendingChunks = new ConcurrentLinkedQueue<>();
     private final Set<ChunkCoord> queuedChunks =
             Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -42,8 +43,9 @@ public class RemovalTaskManager {
         long nextCheck = System.currentTimeMillis() + (delaySeconds * 1000L);
         final QueuedCheck check = new QueuedCheck(coord, action);
         scheduledRechecks.put(check, nextCheck);
-        CSLLogger.debug("Scheduled recheck for chunk %s in %d seconds".formatted(coord, delaySeconds));
+        CSLLogger.debug(() -> "Scheduled recheck for chunk %s in %d seconds".formatted(coord, delaySeconds));
     }
+
 
     public void queueChunkCheck(ChunkCoord coord, Consumer<Entity> action) {
         if (queuedChunks.add(coord)) {
@@ -51,8 +53,13 @@ public class RemovalTaskManager {
         }
     }
 
+    public void removeChunkRecheck(ChunkCoord coord) {
+        scheduledRechecks.entrySet().removeIf(entry ->
+                entry.getKey().coord.equals(coord));
+    }
+
     private void startProcessingTask() {
-        Bukkit.getScheduler().runTaskTimer(plugin, this::processQueue, 20L, 20L); // every 1 second
+        Bukkit.getScheduler().runTaskTimer(plugin, this::processQueue, TICKS_PER_SECOND, TICKS_PER_SECOND); // every 1 second
     }
 
     private void processQueue() {
@@ -72,45 +79,52 @@ public class RemovalTaskManager {
         }
     }
 
-    private Consumer<Entity> getDefaultAction() {
-        return pluginConfig.getRemovalMode().getEntityRemovalAction();
-    }
-
     public void processChunk(ChunkCoord coord, Consumer<Entity> removalAction) {
         CounterData data = counterDataManager.getCounterData(coord);
         if (data == null) return;
 
         Chunk chunk = coord.getChunk();
-        if (chunk == null || !chunk.isLoaded()) {
-            return;
-        }
-        for (EntityType type : data.getTrackedEntityTypes()) {
-            List<Entity> entities = Arrays.stream(chunk.getEntities())
-                    .filter(e -> e.getType() == type)
-                    .toList();
+        if (chunk == null || !chunk.isLoaded()) return;
 
-            Integer allowed = pluginConfig.getEntityLimit(type);
+        // Group entities by tracked type in a single pass
+        Map<EntityType, List<Entity>> entitiesByType = new EnumMap<>(EntityType.class);
+
+        for (Entity entity : chunk.getEntities()) {
+            EntityType type = entity.getType();
+
+            if (!data.getTrackedEntityTypes().contains(type)) continue;
+
+            entitiesByType
+                    .computeIfAbsent(type, t -> new ArrayList<>())
+                    .add(entity);
+        }
+
+        // Apply resolved limits per entity type (includes group limits already)
+        for (Map.Entry<EntityType, List<Entity>> entry : entitiesByType.entrySet()) {
+            EntityType type = entry.getKey();
+            List<Entity> entities = entry.getValue();
+
+            Integer allowed = pluginConfig.getResolvedEntityLimit(type);
             if (allowed == null) {
-                CSLLogger.debug("No limit found for entity type: %s, skipping".formatted(type.name()));
+                CSLLogger.debug(() ->
+                        "No limit found for entity type: %s, skipping".formatted(type.name())
+                );
                 continue;
             }
 
-            if (entities.size() > allowed) {
-                int toRemove = entities.size() - allowed;
-                for (int i = 0; i < toRemove; i++) {
-                    final Entity entity = entities.get(i);
-                    if (!checks(entity)) {
-                        continue;
-                    }
+            int toRemove = entities.size() - allowed;
+            if (toRemove <= 0) continue;
 
-                    removalAction.accept(entity);
-                    //todo message players, or queue up a task to message players?, I don't want it to block this method
-                }
+            for (int i = 0; i < toRemove && i < entities.size(); i++) {
+                Entity entity = entities.get(i);
+                if (shouldSkipRemoval(entity)) continue;
+                removalAction.accept(entity);
             }
         }
     }
 
-    private boolean checks(final Entity entity) {
+    private boolean shouldSkipRemoval(final Entity entity) {
+        // Return false (skip removal) if any preservation check passes
         return Checks.hasCustomName(entity) || Checks.hasMetaData(entity) || ExternalChecks.hasNbtData(entity) || Checks.isPartOfRaid(entity);
     }
 

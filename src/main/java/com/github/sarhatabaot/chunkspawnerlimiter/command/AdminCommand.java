@@ -1,10 +1,14 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.command;
 
 import com.github.sarhatabaot.chunkspawnerlimiter.ChunkSpawnerLimiter;
+import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.Checks;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.ExternalChecks;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import me.despical.commandframework.CommandArguments;
 import me.despical.commandframework.annotations.Command;
 import me.despical.commandframework.annotations.Completer;
-import me.despical.commandframework.annotations.Confirmation;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
@@ -12,14 +16,19 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class AdminCommand {
-    private final ChunkSpawnerLimiter plugin;
 
-    public AdminCommand(ChunkSpawnerLimiter plugin) {
+
+    private final ChunkSpawnerLimiter plugin;
+    private final RemovalTaskManager removalTaskManager;
+    private final PluginConfig pluginConfig;
+
+    public AdminCommand(ChunkSpawnerLimiter plugin, RemovalTaskManager removalTaskManager, PluginConfig pluginConfig) {
         this.plugin = plugin;
+        this.removalTaskManager = removalTaskManager;
+        this.pluginConfig = pluginConfig;
     }
 
     @Command(
@@ -49,8 +58,6 @@ public class AdminCommand {
                 &e/csl reload &7- Reload configuration
                 &e/csl search entities &7- List entity types
                 &e/csl search blocks &7- List block materials
-                &e/csl rebuild &7- Rebuild all counters
-                &c  ⚠️ Can cause lag - use with caution
                """
         );
 
@@ -68,11 +75,6 @@ public class AdminCommand {
                 "Use /csl help " + (page % maxPage + 1) + " for next page");
     }
 
-    /*
-    TODO
-    The reload command should reload the config settings, and update the caches with the correct limits, if they exist.
-    i.e. config settings should change. Counters won't be rebuilt unless specified with onRebuild.
-     */
     @Command(
             name = "csl.reload",
             permission = "csl.reload"
@@ -80,11 +82,41 @@ public class AdminCommand {
     public void onReload(@NotNull CommandArguments arguments) {
         this.plugin.onReload();
 
-        arguments.getSender().sendMessage("Reloaded config.");
+        RemovalMode.reload(removalTaskManager);
+        Checks.setup(pluginConfig);
+        ExternalChecks.setup(pluginConfig);
+
+        arguments.getSender().sendMessage("Reloaded config and updated all systems.");
     }
 
+    /*
+TODO
+5.0.0 RC3
+Show specific chunk info counters. Either in a clickable list format or something like that.
+Optionally users should be able to view this, so they know when to stop placing?
+Mention that the user can see all the entity amounts using /spark profiler
+/csl chunk - shows all options - can click on a chunk to show info
+/csl chunk info - show current chunk info
+/csl chunk info <optional> - shows a specific chunk
+*/
     @Command(
-            name="csl.search.entities"
+            name = "csl.chunk.info"
+    )
+    public void onChunkInfo(CommandArguments commandArguments) {
+        commandArguments.getSender().sendMessage("Not implemented yet.");
+    }
+
+    private static final List<String> ENTITY_NAMES =
+            Arrays.stream(EntityType.values()).map(Enum::name).toList();
+
+    private static final List<String> MATERIAL_NAMES =
+            Arrays.stream(Material.values())
+                    .filter(m -> m != Material.AIR)
+                    .map(Enum::name)
+                    .toList();
+
+    @Command(
+            name = "csl.search.entities"
     )
     public void onSearchEntities(@NotNull CommandArguments arguments) {
         arguments.getSender().sendMessage(Arrays.stream(EntityType.values())
@@ -92,21 +124,19 @@ public class AdminCommand {
                 .collect(Collectors.joining(", ")));
     }
 
-    @Command(
-            name="csl.search.entities"
+    @Completer(
+            name = "csl.search.entities"
     )
     public List<String> onSearchEntitiesCompletion() {
-        return Arrays.stream(EntityType.values())
-                .map(Enum::name)
-                .toList();
+        return ENTITY_NAMES;
     }
 
     @Command(
-            name="csl.search.blocks"
+            name = "csl.search.blocks"
     )
     public void onSearchBlocks(@NotNull CommandArguments arguments) {
         arguments.getSender().sendMessage(Arrays.stream(Material.values())
-                        .filter(material -> material != Material.AIR)
+                .filter(material -> material != Material.AIR)
                 .map(Enum::name)
                 .collect(Collectors.joining(", ")));
     }
@@ -115,27 +145,11 @@ public class AdminCommand {
             name = "csl.search.blocks"
     )
     public List<String> onSearchBlocksCompletion() {
-        return Arrays.stream(Material.values())
-                .map(Enum::name)
-                .toList();
+        return MATERIAL_NAMES;
     }
 
 
-    /*
-    TODO
-    5.0.0 RC2
-    Show specific chunk info counters. Either in a clickable list format or something like that.
-    Optionally users should be able to view this, so they know when to stop placing?
-    Mention that the user can see all the entity amounts using /spark profiler
-    /csl chunk - shows all options - can click on a chunk to show info
-    /csl chunk info - show current chunk info
-    /csl chunk info <optional> - shows a specific chunk
-     */
-    public void onChunkInfo(CommandArguments commandArguments) {
-
-    }
 
 
-    //https://docker-minecraft-server.readthedocs.io/en/latest/
 
 }

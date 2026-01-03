@@ -42,23 +42,12 @@ public record ChunkCoord(UUID worldUuid, int chunkX, int chunkZ) {
         return Bukkit.getWorld(worldUuid);
     }
 
-    private static WeakReference<Chunk> cachedChunk = new WeakReference<>(null);
-
     public @Nullable Chunk getChunk() {
-        Chunk chunk = cachedChunk.get();
-        if (chunk != null && chunk.isLoaded()) {
-            return chunk;
-        }
-
         World world = getWorld();
         if (world == null || !world.isChunkLoaded(chunkX, chunkZ)) {
-            cachedChunk = new WeakReference<>(null);
             return null;
         }
-
-        chunk = world.getChunkAt(chunkX, chunkZ);
-        cachedChunk = new WeakReference<>(chunk);
-        return chunk;
+        return world.getChunkAt(chunkX, chunkZ);
     }
 
     // Check if this chunk is currently loaded

@@ -32,8 +32,9 @@ public final class EnforceKill implements RemovalMode {
         removalTaskManager.queueChunkCheck(coord, getEntityRemovalAction());
     }
 
+    @Contract(pure = true)
     @Override
-    public Consumer<Entity> getEntityRemovalAction() {
+    public @NotNull Consumer<Entity> getEntityRemovalAction() {
         return e -> {
             if (e instanceof LivingEntity living) {
                 living.setHealth(0);

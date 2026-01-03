@@ -32,7 +32,7 @@ entities:
     VEHICLE:
       - MINECART
   limits:
-    ANIMAL: 50
+    ANIMALS: 50
     MONSTERS: 50
     NPC: 50
     OTHER: 500
@@ -61,33 +61,42 @@ entities:
       - "tag"
 
 # Spawn reason filtering
+# To disable, just remove what you don't want.
 spawn-reasons:
-  BREEDING: true
-  BUILD_IRONGOLEM: true
-  BUILD_SNOWMAN: true
-  BUILD_WITHER: true
-  CHUNK_GEN: true
-  DEFAULT: true
-  DISPENSE_EGG: true
-  DROWNED: true
-  EGG: true
-  JOCKEY: true
-  LIGHTNING: true
-  MOUNT: true
-  NATURAL: true
-  NETHER_PORTAL: true
-  OCELOT_BABY: true
-  REINFORCEMENTS: true
-  SILVERFISH_BLOCK: true
-  SPAWNER: true
-  SPAWNER_EGG: true
-  TRAP: true
-  VILLAGE_DEFENSE: true
-  VILLAGE_INVASION: true
+  - "BREEDING"
+  - "BUILD_IRONGOLEM"
+  - "BUILD_SNOWMAN"
+  - "BUILD_WITHER"
+  - "CHUNK_GEN"
+  - "DEFAULT"
+  - "DISPENSE_EGG"
+  - "DROWNED"
+  - "EGG"
+  - "JOCKEY"
+  - "LIGHTNING"
+  - "MOUNT"
+  - "NATURAL"
+  - "NETHER_PORTAL"
+  - "OCELOT_BABY"
+  - "REINFORCEMENTS"
+  - "SILVERFISH_BLOCK"
+  - "SPAWNER"
+  - "SPAWNER_EGG"
+  - "TRAP"
+  - "VILLAGE_DEFENSE"
+  - "VILLAGE_INVASION"
 
 # Block restrictions
 blocks:
-  SPAWNER: 10
+  block-groups:
+    basic:
+      - "STONE"
+      - "DIRT"
+    ores:
+      - "DIAMOND_BLOCK"
+      - "GOLD_BLOCK"
+  limits:
+    SPAWNER: 10
 
 # World configuration
 worlds:
@@ -98,12 +107,13 @@ worlds:
 # todo This should probably be configured, per user, with a permission to toggle.
 notifications:
   enabled: false
+  cooldown-seconds: 3
   method:
     title: false
     message: false
   messages:
-    entities-blocked: "&7Blocked %s from spawning in your chunk."
-    entities-removed: "&7Removed %s %s in your chunk."
+    entities-blocked: "&7Blocked {count} {type} from spawning in your chunk."
+    entities-removed: "&7Removed {count} {type} in your chunk."
     reload-complete: "&cReloaded csl config."
     max-blocks: "&6Cannot place more &4{material}&6. Max amount per chunk &2{amount}."
     max-blocks-title: "&6Cannot place more &4{material}&6."

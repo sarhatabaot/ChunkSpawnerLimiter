@@ -9,11 +9,7 @@ public class CounterDataManager {
     private final Map<ChunkCoord, CounterData> loadedChunkCounters = new ConcurrentHashMap<>();
 
     public CounterData getCounterData(final ChunkCoord chunkCoord) {
-        if (!loadedChunkCounters.containsKey(chunkCoord))  {
-            loadedChunkCounters.put(chunkCoord, new CounterData());
-        }
-
-        return loadedChunkCounters.get(chunkCoord);
+        return loadedChunkCounters.computeIfAbsent(chunkCoord, k -> new CounterData());
     }
 
     public void removeCounterData(final ChunkCoord chunkCoord) {
