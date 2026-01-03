@@ -1,5 +1,6 @@
 package com.github.sarhatabaot.chunkspawnerlimiter;
 
+import org.bukkit.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,11 +16,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("ChunkSpawnerLimiter Main Class Tests")
 class ChunkSpawnerLimiterTest {
 
+    private Server server;
     private ChunkSpawnerLimiter plugin;
 
     @BeforeEach
     void setUp() {
-        // Load plugin with MockBukkit
+        // Load plugin with MockBukkit\
+        server = MockBukkit.mock();
         plugin = MockBukkit.load(ChunkSpawnerLimiter.class);
     }
 

@@ -1,20 +1,21 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.integration;
 
-import be.seeseemelk.mockbukkit.MockBukkit;
-import be.seeseemelk.mockbukkit.ServerMock;
+
 import com.github.sarhatabaot.chunkspawnerlimiter.ChunkSpawnerLimiter;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockbukkit.mockbukkit.MockBukkit;
+import org.mockbukkit.mockbukkit.ServerMock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for the full plugin lifecycle using MockBukkit 3.x.
  * Tests plugin loading, configuration, and basic functionality for Minecraft 1.17+.
- *
+ * <br/>
  * Note: This test suite uses MockBukkit 3.x which supports Minecraft 1.17+.
  * For legacy versions (1.8-1.12), see PluginIntegrationLegacyTest.
  */

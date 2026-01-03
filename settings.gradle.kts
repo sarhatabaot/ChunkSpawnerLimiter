@@ -2,16 +2,18 @@ rootProject.name = "ChunkSpawnerLimiter"
 
 dependencyResolutionManagement {
     repositories {
+        repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
         mavenCentral()
         maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
         maven("https://repo.loohpjames.com/repository/")
         maven("https://repo.codemc.io/repository/maven-public/")
-        maven  ("https://jitpack.io")
+        maven("https://jitpack.io")
     }
 
     versionCatalogs {
         create("libs") {
             library("spigot-api", "org.spigotmc:spigot-api:1.8.8-R0.1-SNAPSHOT")
+            library("paper-api", "io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
             library("bstats", "org.bstats:bstats-bukkit:3.1.0")
             library("annotations", "org.jetbrains:annotations:26.0.2-1")
             library("commands", "com.github.despical:command-framework:1.5.3")
@@ -25,7 +27,7 @@ dependencyResolutionManagement {
             library("assertj-core", "org.assertj:assertj-core:3.26.3")
 
             library("mockbukkit", "org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.98.0")
-            library("mockbukkit-legacy", "com.github.MockBukkit:MockBukkit:v1.8-SNAPSHOT")
+            library("mockbukkit-legacy", "com.github.MockBukkit:MockBukkit:v1.8-spigot-SNAPSHOT")
 
             plugin("run-paper", "xyz.jpenilla.run-paper").version("2.3.1")
             plugin("shadow", "com.gradleup.shadow").version("9.2.2")

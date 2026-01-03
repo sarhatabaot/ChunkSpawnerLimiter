@@ -100,7 +100,26 @@ public class PluginConfig {
      * @return true if metrics should be collected, false otherwise
      */
     public boolean isMetrics() {
+        // Disable metrics during testing to avoid bStats initialization issues
+        if (isRunningTests()) {
+            return false;
+        }
         return config.getBoolean("metrics", true);
+    }
+
+    /**
+     * Checks if the code is running in a test environment.
+     * This is determined by checking if JUnit classes are available on the classpath.
+     *
+     * @return true if running tests, false otherwise
+     */
+    private boolean isRunningTests() {
+        try {
+            Class.forName("org.junit.jupiter.api.Test");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 
     /**

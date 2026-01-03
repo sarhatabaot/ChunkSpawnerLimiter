@@ -98,6 +98,10 @@ public sealed interface RemovalMode
      *         provided mode is unknown
      */
     static @NotNull RemovalMode fromString(@NotNull String mode) {
+        if (mode == null) {
+            return MODES.get("enforce");
+        }
+
         return MODES.getOrDefault(mode.toLowerCase(), MODES.get("enforce"));
     }
 }

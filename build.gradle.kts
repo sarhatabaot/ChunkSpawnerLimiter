@@ -123,6 +123,14 @@ testing {
         val testLegacy by creating(JvmTestSuite::class) {
             useJUnitJupiter()
 
+            sources {
+                java {
+                    srcDir("src/testLegacy/java")
+                    compileClasspath += project.sourceSets.main.get().output
+                    runtimeClasspath += project.sourceSets.main.get().output
+                }
+            }
+
             dependencies {
                 implementation(libs.spigot.api)
                 implementation(libs.junit.api)
@@ -148,8 +156,16 @@ testing {
         val testModern by creating(JvmTestSuite::class) {
             useJUnitJupiter()
 
+            sources {
+                java {
+                    srcDir("src/testModern/java")
+                    compileClasspath += project.sourceSets.main.get().output
+                    runtimeClasspath += project.sourceSets.main.get().output
+                }
+            }
+
             dependencies {
-                implementation(libs.spigot.api)
+                implementation(libs.paper.api)
                 implementation(libs.junit.api)
                 runtimeOnly(libs.junit.engine)
                 implementation(libs.mockito.core)

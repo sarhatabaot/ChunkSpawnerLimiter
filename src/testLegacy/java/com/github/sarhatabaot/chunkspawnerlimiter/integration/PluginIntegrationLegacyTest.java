@@ -36,7 +36,7 @@ class PluginIntegrationLegacyTest {
     @AfterEach
     void tearDown() {
         // Clean up after each test
-        MockBukkit.unmock();
+        MockBukkit.unload();
     }
 
     @Test
