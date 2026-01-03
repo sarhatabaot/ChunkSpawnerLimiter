@@ -1,7 +1,6 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.config;
 
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
-import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import org.bukkit.Material;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.entity.EntityType;
@@ -17,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
@@ -97,9 +95,9 @@ class PluginConfigTest {
         pluginConfig.reload();
 
         // Then
-        assertThat(pluginConfig.getResolvedBlockLimit(Material.MOB_SPAWNER)).isEqualTo(5);
+        assertThat(pluginConfig.getResolvedBlockLimit(Material.SPAWNER)).isEqualTo(5);
         assertThat(pluginConfig.getResolvedBlockLimit(Material.DIAMOND_BLOCK)).isEqualTo(10);
-        assertThat(pluginConfig.hasResolvedBlockLimit(Material.MOB_SPAWNER)).isTrue();
+        assertThat(pluginConfig.hasResolvedBlockLimit(Material.SPAWNER)).isTrue();
         assertThat(pluginConfig.hasResolvedBlockLimit(Material.STONE)).isFalse();
     }
 

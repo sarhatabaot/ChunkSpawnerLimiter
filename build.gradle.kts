@@ -194,3 +194,10 @@ testing {
         }
     }
 }
+
+tasks.named("check") {
+    dependsOn(
+        testing.suites.named("testLegacy"),
+        testing.suites.named("testModern")
+    )
+}
