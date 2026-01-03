@@ -23,6 +23,7 @@ dependencies {
 
     testImplementation(libs.mockbukkit)
     testImplementation(libs.assertj.core)
+    testImplementation("net.kyori:adventure-api:4.14.0")
 }
 
 java {
@@ -103,11 +104,13 @@ testing {
 
             dependencies {
                 implementation(libs.spigot.api)
+                implementation(libs.adventure.api)
                 implementation(libs.junit.api)
                 runtimeOnly(libs.junit.engine)
                 implementation(libs.mockito.core)
                 implementation(libs.mockito.junit.jupiter)
                 implementation(libs.assertj.core)
+                implementation(libs.commands)
             }
 
             targets {
@@ -133,12 +136,15 @@ testing {
 
             dependencies {
                 implementation(libs.spigot.api)
+                implementation(libs.adventure.api)
+                implementation(libs.bstats)
                 implementation(libs.junit.api)
                 runtimeOnly(libs.junit.engine)
                 implementation(libs.mockito.core)
                 implementation(libs.mockito.junit.jupiter)
                 implementation(libs.assertj.core)
                 implementation(libs.mockbukkit.legacy)
+                implementation(libs.commands)
             }
 
             targets {
@@ -166,12 +172,14 @@ testing {
 
             dependencies {
                 implementation(libs.paper.api)
+                implementation(libs.adventure.api)
                 implementation(libs.junit.api)
                 runtimeOnly(libs.junit.engine)
                 implementation(libs.mockito.core)
                 implementation(libs.mockito.junit.jupiter)
                 implementation(libs.assertj.core)
                 implementation(libs.mockbukkit)
+                implementation(libs.commands)
             }
 
             targets {

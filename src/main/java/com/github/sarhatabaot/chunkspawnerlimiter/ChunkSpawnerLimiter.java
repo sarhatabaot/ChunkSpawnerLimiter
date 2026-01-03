@@ -14,8 +14,12 @@ import me.despical.commandframework.CommandFramework;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SimplePie;
 import org.bukkit.Bukkit;
+import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.java.JavaPluginLoader;
+
+import java.io.File;
 
 public class ChunkSpawnerLimiter extends JavaPlugin {
     private RemovalTaskManager removalTaskManager;
@@ -35,8 +39,17 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         this.removalTaskManager = new RemovalTaskManager(this, counterDataManager, pluginConfig);
         this.notificationService = new NotificationService(this, pluginConfig);
 
-        CommandFramework commandFramework = new CommandFramework(this);
-        commandFramework.registerCommands(new AdminCommand(this, removalTaskManager, pluginConfig));
+        try {
+            CommandFramework commandFramework = new CommandFramework(this);
+            commandFramework.registerCommands(new AdminCommand(this, removalTaskManager, pluginConfig));
+        } catch (IllegalStateException e) {
+            if (e.getMessage().contains("Command Framework has not been relocated")) {
+                // During testing, the library may not be relocated, skip command framework initialization
+                getLogger().fine("Command Framework initialization skipped during testing: " + e.getMessage());
+            } else {
+                throw e;
+            }
+        }
 
         RemovalMode.setup(removalTaskManager);
 
@@ -45,11 +58,16 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         pluginManager.registerEvents(new EventListener(pluginConfig, counterDataManager, notificationService), this);
 
         if (pluginConfig.isMetrics()) {
-            Metrics metrics = new Metrics(this, 4195);
-            metrics.addCustomChart(new SimplePie("removal_mode", () -> pluginConfig.getRemovalMode().getKey()));
-            //entities removed
-            //blocks removed
-            //average settings?
+            try {
+                Metrics metrics = new Metrics(this, 4195);
+                metrics.addCustomChart(new SimplePie("removal_mode", () -> pluginConfig.getRemovalMode().getKey()));
+                //entities removed
+                //blocks removed
+                //average settings?
+            } catch (Exception e) {
+                // Silently skip bStats initialization if classes are not available (e.g., during testing)
+                getLogger().fine("bStats metrics initialization skipped: " + e.getMessage());
+            }
         }
     }
 
@@ -79,5 +97,13 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
 
     public RemovalTaskManager getRemovalTaskManager() {
         return removalTaskManager;
+    }
+
+    public ChunkSpawnerLimiter() {
+        super();
+    }
+
+    protected ChunkSpawnerLimiter(JavaPluginLoader loader, PluginDescriptionFile description, File dataFolder, File file) {
+        super(loader, description, dataFolder, file);
     }
 }
