@@ -1,9 +1,0 @@
-{
-  "ignore-entity": "Ignoring %s due spawn-reason: %s",
-  "removing-entity-at": "Removing %d %s @ %dx %dz",
-  "active-check": "Active check @ %dx %dz",
-  "register-listeners": "Registered listeners.",
-  "chunk-unload-event": "ChunkUnloadEvent %s %s",
-  "chunk-load-event": "ChunkLoadEvent %s %s",
-  "block-place-check": "Material=%s, Count=%d, Limit=%d"
-}
