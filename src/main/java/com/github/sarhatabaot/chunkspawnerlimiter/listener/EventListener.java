@@ -39,6 +39,7 @@ public class EventListener implements Listener {
     @EventHandler
     public void onBlockPlace(@NotNull BlockPlaceEvent event) {
         if (pluginConfig.isWorldDisabled(event.getBlock().getWorld().getName())) {
+            CSLLogger.debug(() -> "%s world is disabled.".formatted(event.getBlock().getWorld().getName()));
             return;
         }
 
@@ -82,6 +83,7 @@ public class EventListener implements Listener {
     @EventHandler
     public void onEntitySpawn(@NotNull EntitySpawnEvent event) {
         if (pluginConfig.isWorldDisabled(event.getLocation().getWorld().getName())) {
+            CSLLogger.debug(() -> "%s world is disabled.".formatted(event.getLocation().getWorld().getName()));
             return;
         }
 

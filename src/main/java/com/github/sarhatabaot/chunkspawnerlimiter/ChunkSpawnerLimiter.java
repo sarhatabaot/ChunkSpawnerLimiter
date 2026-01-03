@@ -37,7 +37,7 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
 
         this.counterDataManager = new CounterDataManager();
         this.removalTaskManager = new RemovalTaskManager(this, counterDataManager, pluginConfig);
-        this.notificationService = new NotificationService(this, pluginConfig);
+        this.notificationService = new NotificationService(pluginConfig);
 
         try {
             CommandFramework commandFramework = new CommandFramework(this);

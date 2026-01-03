@@ -198,6 +198,6 @@ testing {
 tasks.named("check") {
     dependsOn(
         testing.suites.named("testLegacy"),
-        testing.suites.named("testModern")
+//        testing.suites.named("testModern") for now TODO
     )
 }

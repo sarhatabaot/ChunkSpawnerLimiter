@@ -19,13 +19,11 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class NotificationService {
     private final PluginConfig config;
-    private final Plugin plugin;
     
     // Throttling: track last notification time per player
     private final Map<UUID, Long> lastNotificationTime = new ConcurrentHashMap<>();
     
-    public NotificationService(Plugin plugin, PluginConfig config) {
-        this.plugin = plugin;
+    public NotificationService(PluginConfig config) {
         this.config = config;
     }
     

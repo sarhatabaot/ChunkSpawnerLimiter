@@ -4,6 +4,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.CSLLogger;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.reflection.scanner.AbstractBlockScanner;
+import com.github.sarhatabaot.chunkspawnerlimiter.reflection.scanner.util.MinecraftVersion;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -17,14 +18,15 @@ import java.lang.reflect.Method;
  * Supports modern package structure: net.minecraft.server.level, net.minecraft.core, etc.
  */
 public class ModernNmsScanner extends AbstractBlockScanner {
-    
+
     private final boolean initialized;
-    
+    private final String versionSuffix;
+
     // NMS classes (Mojang-mapped)
     private Class<?> serverLevelClass;
     private Class<?> blockPosClass;
     private Class<?> blockStateClass;
-    
+
     // Methods
     private Method craftWorld_getHandle;
     private Method getBlockState;
@@ -37,15 +39,32 @@ public class ModernNmsScanner extends AbstractBlockScanner {
 
     public ModernNmsScanner(Plugin plugin, PluginConfig config, CounterDataManager counterManager) {
         super(plugin, config, counterManager);
+        this.versionSuffix = MinecraftVersion.detectVersionSuffix();
         this.initialized = initialize();
     }
 
     private boolean initialize() {
+        if (versionSuffix == null || versionSuffix.isEmpty()) {
+            CSLLogger.debug(() -> "[ModernNMS] No version suffix detected");
+            return false;
+        }
+
         try {
-            // CraftWorld.getHandle()
-            Class<?> craftWorldClass = loadClass("org.bukkit.craftbukkit.CraftWorld");
+            CSLLogger.debug(() -> "[ModernNMS] Starting initialization for " + versionSuffix);
+
+            // CraftWorld.getHandle() - use versioned CraftBukkit package
+            Class<?> craftWorldClass = loadClass("org.bukkit.craftbukkit." + versionSuffix + ".CraftWorld");
             if (craftWorldClass != null) {
-                craftWorld_getHandle = craftWorldClass.getMethod("getHandle");
+                try {
+                    craftWorld_getHandle = craftWorldClass.getMethod("getHandle");
+                    CSLLogger.debug(() -> "[ModernNMS] Found CraftWorld.getHandle() method");
+                } catch (NoSuchMethodException e) {
+                    CSLLogger.debug(() -> "[ModernNMS] CraftWorld.getHandle() method not found: " + e.getMessage());
+                    return false;
+                }
+            } else {
+                CSLLogger.debug(() -> "[ModernNMS] CraftWorld class not found in versioned package: " + versionSuffix);
+                return false;
             }
 
             // Modern NMS classes (Mojang-mapped)
@@ -53,30 +72,55 @@ public class ModernNmsScanner extends AbstractBlockScanner {
                 "net.minecraft.server.level.ServerLevel",
                 "net.minecraft.server.level.WorldServer"
             );
+            if (serverLevelClass == null) {
+                CSLLogger.debug(() -> "[ModernNMS] ServerLevel class not found (tried: net.minecraft.server.level.ServerLevel, net.minecraft.server.level.WorldServer)");
+                return false;
+            } else {
+                CSLLogger.debug(() -> "[ModernNMS] Found ServerLevel class: " + serverLevelClass.getName());
+            }
 
             blockPosClass = loadClass("net.minecraft.core.BlockPosition", "net.minecraft.core.BlockPos");
-            
+            if (blockPosClass == null) {
+                CSLLogger.debug(() -> "[ModernNMS] BlockPos class not found (tried: net.minecraft.core.BlockPosition, net.minecraft.core.BlockPos)");
+                return false;
+            } else {
+                CSLLogger.debug(() -> "[ModernNMS] Found BlockPos class: " + blockPosClass.getName());
+            }
+
             blockStateClass = loadClass(
                 "net.minecraft.world.level.block.state.IBlockData",
                 "net.minecraft.world.level.block.state.BlockState"
             );
-
-            if (serverLevelClass == null || blockPosClass == null) {
-                return false;
+            if (blockStateClass != null) {
+                CSLLogger.debug(() -> "[ModernNMS] Found BlockState class: " + blockStateClass.getName());
+            } else {
+                CSLLogger.debug(() -> "[ModernNMS] BlockState class not found (tried: net.minecraft.world.level.block.state.IBlockData, net.minecraft.world.level.block.state.BlockState)");
             }
 
             // BlockPos constructor (int, int, int)
             try {
                 blockPosConstructor = blockPosClass.getConstructor(int.class, int.class, int.class);
+                CSLLogger.debug(() -> "[ModernNMS] Found BlockPos(int,int,int) constructor");
             } catch (NoSuchMethodException e) {
-                CSLLogger.debug(() -> "[ModernNMS] BlockPos(int,int,int) constructor not found");
+                CSLLogger.debug(() -> "[ModernNMS] BlockPos(int,int,int) constructor not found: " + e.getMessage());
                 return false;
             }
 
             // getBlockState(BlockPos) method
-            getBlockState = findMethod(serverLevelClass, blockPosClass, "getBlockState", "getType", "a");
+            getBlockState = findMethod(serverLevelClass, blockPosClass, "getBlockState", "getType", "a", "a_");
             if (getBlockState == null) {
+                // Debug: List all methods that take a BlockPos parameter
+                CSLLogger.debug(() -> "[ModernNMS] Available methods on " + serverLevelClass.getName() + " that take BlockPos:");
+                for (Method method : serverLevelClass.getMethods()) {
+                    if (method.getParameterCount() == 1 &&
+                        method.getParameterTypes()[0].equals(blockPosClass)) {
+                        CSLLogger.debug(() -> "[ModernNMS]   " + method.getName() + "(" + blockPosClass.getSimpleName() + ") -> " + method.getReturnType().getSimpleName());
+                    }
+                }
+                CSLLogger.debug(() -> "[ModernNMS] getBlockState method not found on " + serverLevelClass.getName() + " (tried: getBlockState, getType, a)");
                 return false;
+            } else {
+                CSLLogger.debug(() -> "[ModernNMS] Found getBlockState method: " + getBlockState.getName());
             }
 
             // Try to find Paper's getBukkitMaterial() optimization
@@ -207,4 +251,6 @@ public class ModernNmsScanner extends AbstractBlockScanner {
         }
         return null;
     }
+
+
 }

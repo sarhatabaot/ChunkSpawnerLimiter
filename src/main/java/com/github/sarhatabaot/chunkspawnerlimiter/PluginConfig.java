@@ -607,7 +607,7 @@ public class PluginConfig {
      * @return true if the world is disabled, false if it's enabled
      */
     public boolean isWorldDisabled(final String worldName) {
-        if (getWorldsMode().equalsIgnoreCase("exclude")) {
+        if (getWorldsMode().equalsIgnoreCase("excluded")) {
             return getWorldsList().contains(worldName);
         }
         return !getWorldsList().contains(worldName);
