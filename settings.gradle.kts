@@ -4,11 +4,11 @@ dependencyResolutionManagement {
     repositories {
         repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
         mavenCentral()
+        maven("https://jitpack.io")
         maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
         maven("https://repo.loohpjames.com/repository/")
         maven("https://repo.codemc.io/repository/maven-public/")
         maven("https://repo.papermc.io/repository/maven-public/")
-        maven("https://jitpack.io")
     }
 
     versionCatalogs {
@@ -29,7 +29,7 @@ dependencyResolutionManagement {
 
             library("adventure-api", "net.kyori:adventure-api:4.14.0")
             library("mockbukkit", "org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.98.4")
-            library("mockbukkit-legacy", "com.github.MockBukkit:MockBukkit:v1.8-spigot-SNAPSHOT")
+            library("mockbukkit-legacy", "com.github.MockBukkit:MockBukkit:v1.8-SNAPSHOT")
 
             plugin("run-paper", "xyz.jpenilla.run-paper").version("2.3.1")
             plugin("shadow", "com.gradleup.shadow").version("9.2.2")
