@@ -123,7 +123,8 @@ public class CounterData {
      * @return the current count, or {@code 0} if the block type is not tracked
      */
     public int getBlockCount(Material type) {
-        return blockCounts.getOrDefault(type, new AtomicInteger(0)).get();
+        AtomicInteger count = blockCounts.get(type);
+        return count != null ? count.get() : 0;
     }
 
     /**
@@ -178,7 +179,8 @@ public class CounterData {
      * @return the current count, or {@code 0} if the entity type is not tracked
      */
     public int getEntityCount(EntityType type) {
-        return entityCounts.getOrDefault(type, new AtomicInteger(0)).get();
+        AtomicInteger count = entityCounts.get(type);
+        return count != null ? count.get() : 0;
     }
 
     /**
