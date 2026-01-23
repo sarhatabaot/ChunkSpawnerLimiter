@@ -9,6 +9,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.notification.NotificationService;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.Checks;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
+import com.github.sarhatabaot.chunkspawnerlimiter.util.SpawnEggUtil;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
@@ -139,27 +140,13 @@ public class EventListener implements Listener {
 
         RemovalMode removalMode = pluginConfig.getRemovalMode();
         removalMode.handleEntity(entity, event);
+
+        if (event.isCancelled() && event instanceof CreatureSpawnEvent creatureSpawnEvent) {
+            if (SpawnEggUtil.isSpawnEggSpawn(creatureSpawnEvent.getSpawnReason().name())) {
+                SpawnEggUtil.dropSpawnEgg(entity.getType(), event.getLocation());
+            }
+        }
     }
-
-
-// TODO Check that impl works across versions, use reflection.
-// MaterialData was changed at some stage
-//    @EventHandler(priority = EventPriority.HIGHEST)
-//    public void onPlayerUseEgg(PlayerInteractEvent event) {
-//        ItemStack item = event.getItem();
-//        if (item != null && item.getType().toString().endsWith("_SPAWN_EGG")) {
-//            final EntityType entityType = event.getEntity().getType();
-//            final ChunkCoord chunkCoord = ChunkCoord.from(event.getEntity().getWorld().getChunkAt(event.getEntity().getLocation()));
-//            final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
-//
-//            if (isUnderOrEqualToLimit(counterData.getEntityCount(entityType), pluginConfig.getEntityLimits().get(entityType.name()))) {
-//                counterData.incrementEntity(entityType);
-//                return;
-//            }
-//
-//            event.setCancelled(true);
-//        }
-//    }
 
     @EventHandler
     public void onEntityDeath(@NotNull EntityDeathEvent event) { //just to decrease counters for tracking.
