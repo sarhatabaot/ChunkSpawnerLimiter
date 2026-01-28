@@ -70,6 +70,10 @@ public class RemovalTaskManager {
         long now = System.currentTimeMillis();
         for (Iterator<Map.Entry<ChunkCoord, List<DelayedQueuedCheck>>> it = scheduledRechecks.entrySet().iterator(); it.hasNext();) {
             Map.Entry<ChunkCoord, List<DelayedQueuedCheck>> entry = it.next();
+            if (shouldPurgeScheduled(entry.getKey())) {
+                it.remove();
+                continue;
+            }
             List<DelayedQueuedCheck> list = entry.getValue();
             list.removeIf(delayed -> {
                 if (delayed.timestamp <= now) {
@@ -82,6 +86,11 @@ public class RemovalTaskManager {
                 it.remove();
             }
         }
+    }
+
+    private boolean shouldPurgeScheduled(ChunkCoord coord) {
+        var world = coord.getWorld();
+        return world == null || pluginConfig.isWorldDisabled(world.getName());
     }
 
     public void processChunk(ChunkCoord coord, Consumer<Entity> removalAction) {
