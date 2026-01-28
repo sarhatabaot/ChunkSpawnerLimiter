@@ -45,6 +45,7 @@ public class PluginConfig {
     private Map<String, Integer> blockLimits;
     private Set<String> spawnReasons;
     private Map<String, List<String>> entityGroups;
+    private List<String> worldsList;
 
     /**
      * Constructs a new PluginConfig instance and loads the initial configuration.
@@ -74,6 +75,7 @@ public class PluginConfig {
         loadBlockLimits();
 
         loadSpawnReasons();
+        loadWorldsList();
     }
 
     /**
@@ -376,6 +378,17 @@ public class PluginConfig {
     }
 
     /**
+     * Loads the world list from configuration and caches it locally.
+     * If no worlds are configured, defaults to an empty list.
+     */
+    private void loadWorldsList() {
+        worldsList = Objects.requireNonNullElse(
+                config.getStringList("worlds.list"),
+                List.of()
+        );
+    }
+
+    /**
      * Gets the removal mode for entities that exceed limits.
      *
      * @return the removal mode, defaults to "enforce"
@@ -502,10 +515,7 @@ public class PluginConfig {
      * @return list of world names
      */
     public List<String> getWorldsList() {
-        return Objects.requireNonNullElse(
-                config.getStringList("worlds.list"),
-                List.of()
-        );
+        return worldsList;
     }
 
     /**
