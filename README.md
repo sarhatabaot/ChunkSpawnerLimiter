@@ -16,3 +16,9 @@ This plugin is especially useful for large servers or resource-constrained envir
 * Customizable: Adjust limits via configuration files.
 * Lightweight: Minimal performance impact on your server.
 * Support for Multiple Versions: Works with Minecraft 1.8.8-1.21.10.
+
+## Release Notes (5.0.0)
+
+### Known Limitations
+
+- **Async chunk scanning**: chunk block scans currently run asynchronously for performance. Some server implementations may treat Bukkit world access off the main thread as unsafe. If you encounter instability, consider disabling async scans or switching to synchronous scanning until a thread-safe scan path is introduced.

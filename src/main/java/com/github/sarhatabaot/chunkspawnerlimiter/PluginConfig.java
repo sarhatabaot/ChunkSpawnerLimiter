@@ -8,7 +8,6 @@ import org.bukkit.entity.*;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,7 +43,7 @@ public class PluginConfig {
     private Map<String, Integer> entityLimits;
     private Map<String, Integer> blockLimits;
     private Set<String> spawnReasons;
-    private Map<String, List<String>> entityGroups;
+    private List<String> worldsList;
 
     /**
      * Constructs a new PluginConfig instance and loads the initial configuration.
@@ -67,13 +66,17 @@ public class PluginConfig {
         plugin.reloadConfig();
         this.config = plugin.getConfig();
 
+        this.entityLimits = null;
+
         loadEntityGroups();
         loadEntityLimits();
 
+        this.blockLimits = null;
         loadBlockGroups();
         loadBlockLimits();
 
         loadSpawnReasons();
+        loadWorldsList();
     }
 
     /**
@@ -182,14 +185,6 @@ public class PluginConfig {
         return config.getInt("events.inspections.frequency", 300);
     }
 
-    /**
-     * Gets the radius (in chunks) around a target chunk to include in inspections.
-     *
-     * @return the surrounding chunks radius
-     */
-    public int getSurroundingChunksRadius() {
-        return config.getInt("events.chunk.surrounding-chunks-radius", 1);
-    }
 
     /**
      * Loads block groups from the configuration.
@@ -376,6 +371,17 @@ public class PluginConfig {
     }
 
     /**
+     * Loads the world list from configuration and caches it locally.
+     * If no worlds are configured, defaults to an empty list.
+     */
+    private void loadWorldsList() {
+        worldsList = Objects.requireNonNullElse(
+                config.getStringList("worlds.list"),
+                List.of()
+        );
+    }
+
+    /**
      * Gets the removal mode for entities that exceed limits.
      *
      * @return the removal mode, defaults to "enforce"
@@ -502,10 +508,7 @@ public class PluginConfig {
      * @return list of world names
      */
     public List<String> getWorldsList() {
-        return Objects.requireNonNullElse(
-                config.getStringList("worlds.list"),
-                List.of()
-        );
+        return worldsList;
     }
 
     /**

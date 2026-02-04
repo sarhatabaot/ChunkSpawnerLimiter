@@ -29,7 +29,8 @@ public final class CSLLogger {
     }
 
     public static void debug(Supplier<String> messageSupplier) {
-        if (pluginConfig.isDebugMessages()) {
+
+        if (pluginConfig != null && pluginConfig.isDebugMessages()) {
             log("DEBUG " + messageSupplier.get());
         }
     }

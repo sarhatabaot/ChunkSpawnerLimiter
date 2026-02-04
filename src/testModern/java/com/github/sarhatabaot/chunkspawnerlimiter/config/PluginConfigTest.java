@@ -287,7 +287,6 @@ class PluginConfigTest {
         // Given
         when(mockConfig.getBoolean("events.inspections.enabled", true)).thenReturn(true);
         when(mockConfig.getInt("events.inspections.frequency", 300)).thenReturn(600);
-        when(mockConfig.getInt("events.chunk.surrounding-chunks-radius", 1)).thenReturn(2);
 
         // When
         pluginConfig.reload();
@@ -295,6 +294,5 @@ class PluginConfigTest {
         // Then
         assertThat(pluginConfig.isActiveInspections()).isTrue();
         assertThat(pluginConfig.getInspectionFrequency()).isEqualTo(600);
-        assertThat(pluginConfig.getSurroundingChunksRadius()).isEqualTo(2);
     }
 }
