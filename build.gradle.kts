@@ -4,31 +4,76 @@ plugins {
     java
     alias(libs.plugins.shadow)
     alias(libs.plugins.plugin.yml)
+    alias(libs.plugins.run.paper)
 }
-version = "4.4.4"
-description = "Limit entities in chunks."
+
+group = "com.github.sarhatabaot"
+version = "5.0.0"
+description = "Limit blocks & entities in chunks."
 
 dependencies {
     compileOnly(libs.spigot.api)
+    compileOnly(libs.nbt.api)
 
     implementation(libs.bstats)
-    implementation(libs.acf)
     implementation(libs.annotations)
+    implementation(libs.jcip)
+
+    implementation(libs.commands)
+
+    testImplementation(libs.mockbukkit)
+    testImplementation(libs.assertj.core)
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+        vendor.set(JvmVendorSpec.ADOPTIUM)
+    }
+}
 bukkit {
-    name = "ChunkSpawnerLimiter"
-    main = "com.cyprias.chunkspawnerlimiter.ChunkSpawnerLimiter"
+    name = rootProject.name
+    main = "com.github.sarhatabaot.chunkspawnerlimiter.ChunkSpawnerLimiter"
     version = project.version.toString()
-    apiVersion = "1.14"
+    website = "https://github.com/sarhatabaot/ChunkSpawnerLimiter"
     authors = listOf("Cyprias", "sarhatabaot")
-    website = "https://github.com/Cyprias/ChunkSpawnerLimiter"
-    description = "Limit entities in chunks."
     load = BukkitPluginDescription.PluginLoadOrder.POSTWORLD
     prefix = "CSL"
+    apiVersion = "1.13"
+    softDepend = listOf("NBTAPI") //todo, this way we keep it small
 }
 
 tasks {
+    runServer {
+        //use this to manually test various version load, probably should use docker with ci/cd for the automated version
+        //todo amazing 1.13-1.16 breaks with jvm 21, the rest works, lmao, mention this on the website
+        minecraftVersion("1.20.1")
+        jvmArgs("-Dcom.mojang.eula.agree=true")
+    }
+
+
+    // Define your versions
+    val minecraftVersions = listOf("1.8.8", "1.9.4", "1.12.2", "1.16.5", "1.20.1", "1.21.10")
+
+    // Create tasks for each version
+    minecraftVersions.forEach { version ->
+        // Convert version to valid task name (replace dots with underscores)
+        val taskName = "runServer${version.replace(".", "_")}"
+
+        register(taskName) {
+            group = "minecraft"
+            description = "Run Minecraft server version $version"
+            dependsOn(runServer)
+            doFirst {
+                // Set the minecraft version on the base task
+                (runServer.get() as Task).extensions.extraProperties.set("minecraftVersion", version)
+                (runServer.get() as Task).extensions.extraProperties.set("jvmArgs", "-Dcom.mojang.eula.agree=true")
+                // Or if runServer has a property/method for setting version:
+                // runServer.get().setMinecraftVersion(version)
+            }
+        }
+    }
+
     build {
         dependsOn(shadowJar)
     }
@@ -36,26 +81,122 @@ tasks {
     shadowJar {
         minimize()
 
-        exclude("META-INF/**")
-
         archiveFileName.set("chunkspawnerlimiter-${project.version}.jar")
         archiveClassifier.set("shadow")
 
-        relocate("org.bstats", "com.cyprias.chunkspawnerlimiter.libs.bstats")
-        relocate("co.aikar.commands", "com.cyprias.chunkspawnerlimiter.libs.acf")
-        relocate("co.aikar.locales", "com.cyprias.chunkspawnerlimiter.libs.locales")
+        exclude("META-INF/**")
+
+        relocate("me.despical.commandframework","com.github.sarhatabaot.chunkspawnerlimiter.libs")
+        relocate("org.bstats", "com.github.sarhatabaot.chunkspawnerlimiter.libs")
     }
 
     compileJava {
-        options.compilerArgs.add("-parameters")
-        options.isFork = true
         options.encoding = "UTF-8"
     }
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(8))
-        vendor.set(JvmVendorSpec.ADOPTIUM)
+testing {
+    suites {
+        // Unit tests - version agnostic
+        val test by getting(JvmTestSuite::class) {
+            useJUnitJupiter()
+
+            dependencies {
+                implementation(libs.spigot.api)
+                implementation(libs.adventure.api)
+                implementation(libs.junit.api)
+                runtimeOnly(libs.junit.engine)
+                implementation(libs.mockito.core)
+                implementation(libs.mockito.junit.jupiter)
+                implementation(libs.assertj.core)
+                implementation(libs.commands)
+            }
+
+            targets {
+                all {
+                    testTask.configure {
+                        useJUnitPlatform()
+                    }
+                }
+            }
+        }
+
+        // Legacy integration tests (1.8-1.12)
+        val testLegacy by creating(JvmTestSuite::class) {
+            useJUnitJupiter()
+
+            sources {
+                java {
+                    srcDir("src/testLegacy/java")
+                    compileClasspath += project.sourceSets.main.get().output
+                    runtimeClasspath += project.sourceSets.main.get().output
+                }
+            }
+
+            dependencies {
+                implementation(libs.spigot.api)
+                implementation(libs.adventure.api)
+                implementation(libs.bstats)
+                implementation(libs.junit.api)
+                runtimeOnly(libs.junit.engine)
+                implementation(libs.mockito.core)
+                implementation(libs.mockito.junit.jupiter)
+                implementation(libs.assertj.core)
+                implementation(libs.mockbukkit.legacy)
+                implementation(libs.commands)
+            }
+
+            targets {
+                all {
+                    testTask.configure {
+                        useJUnitPlatform()
+                        group = "verification"
+                        description = "Runs legacy integration tests for Minecraft 1.8-1.12"
+                    }
+                }
+            }
+        }
+
+        // Modern integration tests (1.17+)
+        val testModern by creating(JvmTestSuite::class) {
+            useJUnitJupiter()
+
+            sources {
+                java {
+                    srcDir("src/testModern/java")
+                    compileClasspath += project.sourceSets.main.get().output
+                    runtimeClasspath += project.sourceSets.main.get().output
+                }
+            }
+
+            dependencies {
+                implementation(libs.paper.api)
+                implementation(libs.adventure.api)
+                implementation(libs.junit.api)
+                runtimeOnly(libs.junit.engine)
+                implementation(libs.mockito.core)
+                implementation(libs.mockito.junit.jupiter)
+                implementation(libs.assertj.core)
+                implementation(libs.mockbukkit)
+                implementation(libs.commands)
+            }
+
+            targets {
+                all {
+                    testTask.configure {
+                        useJUnitPlatform()
+                        group = "verification"
+                        description = "Runs modern integration tests for Minecraft 1.17+"
+                    }
+                }
+            }
+        }
     }
+}
+
+tasks.named("check") {
+    dependsOn(
+        testing.suites.named("testLegacy"),
+//        testing.suites.named("testModern") for now TODO
+    )
 }

@@ -1,0 +1,155 @@
+package com.github.sarhatabaot.chunkspawnerlimiter.command;
+
+import com.github.sarhatabaot.chunkspawnerlimiter.ChunkSpawnerLimiter;
+import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.Checks;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.ExternalChecks;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
+import me.despical.commandframework.CommandArguments;
+import me.despical.commandframework.annotations.Command;
+import me.despical.commandframework.annotations.Completer;
+import org.bukkit.Material;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.EntityType;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class AdminCommand {
+
+
+    private final ChunkSpawnerLimiter plugin;
+    private final RemovalTaskManager removalTaskManager;
+    private final PluginConfig pluginConfig;
+
+    public AdminCommand(ChunkSpawnerLimiter plugin, RemovalTaskManager removalTaskManager, PluginConfig pluginConfig) {
+        this.plugin = plugin;
+        this.removalTaskManager = removalTaskManager;
+        this.pluginConfig = pluginConfig;
+    }
+
+    @Command(
+            name = "csl",
+            aliases = {"csl.help", "csl.version"},
+            permission = "csl"
+    )
+    public void onHelp(@NotNull CommandArguments arguments) {
+        int page = arguments.getArgumentAsInt(0);
+
+        showHelpPage(arguments.getSender(), page);
+    }
+
+    private void showHelpPage(CommandSender sender, int page) {
+        List<String> helpPages = List.of(
+                // Page 1 - Basic Commands
+                """
+                &6&lChunkSpawnerLimiter v%s Help &7(Page 1/2)
+                &e/csl chunk info &7- Show chunk spawner info
+                &7View current chunk's spawner counts
+                &e/csl help [page] &7- Show help menu
+                """.formatted(plugin.getDescription().getVersion()),
+                """
+                &6&lChunkSpawnerLimiter Help &7(Page 2/2)
+                &6Admin Commands:
+                &e/csl version &7- Show plugin version
+                &e/csl reload &7- Reload configuration
+                &e/csl search entities &7- List entity types
+                &e/csl search blocks &7- List block materials
+               """
+        );
+
+        int maxPage = helpPages.size();
+        if (page < 1 || page > maxPage) {
+            page = 1;
+        }
+
+        String pageContent = helpPages.get(page - 1);
+        for (String line : pageContent.split("\n")) {
+            sender.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', line));
+        }
+
+        sender.sendMessage(org.bukkit.ChatColor.GRAY +
+                "Use /csl help " + (page % maxPage + 1) + " for next page");
+    }
+
+    @Command(
+            name = "csl.reload",
+            permission = "csl.reload"
+    )
+    public void onReload(@NotNull CommandArguments arguments) {
+        this.plugin.onReload();
+
+        RemovalMode.reload(removalTaskManager);
+        Checks.setup(pluginConfig);
+        ExternalChecks.setup(pluginConfig);
+
+        arguments.getSender().sendMessage("Reloaded config and updated all systems.");
+    }
+
+    /*
+TODO
+5.0.0 RC3
+Show specific chunk info counters. Either in a clickable list format or something like that.
+Optionally users should be able to view this, so they know when to stop placing?
+Mention that the user can see all the entity amounts using /spark profiler
+/csl chunk - shows all options - can click on a chunk to show info
+/csl chunk info - show current chunk info
+/csl chunk info <optional> - shows a specific chunk
+*/
+    @Command(
+            name = "csl.chunk.info"
+    )
+    public void onChunkInfo(CommandArguments commandArguments) {
+        commandArguments.getSender().sendMessage("Not implemented yet.");
+    }
+
+    private static final List<String> ENTITY_NAMES =
+            Arrays.stream(EntityType.values()).map(Enum::name).toList();
+
+    private static final List<String> MATERIAL_NAMES =
+            Arrays.stream(Material.values())
+                    .filter(m -> m != Material.AIR)
+                    .map(Enum::name)
+                    .toList();
+
+    @Command(
+            name = "csl.search.entities"
+    )
+    public void onSearchEntities(@NotNull CommandArguments arguments) {
+        arguments.getSender().sendMessage(Arrays.stream(EntityType.values())
+                .map(Enum::name)
+                .collect(Collectors.joining(", ")));
+    }
+
+    @Completer(
+            name = "csl.search.entities"
+    )
+    public List<String> onSearchEntitiesCompletion() {
+        return ENTITY_NAMES;
+    }
+
+    @Command(
+            name = "csl.search.blocks"
+    )
+    public void onSearchBlocks(@NotNull CommandArguments arguments) {
+        arguments.getSender().sendMessage(Arrays.stream(Material.values())
+                .filter(material -> material != Material.AIR)
+                .map(Enum::name)
+                .collect(Collectors.joining(", ")));
+    }
+
+    @Completer(
+            name = "csl.search.blocks"
+    )
+    public List<String> onSearchBlocksCompletion() {
+        return MATERIAL_NAMES;
+    }
+
+
+
+
+
+}

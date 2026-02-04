@@ -1,123 +1,119 @@
-properties:
-  # Show debug messages.
-  debug-messages: false
-
-  # Check a chunk upon load (ChunkLoadEvent).
-  check-chunk-load: false
-  
-  # Check a chunk upon unload (ChunkUnloadEvent).
-  check-chunk-unload: false
-
-  # When a chunk is loaded, recheck it periodically.
-  # Check-chunk-load must be true for this to work.
-  active-inspections: true
-  
-  # Check a chunk when a mob spawns (CreatureSpawnEvent).
-  watch-creature-spawns: true
-
-  # Check a chunk when a vehicle spawns (VehicleCreateEvent).
-  watch-vehicle-create-event: true
-
-  # Check a chunk when an entity spawns (ArmorStand)
-  watch-entity-spawns: true
-
-  # Radius of surrounding chunks to check.
-  check-surrounding-chunks: 1
-
-  # How often, in seconds, to check the chunk.
-  inspection-frequency: 300
-  
-  # Notify players in that chunk if stuff has been culled. 
-  notify-players: false
-
-  # Prioritize entities without names over older entities.
-  preserve-named-entities: true
-
-  # Don't remove pillagers that are part of a raid.
-  preserve-raid-entities: true
-
-  # Ignore entities with any of the following metadata.
-  ignore-metadata:
-    - shopkeeper
-
-  kill-instead-of-remove: false
-
-  # Only relevant if kill-instead-of-remove is used (unless paper's tick setting is set to false)
-  # Drops the items from the armor stands, i.e. helmet, etc
-  drop-items-from-armor-stands: false
-
-  log-armor-stand-tick-warning: true
-
-# Spawn reasons to cull on.
-spawn-reasons:
-  BREEDING: true
-  BUILD_IRONGOLEM: true
-  BUILD_SNOWMAN: true
-  BUILD_WITHER: true
-  CHUNK_GEN: true
-  DEFAULT: true
-  DISPENSE_EGG: true
-  DROWNED: true
-  EGG: true
-  JOCKEY: true
-  LIGHTNING: true
-  MOUNT: true
-  NATURAL: true
-  NETHER_PORTAL: true
-  OCELOT_BABY: true
-  REINFORCEMENTS: true #proabably animals
-  SILVERFISH_BLOCK: true
-  SPAWNER: true
-  SPAWNER_EGG: true
-  TRAP: true
-  VILLAGE_DEFENSE: true
-  VILLAGE_INVASION: true
-
-entities:
-  ANIMAL: 50
-  MONSTER: 50
-  NPC: 50
-  OTHER: 500
-#  WATER_MOB: 5
-#  AMBIENT: 5
-#  CREEPER: 10
-#  SHEEP: 10
-#  OCELOT: 10
-#  GIANT: 10
-#  SLIME: 10
-#  GHAST: 10
-#  PIG_ZOMBIE: 10
-#  ENDERMAN: 10
-#  SILVERFISH: 10
-#  MAGMA_CUBE: 10
-#  CHICKEN: 10
-#  SQUID: 10
-#  WOLF: 10
-#  MUSHROOM_COW: 10
-#  SNOWMAN: 10
-#  VILLAGER: 10
-#  SPIDER: 10
-#  SKELETON: 10
-#  ZOMBIE: 10
-#  BLAZE: 10
-#  CAVE_SPIDER: 10
-#  IRON_GOLEM: 10
-#  WITHER: 10
-#  PIG: 10
-#  HORSE: 10
-#  WITCH: 10
-
-# Exclude these worlds from limits.
-worlds:
-  # Can be "excluded" or "included"
-  mode: excluded
-  worlds: []
-
-messages:
-  removedEntities: "&7Removed %s %s in your chunk."
-  reloadedConfig: "&cReloaded csl config."
-  maxAmountBlocks: "&6Cannot place more &4{material}&6. Max amount per chunk &2{amount}."
-  maxAmountBlocksTitle: "&6Cannot place more &4{material}&6."
-  maxAmountBlocksSubtitle: "&6Max amount per chunk &2{amount}."
-
+# Main toggle and debug settings
+enabled: true
+debug-messages: false
 metrics: true
+
+# This config is written with 1.21.10 in mind, but is still compatible with earlier versions. Make sure to convert the values
+# Event monitoring configuration
+events:
+  spawn:
+    creature: true
+    vehicle: true
+    entity: true
+  inspections:
+    # This will recheck loaded chunks every {frequency} seconds
+    enabled: true
+    frequency: 60
+
+# Entity management settings
+entities:
+  entity-groups:
+    ANIMALS:
+      - COW
+      - SHEEP
+      - PIG
+      - CHICKEN
+    MONSTERS:
+      - ZOMBIE
+      - SKELETON
+      - CREEPER
+    NPC:
+      - VILLAGER
+    VEHICLE:
+      - MINECART
+  limits:
+    ANIMALS: 50
+    MONSTERS: 50
+    NPC: 50
+    OTHER: 500
+  preservation:
+    named-entities: true
+    raid-entities: true
+  removal:
+    mode: "enforce"
+    # Options:
+    # "enforce" - Actively clean up existing chunks (remove) AND prevent new violations
+    # "enforce-kill" - Actively clean up existing chunks (kill) AND prevent new violations
+    # "prevent" - Only prevent new entities/blocks from exceeding limits
+    # "remove" - Instantly remove excess entities without effects
+    # "kill" - Kill excess entities with death effects/drops
+    armor-stand:
+      drop: false
+      log-warnings: true
+    # This will allow players to be killed by CSL, if they reach the set limit in entities.
+    # This will work with kill, remove, enforce & enforce kill. Since we can't "remove" players in those modes the players will be killed.
+    kill-players: false
+  ignore:
+    metadata:
+      - shopkeeper
+    # This will only work if you have NBTAPI Installed https://modrinth.com/plugin/nbtapi
+    nbt:
+      - "tag"
+
+# Spawn reason filtering
+# To disable, just remove what you don't want.
+spawn-reasons:
+  - "BREEDING"
+  - "BUILD_IRONGOLEM"
+  - "BUILD_SNOWMAN"
+  - "BUILD_WITHER"
+  - "CHUNK_GEN"
+  - "DEFAULT"
+  - "DISPENSE_EGG"
+  - "DROWNED"
+  - "EGG"
+  - "JOCKEY"
+  - "LIGHTNING"
+  - "MOUNT"
+  - "NATURAL"
+  - "NETHER_PORTAL"
+  - "OCELOT_BABY"
+  - "REINFORCEMENTS"
+  - "SILVERFISH_BLOCK"
+  - "SPAWNER"
+  - "SPAWNER_EGG"
+  - "TRAP"
+  - "VILLAGE_DEFENSE"
+  - "VILLAGE_INVASION"
+
+# Block restrictions
+blocks:
+  block-groups:
+    basic:
+      - "STONE"
+      - "DIRT"
+    ores:
+      - "DIAMOND_BLOCK"
+      - "GOLD_BLOCK"
+  limits:
+    SPAWNER: 10
+
+# World configuration
+worlds:
+  mode: excluded  # "excluded" or "included"
+  list: []
+
+# Player notification settings
+notifications:
+  enabled: false
+  cooldown-seconds: 3
+  method:
+    title: true
+    message: false
+  messages:
+    entities-blocked: "&7Blocked {count} {type} from spawning in your chunk."
+    entities-removed: "&7Removed {count} {type} in your chunk."
+    reload-complete: "&cReloaded csl config."
+    max-blocks: "&6Cannot place more &4{material}&6. Max amount per chunk &2{amount}."
+    max-blocks-title: "&6Cannot place more &4{material}&6."
+    max-blocks-subtitle: "&6Max amount per chunk &2{amount}."

@@ -16,7 +16,7 @@ body:
     attributes:
       label: "Plugin Version"
       description: "Which version of the plugin are you using?"
-      placeholder: "e.g. 4.3.12"
+      placeholder: "e.g. 5.0.0"
   - type: textarea
     id: expected-behavior
     attributes:
