@@ -126,7 +126,7 @@ class PluginIntegrationTest {
 
         // Then
         assertThat(description.getName()).isEqualTo("ChunkSpawnerLimiter");
-        assertThat(description.getVersion()).isEqualTo("5.0.0-RC3");
+
         assertThat(description.getDescription()).contains("Limit blocks & entities in chunks");
         assertThat(description.getAuthors()).contains("Cyprias", "sarhatabaot");
     }

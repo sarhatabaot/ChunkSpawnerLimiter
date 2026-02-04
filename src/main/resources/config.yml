@@ -104,12 +104,11 @@ worlds:
   list: []
 
 # Player notification settings
-# todo This should probably be configured, per user, with a permission to toggle.
 notifications:
   enabled: false
   cooldown-seconds: 3
   method:
-    title: false
+    title: true
     message: false
   messages:
     entities-blocked: "&7Blocked {count} {type} from spawning in your chunk."
