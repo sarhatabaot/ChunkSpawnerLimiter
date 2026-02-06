@@ -50,7 +50,7 @@ public class SpawnEggUtil {
             // For 1.8.8 compatibility, we use the legacy monster egg system
             // Most entities use MONSTER_EGG with metadata to determine the entity type
             return Material.MONSTER_EGG;
-        } catch (IllegalArgumentException e) {
+        } catch (NoSuchFieldError | IllegalArgumentException e) {
             // If MONSTER_EGG doesn't exist, try the modern system
             try {
                 String materialName = entityType.name() + "_SPAWN_EGG";
