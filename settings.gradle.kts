@@ -29,7 +29,7 @@ dependencyResolutionManagement {
 
             library("adventure-api", "net.kyori:adventure-api:4.14.0")
             library("mockbukkit", "org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.98.4")
-            library("mockbukkit-legacy", "com.github.MockBukkit:MockBukkit:v1.8-SNAPSHOT")
+            library("mockbukkit-legacy", "com.github.MockBukkit:MockBukkit:2ab2b498cd")
 
             plugin("run-paper", "xyz.jpenilla.run-paper").version("2.3.1")
             plugin("shadow", "com.gradleup.shadow").version("9.2.2")

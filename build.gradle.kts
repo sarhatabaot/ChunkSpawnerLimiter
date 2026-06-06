@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.github.sarhatabaot"
-version = "5.0.1"
+version = "5.0.2"
 description = "Limit blocks & entities in chunks."
 
 dependencies {
