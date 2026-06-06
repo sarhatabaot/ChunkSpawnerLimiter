@@ -23,15 +23,18 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
 
 public class EventListener implements Listener {
+    private final Plugin plugin;
     private final PluginConfig pluginConfig;
     private final CounterDataManager counterDataManager;
     private final NotificationService notificationService;
 
-    public EventListener(PluginConfig pluginConfig, CounterDataManager counterDataManager, NotificationService notificationService) {
+    public EventListener(Plugin plugin, PluginConfig pluginConfig, CounterDataManager counterDataManager, NotificationService notificationService) {
+        this.plugin = plugin;
         this.pluginConfig = pluginConfig;
         this.counterDataManager = counterDataManager;
         this.notificationService = notificationService;
@@ -130,8 +133,12 @@ public class EventListener implements Listener {
                 counterData.getEntityCount(entityType), 
                 entityTypeLimit != null ? String.valueOf(entityTypeLimit) : "unlimited"
             ));
-            
-            counterData.incrementEntity(entityType);
+
+            if (pluginConfig.shouldDelayEntityCountForCompatibility()) {
+                scheduleEntityCountFinalization(entity);
+            } else {
+                counterData.incrementEntity(entityType);
+            }
             return;
         }
 
@@ -210,5 +217,27 @@ public class EventListener implements Listener {
         counterData.decrementEntity(vehicle.getType());
     }
 
+    private void scheduleEntityCountFinalization(@NotNull Entity entity) {
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            if (!entity.isValid()) {
+                return;
+            }
+
+            if (pluginConfig.isWorldDisabled(entity.getWorld().getName())) {
+                return;
+            }
+
+            if (Checks.shouldSkipPlayers(entity) || !pluginConfig.hasResolvedEntityLimit(entity.getType())) {
+                return;
+            }
+
+            final Chunk chunk = entity.getLocation().getChunk();
+            if (!chunk.isLoaded()) {
+                return;
+            }
+
+            counterDataManager.getCounterData(ChunkCoord.from(chunk)).incrementEntity(entity.getType());
+        });
+    }
 
 }

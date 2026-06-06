@@ -36,6 +36,13 @@ entities:
     MONSTERS: 50
     NPC: 50
     OTHER: 500
+  compatibility:
+    # When enabled, CSL waits one tick before counting freshly spawned entities.
+    # This lets stacking plugins such as WildStacker merge and discard transient
+    # spawn entities so CSL counts the surviving stack entity instead.
+    # Options: auto, true, false
+    # "auto" enables this when a known stacking plugin is installed.
+    defer-count-until-next-tick: auto
   preservation:
     named-entities: true
     raid-entities: true

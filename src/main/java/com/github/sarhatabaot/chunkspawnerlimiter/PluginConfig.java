@@ -429,6 +429,28 @@ public class PluginConfig {
     }
 
     /**
+     * Checks whether entity counts should be finalized one tick after spawn so stacking plugins
+     * can merge and discard transient entities before they are counted.
+     *
+     * <p>The default is enabled when a known stacking plugin is present and can be overridden
+     * explicitly in the config.</p>
+     *
+     * @return true if entity counting should be delayed for stacking-plugin compatibility
+     */
+    public boolean shouldDelayEntityCountForCompatibility() {
+        String mode = config.getString("entities.compatibility.defer-count-until-next-tick", "auto");
+        if (mode == null) {
+            return hasKnownStackingPlugin();
+        }
+
+        return switch (mode.toLowerCase(Locale.ROOT)) {
+            case "true", "enabled", "on", "yes" -> true;
+            case "false", "disabled", "off", "no" -> false;
+            default -> hasKnownStackingPlugin();
+        };
+    }
+
+    /**
      * Gets the list of metadata keys that should be ignored when checking entities.
      * Entities with any of these metadata keys will not be counted or removed.
      *
@@ -624,5 +646,11 @@ public class PluginConfig {
      */
     public boolean isKillPlayers() {
         return config.getBoolean("entities.removal.kill-players", false);
+    }
+
+    private boolean hasKnownStackingPlugin() {
+        return plugin.getServer().getPluginManager().isPluginEnabled("WildStacker")
+                || plugin.getServer().getPluginManager().isPluginEnabled("RoseStacker")
+                || plugin.getServer().getPluginManager().isPluginEnabled("UltimateStacker");
     }
 }

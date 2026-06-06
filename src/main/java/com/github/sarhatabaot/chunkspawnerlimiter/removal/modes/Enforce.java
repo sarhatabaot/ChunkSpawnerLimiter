@@ -8,7 +8,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -59,9 +58,7 @@ public final class Enforce implements RemovalMode {
         event.setCancelled(true);
 
         if (event instanceof BlockPlaceEvent blockPlaceEvent) {
-            final ItemStack itemReturned = blockPlaceEvent.getItemInHand();
-            itemReturned.setAmount(1);
-            blockPlaceEvent.getPlayer().getInventory().addItem(itemReturned);
+            blockPlaceEvent.getPlayer().updateInventory();
         }
     }
 }
