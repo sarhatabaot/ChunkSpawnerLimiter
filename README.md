@@ -1,3 +1,12 @@
+> [!NOTE]
+> **Project Status: Slowing Down**
+>
+> This project isn't going anywhere, but I'm gradually shifting it towards **maintenance mode**.
+>
+> I'll continue fixing bugs, updating compatibility when needed, and reviewing pull requests, but I want to be realistic about my available time. New features will be much less frequent than they have been in the past.
+>
+> Thanks to everyone who's used the plugin, reported issues, suggested ideas, or contributed. I really appreciate it, and I hope to keep this project useful for a long time, even if development slows down.
+
 # ChunkSpawnerLimiter
 
 [![Codacy Badge](https://img.shields.io/codacy/grade/d3eefde107a2471d856542804c4a3016?logo=codacy&style=for-the-badge)](https://app.codacy.com/gh/sarhatabaot/ChunkSpawnerLimiter/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
