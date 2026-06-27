@@ -33,7 +33,7 @@ dependencyResolutionManagement {
 
             plugin("run-paper", "xyz.jpenilla.run-paper").version("2.3.1")
             plugin("shadow", "com.gradleup.shadow").version("9.4.3")
-            plugin("plugin-yml", "de.eldoria.plugin-yml.bukkit").version("0.8.0")
+            plugin("plugin-yml", "de.eldoria.plugin-yml.bukkit").version("0.9.0")
         }
     }
 
