@@ -5,11 +5,13 @@ import com.github.sarhatabaot.chunkspawnerlimiter.command.AdminCommand;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.listener.ChunkListener;
 import com.github.sarhatabaot.chunkspawnerlimiter.listener.EventListener;
+import com.github.sarhatabaot.chunkspawnerlimiter.listener.DespawnListener;
 import com.github.sarhatabaot.chunkspawnerlimiter.notification.NotificationService;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.Checks;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.ExternalChecks;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
+import com.github.sarhatabaot.chunkspawnerlimiter.tracker.EntityChunkTracker;
 import me.despical.commandframework.CommandFramework;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SimplePie;
@@ -26,6 +28,7 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
     private CounterDataManager counterDataManager;
     private PluginConfig pluginConfig;
     private NotificationService notificationService;
+    private EntityChunkTracker entityChunkTracker;
 
     @Override
     public void onEnable() {
@@ -39,12 +42,19 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         this.removalTaskManager = new RemovalTaskManager(this, counterDataManager, pluginConfig);
         this.notificationService = new NotificationService(pluginConfig);
 
+        // Entity chunk tracker for cross-chunk movement detection (polls every 2s / 40 ticks)
+        this.entityChunkTracker = new EntityChunkTracker(
+                this,
+                counterDataManager,
+                pluginConfig::hasResolvedEntityLimit,
+                40L
+        );
+
         try {
             CommandFramework commandFramework = new CommandFramework(this);
             commandFramework.registerCommands(new AdminCommand(this, removalTaskManager, pluginConfig));
         } catch (IllegalStateException e) {
             if (e.getMessage().contains("Command Framework has not been relocated")) {
-                // During testing, the library may not be relocated, skip command framework initialization
                 getLogger().fine("Command Framework initialization skipped during testing: " + e.getMessage());
             } else {
                 throw e;
@@ -54,18 +64,15 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         RemovalMode.setup(removalTaskManager);
 
         PluginManager pluginManager = Bukkit.getPluginManager();
-        pluginManager.registerEvents(new ChunkListener(this, pluginConfig, counterDataManager, removalTaskManager), this);
-        pluginManager.registerEvents(new EventListener(this, pluginConfig, counterDataManager, notificationService), this);
+        pluginManager.registerEvents(new ChunkListener(this, pluginConfig, counterDataManager, removalTaskManager, entityChunkTracker), this);
+        pluginManager.registerEvents(new EventListener(this, pluginConfig, counterDataManager, notificationService, entityChunkTracker), this);
+        DespawnListener.registerIfSupported(this, pluginConfig, counterDataManager, entityChunkTracker);
 
         if (pluginConfig.isMetrics()) {
             try {
                 Metrics metrics = new Metrics(this, 4195);
                 metrics.addCustomChart(new SimplePie("removal_mode", () -> pluginConfig.getRemovalMode().getKey()));
-                //entities removed
-                //blocks removed
-                //average settings?
             } catch (Exception e) {
-                // Silently skip bStats initialization if classes are not available (e.g., during testing)
                 getLogger().fine("bStats metrics initialization skipped: " + e.getMessage());
             }
         }
@@ -77,6 +84,7 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         this.removalTaskManager = null;
         this.pluginConfig = null;
         this.notificationService = null;
+        this.entityChunkTracker = null;
     }
 
     public void onReload() {
@@ -97,6 +105,10 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
 
     public RemovalTaskManager getRemovalTaskManager() {
         return removalTaskManager;
+    }
+
+    public EntityChunkTracker getEntityChunkTracker() {
+        return entityChunkTracker;
     }
 
     public ChunkSpawnerLimiter() {

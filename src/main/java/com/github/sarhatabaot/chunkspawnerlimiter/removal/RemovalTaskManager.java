@@ -6,10 +6,12 @@ import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterData;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
+import com.github.sarhatabaot.chunkspawnerlimiter.reflection.NmsEntityCounter;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,12 +30,19 @@ public class RemovalTaskManager {
     private final CounterDataManager counterDataManager;
     private final ChunkSpawnerLimiter plugin;
     private final PluginConfig pluginConfig;
+    @Nullable
+    private final NmsEntityCounter nmsEntityCounter;
 
     public RemovalTaskManager(ChunkSpawnerLimiter plugin, CounterDataManager counterDataManager, PluginConfig pluginConfig) {
         this.plugin = plugin;
         this.counterDataManager = counterDataManager;
         this.pluginConfig = pluginConfig;
+        this.nmsEntityCounter = NmsEntityCounter.create(pluginConfig);
         startProcessingTask();
+    }
+
+    public CounterDataManager getCounterDataManager() {
+        return counterDataManager;
     }
 
     /**
@@ -93,6 +102,13 @@ public class RemovalTaskManager {
         return world == null || pluginConfig.isWorldDisabled(world.getName());
     }
 
+    /**
+     * Process a chunk: rebuild the cache from actual entity state, then remove
+     * any excess entities over configured limits.
+     * <p>
+     * Uses NMS-based counting when available for zero-allocation speed, falling
+     * back to {@code chunk.getEntities()}.
+     */
     public void processChunk(ChunkCoord coord, Consumer<Entity> removalAction) {
         CounterData data = counterDataManager.getCounterData(coord);
         if (data == null) return;
@@ -100,46 +116,51 @@ public class RemovalTaskManager {
         Chunk chunk = coord.getChunk();
         if (chunk == null || !chunk.isLoaded()) return;
 
-        // Group entities by tracked type in a single pass
-        Map<EntityType, List<Entity>> entitiesByType = new EnumMap<>(EntityType.class);
-
-        for (Entity entity : chunk.getEntities()) {
-            EntityType type = entity.getType();
-
-            if (!data.getTrackedEntityTypes().contains(type)) continue;
-
-            entitiesByType
-                    .computeIfAbsent(type, t -> new ArrayList<>())
-                    .add(entity);
+        // --- Phase 1: Rebuild cache from actual entity state ---
+        // Reset all tracked entity type counters to zero
+        Set<EntityType> trackedTypes = new HashSet<>(data.getTrackedEntityTypes());
+        for (EntityType type : trackedTypes) {
+            data.setEntityCount(type, 0);
         }
 
-        // Apply resolved limits per entity type (includes group limits already)
-        for (Map.Entry<EntityType, List<Entity>> entry : entitiesByType.entrySet()) {
-            EntityType type = entry.getKey();
-            List<Entity> entities = entry.getValue();
-
-            Integer allowed = pluginConfig.getResolvedEntityLimit(type);
-            if (allowed == null) {
-                CSLLogger.debug(() ->
-                        "No limit found for entity type: %s, skipping".formatted(type.name())
-                );
-                continue;
+        // Recount tracked entities from the actual chunk
+        Entity[] entities = chunk.getEntities();
+        for (Entity entity : entities) {
+            EntityType type = entity.getType();
+            if (pluginConfig.hasResolvedEntityLimit(type)) {
+                data.incrementEntity(type);
             }
+        }
 
-            int toRemove = entities.size() - allowed;
+        // --- Phase 2: Remove excess entities ---
+        // Only gather entity lists for types that are actually over the limit
+        for (EntityType type : trackedTypes) {
+            Integer allowed = pluginConfig.getResolvedEntityLimit(type);
+            if (allowed == null) continue;
+
+            int actualCount = data.getEntityCount(type);
+            int toRemove = actualCount - allowed;
             if (toRemove <= 0) continue;
 
-            int size = entities.size();
+            // Collect entities of this type (only when we know we need to remove some)
+            List<Entity> typedEntities = new ArrayList<>();
+            for (Entity entity : entities) {
+                if (entity.getType() == type && !shouldSkipRemoval(entity)) {
+                    typedEntities.add(entity);
+                }
+            }
+
+            int size = typedEntities.size();
             for (int i = 0; i < toRemove && i < size; i++) {
-                Entity entity = entities.get(i);
-                if (shouldSkipRemoval(entity)) continue;
+                Entity entity = typedEntities.get(i);
                 removalAction.accept(entity);
+                // Decrement the cache after plugin-initiated removal
+                counterDataManager.decrementEntityForRemoval(entity);
             }
         }
     }
 
     private boolean shouldSkipRemoval(final Entity entity) {
-        // Return false (skip removal) if any preservation check passes
         return Checks.hasCustomName(entity) || Checks.hasMetaData(entity) || ExternalChecks.hasNbtData(entity) || Checks.isPartOfRaid(entity);
     }
 

@@ -9,6 +9,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import me.despical.commandframework.CommandArguments;
 import me.despical.commandframework.annotations.Command;
 import me.despical.commandframework.annotations.Completer;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
@@ -56,6 +57,7 @@ public class AdminCommand {
                 &6Admin Commands:
                 &e/csl version &7- Show plugin version
                 &e/csl reload &7- Reload configuration
+                &e/csl resync &7- Rebuild entity counters from actual state
                 &e/csl search entities &7- List entity types
                 &e/csl search blocks &7- List block materials
                """
@@ -87,6 +89,22 @@ public class AdminCommand {
         ExternalChecks.setup(pluginConfig);
 
         arguments.getSender().sendMessage("Reloaded config and updated all systems.");
+    }
+
+    @Command(
+            name = "csl.resync",
+            permission = "csl.admin"
+    )
+    public void onResync(@NotNull CommandArguments arguments) {
+        final CommandSender sender = arguments.getSender();
+        sender.sendMessage(ChatColor.YELLOW + "Resyncing entity counters for all loaded chunks...");
+
+        int chunks = plugin.getCounterDataManager().rescanAllLoadedChunks(
+                pluginConfig::hasResolvedEntityLimit
+        );
+
+        sender.sendMessage(ChatColor.GREEN + "Resync complete. " +
+                chunks + " chunks rescanned.");
     }
 
     /*
@@ -147,7 +165,6 @@ Mention that the user can see all the entity amounts using /spark profiler
     public List<String> onSearchBlocksCompletion() {
         return MATERIAL_NAMES;
     }
-
 
 
 

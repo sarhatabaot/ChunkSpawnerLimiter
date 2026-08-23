@@ -24,6 +24,8 @@ public final class Remove implements RemovalMode {
     @Override
     public void handleEntity(@NotNull Entity entity, @Nullable Cancellable event) {
         entity.remove();
+        // entity.remove() does NOT fire EntityDeathEvent, so we must decrement manually
+        removalTaskManager.getCounterDataManager().decrementEntityForRemoval(entity);
 
         ChunkCoord coord = ChunkCoord.from(entity.getLocation().getChunk());
         removalTaskManager.queueChunkCheck(coord, getEntityRemovalAction());

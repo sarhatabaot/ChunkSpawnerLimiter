@@ -38,6 +38,7 @@ public class PluginConfig {
     private Map<Material, Integer> directBlockLimits;
     private Map<Material, Integer> resolvedBlockLimits;
     private Map<Material, String> blockToGroup;
+    private Set<Material> trackedBlockMaterials;
 
     // Raw configuration data
     private Map<String, Integer> entityLimits;
@@ -74,6 +75,7 @@ public class PluginConfig {
         this.blockLimits = null;
         loadBlockGroups();
         loadBlockLimits();
+        this.trackedBlockMaterials = Collections.unmodifiableSet(resolvedBlockLimits.keySet());
 
         loadSpawnReasons();
         loadWorldsList();
@@ -646,6 +648,25 @@ public class PluginConfig {
      */
     public boolean isKillPlayers() {
         return config.getBoolean("entities.removal.kill-players", false);
+    }
+
+    /**
+     * Gets the set of materials that have configured block limits.
+     * Useful for block scanners to pre-filter which blocks to scan for.
+     *
+     * @return an unmodifiable set of tracked block materials
+     */
+    public Set<Material> getTrackedBlockMaterials() {
+        return trackedBlockMaterials;
+    }
+
+    /**
+     * Checks whether NMS-based entity counting is enabled.
+     *
+     * @return true if NMS entity counting should be used
+     */
+    public boolean isNmsEntityCount() {
+        return config.getBoolean("entities.nms-entity-count", false);
     }
 
     private boolean hasKnownStackingPlugin() {

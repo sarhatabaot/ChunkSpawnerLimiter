@@ -36,6 +36,8 @@ public final class Enforce implements RemovalMode {
 
         if (entity instanceof Vehicle) {
             entity.remove();
+            // entity.remove() does NOT fire EntityDeathEvent, so we must decrement manually
+            removalTaskManager.getCounterDataManager().decrementEntityForRemoval(entity);
         }
 
         ChunkCoord coord = ChunkCoord.from(entity.getLocation().getChunk());

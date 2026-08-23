@@ -1,5 +1,6 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.removal.modes;
 
+import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Vehicle;
@@ -11,6 +12,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.function.Consumer;
 
 public final class Prevent implements RemovalMode {
+    private final RemovalTaskManager removalTaskManager;
+
+    public Prevent(RemovalTaskManager removalTaskManager) {
+        this.removalTaskManager = removalTaskManager;
+    }
+
     @Contract(pure = true)
     public @NotNull String getKey() { return "prevent"; }
 
@@ -22,6 +29,8 @@ public final class Prevent implements RemovalMode {
 
         if (entity instanceof Vehicle) {
             entity.remove();
+            // entity.remove() does NOT fire EntityDeathEvent, so we must decrement manually
+            removalTaskManager.getCounterDataManager().decrementEntityForRemoval(entity);
         }
     }
 

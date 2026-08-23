@@ -83,7 +83,7 @@ public sealed interface RemovalMode
 
     static void reload(@NotNull RemovalTaskManager removalTaskManager) {
         MODES.clear(); // Safe to clear and rebuild
-        MODES.put("prevent", new Prevent());
+        MODES.put("prevent", new Prevent(removalTaskManager));
         MODES.put("remove", new Remove(removalTaskManager));
         MODES.put("kill", new Kill(removalTaskManager));
         MODES.put("enforce", new Enforce(removalTaskManager));

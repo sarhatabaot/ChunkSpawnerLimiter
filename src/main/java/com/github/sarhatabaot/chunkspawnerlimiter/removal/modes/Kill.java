@@ -25,7 +25,14 @@ public final class Kill implements RemovalMode {
     public void handleEntity(@NotNull Entity entity, @Nullable Cancellable event) {
         final Consumer<Entity> action = getEntityRemovalAction();
 
-        action.accept(entity);
+        if (entity instanceof LivingEntity) {
+            // setHealth(0) triggers EntityDeathEvent → counter decremented by event handler
+            action.accept(entity);
+        } else {
+            // entity.remove() does NOT fire EntityDeathEvent, so we must decrement manually
+            action.accept(entity);
+            removalTaskManager.getCounterDataManager().decrementEntityForRemoval(entity);
+        }
 
         ChunkCoord coord = ChunkCoord.from(entity.getLocation().getChunk());
         removalTaskManager.queueChunkCheck(coord, action);

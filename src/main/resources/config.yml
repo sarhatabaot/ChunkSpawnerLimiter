@@ -43,6 +43,9 @@ entities:
     # Options: auto, true, false
     # "auto" enables this when a known stacking plugin is installed.
     defer-count-until-next-tick: auto
+    # Use NMS reflection to count entities directly from chunk internals.
+    # Faster than Bukkit API chunk.getEntities() but version-dependent.
+    nms-entity-count: false
   preservation:
     named-entities: true
     raid-entities: true

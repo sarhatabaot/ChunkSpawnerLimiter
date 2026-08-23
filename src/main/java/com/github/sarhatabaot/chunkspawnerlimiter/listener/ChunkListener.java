@@ -9,6 +9,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.reflection.scanner.BlockScanne
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.Checks;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
+import com.github.sarhatabaot.chunkspawnerlimiter.tracker.EntityChunkTracker;
 import org.bukkit.Chunk;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -23,12 +24,17 @@ public class ChunkListener implements Listener {
     private final PluginConfig pluginConfig;
     private final CounterDataManager counterDataManager;
     private final RemovalTaskManager removalTaskManager;
+    private final EntityChunkTracker chunkTracker;
     private final BlockScanner blockScanner;
 
-    public ChunkListener(Plugin plugin, PluginConfig pluginConfig, CounterDataManager counterDataManager, RemovalTaskManager removalTaskManager) {
+    public ChunkListener(Plugin plugin, PluginConfig pluginConfig,
+                         CounterDataManager counterDataManager,
+                         RemovalTaskManager removalTaskManager,
+                         EntityChunkTracker chunkTracker) {
         this.pluginConfig = pluginConfig;
         this.counterDataManager = counterDataManager;
         this.removalTaskManager = removalTaskManager;
+        this.chunkTracker = chunkTracker;
         this.blockScanner = BlockScannerFactory.create(plugin, pluginConfig, counterDataManager);
     }
 
@@ -74,6 +80,8 @@ public class ChunkListener implements Listener {
 
             if (pluginConfig.hasResolvedEntityLimit(entity.getType())) {
                 counterDataManager.getCounterData(chunkCoord).incrementEntity(entity.getType());
+                // Register with the cross-chunk movement tracker
+                chunkTracker.recordEntry(entity);
             }
         }
     }

@@ -4,6 +4,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.notification.NotificationService;
+import com.github.sarhatabaot.chunkspawnerlimiter.tracker.EntityChunkTracker;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Server;
@@ -40,7 +41,8 @@ class EventListenerTest {
         PluginConfig pluginConfig = mock(PluginConfig.class);
         NotificationService notificationService = mock(NotificationService.class);
         CounterDataManager counterDataManager = new CounterDataManager();
-        EventListener listener = new EventListener(plugin, pluginConfig, counterDataManager, notificationService);
+        EntityChunkTracker chunkTracker = mock(EntityChunkTracker.class);
+        EventListener listener = new EventListener(plugin, pluginConfig, counterDataManager, notificationService, chunkTracker);
 
         EntitySpawnEvent event = mock(EntitySpawnEvent.class);
         Entity entity = mock(Entity.class);
