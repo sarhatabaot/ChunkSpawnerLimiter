@@ -10,7 +10,6 @@ import com.github.sarhatabaot.chunkspawnerlimiter.notification.NotificationServi
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.Checks;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import com.github.sarhatabaot.chunkspawnerlimiter.tracker.EntityChunkTracker;
-import com.github.sarhatabaot.chunkspawnerlimiter.util.SpawnEggUtil;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
@@ -142,6 +141,15 @@ public class EventListener implements Listener {
             return;
         }
 
+        // Stacking-plugin compatibility: defer the limit check AND the counter
+        // update to the next tick. By then, WildStacker/RoseStacker will have
+        // merged transient spawn entities into stacked entities, so we count
+        // the actual stacks (1 per stack, not 1 per individual entity).
+        if (pluginConfig.shouldDelayEntityCountForCompatibility()) {
+            scheduleEntityCountFinalization(entity, event);
+            return;
+        }
+
         final ChunkCoord chunkCoord = ChunkCoord.from(chunk);
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
 
@@ -157,12 +165,7 @@ public class EventListener implements Listener {
                 entityTypeLimit != null ? String.valueOf(entityTypeLimit) : "unlimited"
             ));
 
-            if (pluginConfig.shouldDelayEntityCountForCompatibility()) {
-                scheduleEntityCountFinalization(entity);
-            } else {
-                counterData.incrementEntity(entityType);
-            }
-
+            counterData.incrementEntity(entityType);
             // Track entity for cross-chunk movement detection
             chunkTracker.recordEntry(entity);
             return;
@@ -172,12 +175,11 @@ public class EventListener implements Listener {
 
         RemovalMode removalMode = pluginConfig.getRemovalMode();
         removalMode.handleEntity(entity, event);
-
-        if (event.isCancelled() && event instanceof CreatureSpawnEvent creatureSpawnEvent) {
-            if (SpawnEggUtil.isSpawnEggSpawn(creatureSpawnEvent.getSpawnReason().name())) {
-                SpawnEggUtil.dropSpawnEgg(entity.getType(), event.getLocation());
-            }
-        }
+        // Note: we intentionally do NOT drop a refund egg when the event is cancelled.
+        // On modern Paper/Spigot, cancelling CreatureSpawnEvent prevents the entity
+        // from spawning, but the player's spawn-egg item has already been consumed
+        // from the hand. Dropping a new egg would create an unlimited dupe exploit.
+        // (See bug report: "i set the villager limit to 5... i keep my own egg" dupe.)
     }
 
     // -- Entity death / removal events --------------------------------------
@@ -326,8 +328,9 @@ public class EventListener implements Listener {
 
     // -- Internal helpers ---------------------------------------------------
 
-    private void scheduleEntityCountFinalization(@NotNull Entity entity) {
+    private void scheduleEntityCountFinalization(@NotNull Entity entity, @NotNull EntitySpawnEvent originalEvent) {
         plugin.getServer().getScheduler().runTask(plugin, () -> {
+            // --- Stale-event guards -------------------------------------------------
             if (!entity.isValid()) {
                 return;
             }
@@ -345,8 +348,51 @@ public class EventListener implements Listener {
                 return;
             }
 
-            final CounterData counterData = counterDataManager.getCounterData(ChunkCoord.from(chunk));
-            counterData.incrementEntity(entity.getType());
+            // --- Stacking-plugin aware limit enforcement -----------------------------
+            // Count actual entities in the chunk (each WildStacker stack is 1 entity),
+            // then either sync the counter (under limit) or remove excess (over limit).
+            final ChunkCoord chunkCoord = ChunkCoord.from(chunk);
+            final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
+            final EntityType entityType = entity.getType();
+            final Integer entityTypeLimit = pluginConfig.getResolvedEntityLimit(entityType);
+
+            int actualCount = 0;
+            for (Entity e : chunk.getEntities()) {
+                if (e.getType() == entityType) actualCount++;
+            }
+
+            // Sync counter from actual chunk state (each stack = 1, not N).
+            counterData.setEntityCount(entityType, actualCount);
+
+            if (entityTypeLimit != null && actualCount > entityTypeLimit) {
+                int toRemove = actualCount - entityTypeLimit;
+                final int fActualCount = actualCount;
+                CSLLogger.debug(() -> "Stacking compat: chunk %s has %d %s, limit %d, removing %d"
+                        .formatted(chunkCoord, fActualCount, entityType.name(), entityTypeLimit, toRemove));
+
+                int removed = 0;
+                for (Entity e : chunk.getEntities()) {
+                    if (removed >= toRemove) break;
+                    if (e.getType() != entityType) continue;
+                    // Prefer to remove the entity that just spawned (the one this
+                    // deferred task is for) so existing stacks remain intact.
+                    if (e.equals(entity) && originalEvent != null) {
+                        RemovalMode removalMode = pluginConfig.getRemovalMode();
+                        removalMode.handleEntity(e, originalEvent);
+                        actualCount = Math.max(0, actualCount - 1);
+                        counterData.setEntityCount(entityType, actualCount);
+                        removed++;
+                    } else if (e.getTicksLived() < 5) {
+                        // Recent spawn — likely a transient pre-merge entity. Remove
+                        // to enforce the limit without disturbing existing stacks.
+                        e.remove();
+                        counterData.decrementEntity(entityType);
+                        actualCount = Math.max(0, actualCount - 1);
+                        removed++;
+                    }
+                }
+            }
+
             chunkTracker.recordEntry(entity);
         });
     }
