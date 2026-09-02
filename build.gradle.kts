@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.github.sarhatabaot"
-version = "5.0.2"
+version = providers.gradleProperty("versionOverride").orElse("5.0.2").get()
 description = "Limit blocks & entities in chunks."
 
 dependencies {
@@ -200,3 +200,4 @@ tasks.named("check") {
 //        testing.suites.named("testModern") for now TODO
     )
 }
+

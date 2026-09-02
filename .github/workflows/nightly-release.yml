@@ -1,0 +1,106 @@
+name: Nightly Release
+
+on:
+  schedule:
+    - cron: "15 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  nightly:
+    name: Build and publish nightly GitHub prerelease
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TZ: Asia/Jerusalem
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve nightly metadata
+        id: nightly_meta
+        shell: bash
+        run: |
+          tag="nightly.$(date +'%d.%m.%Y')"
+          previous_tag="$(git for-each-ref --sort=-creatordate --format='%(refname:short)' 'refs/tags/nightly.*' | head -n 1)"
+          head_sha="$(git rev-parse HEAD)"
+          tag_exists="false"
+
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            tag_exists="true"
+          fi
+
+          should_release="true"
+          if [ "$tag_exists" = "true" ]; then
+            should_release="false"
+          elif [ -n "$previous_tag" ]; then
+            previous_sha="$(git rev-list -n 1 "$previous_tag")"
+            if [ "$previous_sha" = "$head_sha" ]; then
+              should_release="false"
+            fi
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "previous_tag=$previous_tag" >> "$GITHUB_OUTPUT"
+          echo "tag_exists=$tag_exists" >> "$GITHUB_OUTPUT"
+          echo "should_release=$should_release" >> "$GITHUB_OUTPUT"
+
+      - name: Stop when no new commits exist
+        if: steps.nightly_meta.outputs.should_release != 'true'
+        shell: bash
+        run: |
+          if [ "${{ steps.nightly_meta.outputs.tag_exists }}" = "true" ]; then
+            echo "Tag ${{ steps.nightly_meta.outputs.tag }} already exists. Skipping nightly release."
+          elif [ -n "${{ steps.nightly_meta.outputs.previous_tag }}" ]; then
+            echo "No new commits since ${{ steps.nightly_meta.outputs.previous_tag }}. Skipping nightly release."
+          else
+            echo "No previous nightly tag found, but release creation was skipped."
+          fi
+
+      - name: Set up JDK 21
+        if: steps.nightly_meta.outputs.should_release == 'true'
+        uses: actions/setup-java@v5
+        with:
+          java-version: "21"
+          distribution: "temurin"
+
+      - name: Setup Gradle
+        if: steps.nightly_meta.outputs.should_release == 'true'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable
+        if: steps.nightly_meta.outputs.should_release == 'true'
+        run: chmod +x ./gradlew
+
+      - name: Build shaded jar
+        if: steps.nightly_meta.outputs.should_release == 'true'
+        run: ./gradlew shadowJar -PversionOverride=${{ steps.nightly_meta.outputs.tag }}
+
+      - name: Resolve built jar
+        if: steps.nightly_meta.outputs.should_release == 'true'
+        id: jar_meta
+        shell: bash
+        run: |
+          jar_path="$(find build/libs -maxdepth 1 -type f -name 'chunkspawnerlimiter-*-shadow.jar' | head -n 1)"
+          if [ -z "$jar_path" ]; then
+            echo "No built jar found in build/libs" >&2
+            exit 1
+          fi
+
+          echo "jar_path=$jar_path" >> "$GITHUB_OUTPUT"
+
+      - name: Publish nightly prerelease
+        if: steps.nightly_meta.outputs.should_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.nightly_meta.outputs.tag }}
+          target_commitish: ${{ steps.nightly_meta.outputs.head_sha }}
+          name: ${{ steps.nightly_meta.outputs.tag }}
+          prerelease: true
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: ${{ steps.jar_meta.outputs.jar_path }}
