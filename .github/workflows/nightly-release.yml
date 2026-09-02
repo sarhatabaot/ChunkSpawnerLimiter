@@ -85,7 +85,7 @@ jobs:
         id: jar_meta
         shell: bash
         run: |
-          jar_path="$(find build/libs -maxdepth 1 -type f -name 'chunkspawnerlimiter-*-shadow.jar' | head -n 1)"
+          jar_path="$(find build/libs -maxdepth 1 -type f -name 'chunkspawnerlimiter-*.jar' | head -n 1)"
           if [ -z "$jar_path" ]; then
             echo "No built jar found in build/libs" >&2
             exit 1
@@ -104,3 +104,4 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: ${{ steps.jar_meta.outputs.jar_path }}
+
