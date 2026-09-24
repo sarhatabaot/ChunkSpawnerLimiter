@@ -18,21 +18,21 @@ dependencyResolutionManagement {
             library("bstats", "org.bstats:bstats-bukkit:3.2.1")
             library("annotations", "org.jetbrains:annotations:26.1.0")
             library("commands", "com.github.despical:command-framework:1.5.4")
-            library("nbt-api", "de.tr7zw:item-nbt-api-plugin:2.15.7")
+            library("nbt-api", "de.tr7zw:item-nbt-api-plugin:2.16.1")
             library("jcip", "com.google.code.findbugs:jsr305:3.0.2")
 
             library("junit-api", "org.junit.jupiter:junit-jupiter-api:5.14.4")
             library("junit-engine", "org.junit.jupiter:junit-jupiter-engine:5.14.4")
-            library("mockito-core", "org.mockito:mockito-core:5.23.0")
-            library("mockito-junit-jupiter", "org.mockito:mockito-junit-jupiter:5.23.0")
+            library("mockito-core", "org.mockito:mockito-core:5.24.0")
+            library("mockito-junit-jupiter", "org.mockito:mockito-junit-jupiter:5.24.0")
             library("assertj-core", "org.assertj:assertj-core:3.27.7")
 
             library("adventure-api", "net.kyori:adventure-api:4.26.1")
-            library("mockbukkit", "org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.110.0")
+            library("mockbukkit", "org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.116.3")
             library("mockbukkit-legacy", "com.github.MockBukkit:MockBukkit:2ab2b498cd")
 
             plugin("run-paper", "xyz.jpenilla.run-paper").version("2.3.1")
-            plugin("shadow", "com.gradleup.shadow").version("9.4.3")
+            plugin("shadow", "com.gradleup.shadow").version("9.6.1")
             plugin("plugin-yml", "de.eldoria.plugin-yml.bukkit").version("0.9.0")
         }
     }
