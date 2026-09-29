@@ -33,6 +33,53 @@ import static org.mockito.Mockito.when;
 class EventListenerTest {
 
     @Test
+    @DisplayName("Should replace a stale count before enforcing the spawn limit")
+    void shouldReplaceStaleCountBeforeEnforcingSpawnLimit() {
+        Plugin plugin = mock(Plugin.class);
+        PluginConfig pluginConfig = mock(PluginConfig.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        CounterDataManager counterDataManager = new CounterDataManager();
+        EntityChunkTracker chunkTracker = mock(EntityChunkTracker.class);
+        EventListener listener = new EventListener(plugin, pluginConfig, counterDataManager, notificationService, chunkTracker);
+
+        EntitySpawnEvent event = mock(EntitySpawnEvent.class);
+        Entity spawningEntity = mock(Entity.class);
+        Entity existingEntity = mock(Entity.class);
+        World world = mock(World.class);
+        Chunk chunk = mock(Chunk.class);
+        Location location = mock(Location.class);
+
+        when(event.getLocation()).thenReturn(location);
+        when(event.getEntity()).thenReturn(spawningEntity);
+        when(spawningEntity.getType()).thenReturn(EntityType.ZOMBIE);
+        when(spawningEntity.getLocation()).thenReturn(location);
+        when(existingEntity.getType()).thenReturn(EntityType.ZOMBIE);
+        when(location.getWorld()).thenReturn(world);
+        when(location.getChunk()).thenReturn(chunk);
+        when(world.getName()).thenReturn("world");
+        when(world.getUID()).thenReturn(UUID.randomUUID());
+        when(chunk.getWorld()).thenReturn(world);
+        when(chunk.getX()).thenReturn(1);
+        when(chunk.getZ()).thenReturn(2);
+        when(chunk.isLoaded()).thenReturn(true);
+        when(chunk.getEntities()).thenReturn(new Entity[]{existingEntity, spawningEntity});
+
+        when(pluginConfig.isWorldDisabled("world")).thenReturn(false);
+        when(pluginConfig.hasResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(true);
+        when(pluginConfig.getResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(150);
+        when(pluginConfig.shouldDelayEntityCountForCompatibility()).thenReturn(false);
+
+        ChunkCoord coord = ChunkCoord.from(chunk);
+        counterDataManager.getCounterData(coord).setEntityCount(EntityType.ZOMBIE, 150);
+
+        listener.onEntitySpawn(event);
+
+        assertThat(counterDataManager.getCounterData(coord).getEntityCount(EntityType.ZOMBIE)).isEqualTo(2);
+        verify(notificationService, never()).notifyEntitiesBlocked(any(), any(), anyInt());
+        verify(chunkTracker).recordEntry(spawningEntity);
+    }
+
+    @Test
     @DisplayName("Should not count entities removed before deferred compatibility finalization")
     void shouldNotCountEntitiesRemovedBeforeDeferredCompatibilityFinalization() {
         Plugin plugin = mock(Plugin.class);

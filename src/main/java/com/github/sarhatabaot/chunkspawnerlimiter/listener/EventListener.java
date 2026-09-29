@@ -109,7 +109,7 @@ public class EventListener implements Listener {
 
     // -- Entity spawn events -------------------------------------------------
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntitySpawn(@NotNull EntitySpawnEvent event) {
         if (pluginConfig.isWorldDisabled(event.getLocation().getWorld().getName())) {
             CSLLogger.debug(() -> "%s world is disabled.".formatted(event.getLocation().getWorld().getName()));
@@ -152,16 +152,17 @@ public class EventListener implements Listener {
 
         final ChunkCoord chunkCoord = ChunkCoord.from(chunk);
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
+        final int existingEntityCount = counterDataManager.synchronizeEntityCount(chunk, entityType, entity);
 
         final Integer entityTypeLimit = pluginConfig.getResolvedEntityLimit(entityType);
 
         boolean withinTypeLimit = entityTypeLimit == null ||
-            Checks.isUnderOrEqualToLimit(counterData.getEntityCount(entityType), entityTypeLimit);
+            Checks.isUnderOrEqualToLimit(existingEntityCount, entityTypeLimit);
 
         if (withinTypeLimit) {
             CSLLogger.debug(() -> "%s entity under entity limits (type: %d/%s)".formatted(
                 entityType.name(),
-                counterData.getEntityCount(entityType),
+                existingEntityCount,
                 entityTypeLimit != null ? String.valueOf(entityTypeLimit) : "unlimited"
             ));
 

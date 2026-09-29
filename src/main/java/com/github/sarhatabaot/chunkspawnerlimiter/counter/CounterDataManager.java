@@ -8,6 +8,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,6 +23,31 @@ public class CounterDataManager {
 
     public void removeCounterData(final ChunkCoord chunkCoord) {
         loadedChunkCounters.remove(chunkCoord);
+    }
+
+    @Nullable
+    public CounterData getCounterDataIfPresent(final ChunkCoord chunkCoord) {
+        return loadedChunkCounters.get(chunkCoord);
+    }
+
+    public int synchronizeEntityCount(@NotNull Chunk chunk, @NotNull EntityType type,
+                                      @Nullable Entity excludedEntity) {
+        int count = 0;
+        for (Entity entity : chunk.getEntities()) {
+            if (entity != excludedEntity && entity.getType() == type) {
+                count++;
+            }
+        }
+
+        getCounterData(ChunkCoord.from(chunk)).setEntityCount(type, count);
+        return count;
+    }
+
+    public void decrementEntityIfPresent(@NotNull ChunkCoord chunkCoord, @NotNull EntityType type) {
+        CounterData counterData = loadedChunkCounters.get(chunkCoord);
+        if (counterData != null) {
+            counterData.decrementEntity(type);
+        }
     }
 
     /**

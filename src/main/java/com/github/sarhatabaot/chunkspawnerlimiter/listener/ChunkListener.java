@@ -67,6 +67,7 @@ public class ChunkListener implements Listener {
         }
 
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getChunk());
+        chunkTracker.forgetChunk(chunkCoord);
         counterDataManager.removeCounterData(chunkCoord);
         removalTaskManager.removeChunkRecheck(chunkCoord);
     }
