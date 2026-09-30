@@ -52,10 +52,12 @@ public class ChunkListener implements Listener {
         blockScanner.scanChunk(chunk, chunkCoord, true);
 
         RemovalMode removalMode = pluginConfig.getRemovalMode();
-        removalTaskManager.queueChunkCheck(chunkCoord, removalMode.getEntityRemovalAction());
+        if (removalMode.removesExistingEntities()) {
+            removalTaskManager.queueChunkCheck(chunkCoord, removalMode.getEntityRemovalAction());
 
-        if (pluginConfig.isActiveInspections()) {
-            removalTaskManager.scheduleRecheck(chunkCoord, removalMode.getEntityRemovalAction(), pluginConfig.getInspectionFrequency());
+            if (pluginConfig.isActiveInspections()) {
+                removalTaskManager.scheduleRecheck(chunkCoord, removalMode.getEntityRemovalAction(), pluginConfig.getInspectionFrequency());
+            }
         }
     }
 

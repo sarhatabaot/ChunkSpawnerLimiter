@@ -54,11 +54,16 @@ public sealed interface RemovalMode
      */
     void handleBlock(@NotNull Block block, @NotNull Cancellable event);
 
+    default boolean removesExistingEntities() {
+        return true;
+    }
+
     /**
      * Returns the action used to remove or otherwise process entities for this mode.
      *
      * @return a consumer that performs the entity removal action
      */
+    @NotNull
     Consumer<Entity> getEntityRemovalAction();
 
     /**

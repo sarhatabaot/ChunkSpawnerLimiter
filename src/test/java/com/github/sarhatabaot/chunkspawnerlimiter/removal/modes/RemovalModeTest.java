@@ -1,11 +1,14 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.removal.modes;
 
+import org.bukkit.entity.Entity;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
  * Test suite for RemovalMode registry and factory methods.
@@ -91,6 +94,20 @@ class RemovalModeTest {
         assertThat(kill.getKey()).isEqualTo("kill");
         assertThat(enforce.getKey()).isEqualTo("enforce");
         assertThat(enforceKill.getKey()).isEqualTo("enforce-kill");
+    }
+
+    @Test
+    @DisplayName("Prevent mode should not remove existing entities")
+    void preventModeShouldNotRemoveExistingEntities() {
+        RemovalMode prevent = RemovalMode.fromString("prevent");
+        Entity entity = mock(Entity.class);
+
+        assertThat(prevent.removesExistingEntities()).isFalse();
+        assertThat(prevent.getEntityRemovalAction()).isNotNull();
+
+        prevent.getEntityRemovalAction().accept(entity);
+
+        verifyNoInteractions(entity);
     }
 
     @Test

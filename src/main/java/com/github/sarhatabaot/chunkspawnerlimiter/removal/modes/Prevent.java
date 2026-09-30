@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.function.Consumer;
 
 public final class Prevent implements RemovalMode {
+    private static final Consumer<Entity> NO_OP_REMOVAL = entity -> { };
     private final RemovalTaskManager removalTaskManager;
 
     public Prevent(RemovalTaskManager removalTaskManager) {
@@ -35,8 +36,13 @@ public final class Prevent implements RemovalMode {
     }
 
     @Override
-    public Consumer<Entity> getEntityRemovalAction() {
-        return null;
+    public boolean removesExistingEntities() {
+        return false;
+    }
+
+    @Override
+    public @NotNull Consumer<Entity> getEntityRemovalAction() {
+        return NO_OP_REMOVAL;
     }
 
     @Override
