@@ -57,17 +57,15 @@ public final class RaidReflection {
      * Checks if a given entity is part of an active raid.
      */
     public static boolean isEntityInRaid(Object entity) {
-        if (!SUPPORTED || entity == null || !RAIDER_CLASS.isInstance(entity)) {
+        if (!SUPPORTED || !RAIDER_CLASS.isInstance(entity)) {
             return false;
         }
 
         try {
             Object world = GET_WORLD.invoke(entity);
-            @SuppressWarnings("unchecked")
             Collection<?> raids = (Collection<?>) GET_RAIDS.invoke(world);
 
             for (Object raid : raids) {
-                @SuppressWarnings("unchecked")
                 Collection<?> raiders = (Collection<?>) GET_RAIDERS.invoke(raid);
                 if (raiders.contains(entity)) {
                     return true;
