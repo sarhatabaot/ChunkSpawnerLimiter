@@ -17,6 +17,7 @@ entities:
       - ARMOR_STAND
   limits:
     TEST_DECORATIONS: 2
+    PLAYER: 0
   compatibility:
     defer-count-until-next-tick: false
     nms-entity-count: false

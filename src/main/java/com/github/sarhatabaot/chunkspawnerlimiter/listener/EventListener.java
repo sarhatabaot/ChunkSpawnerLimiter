@@ -126,12 +126,8 @@ public class EventListener implements Listener {
 
         final Entity entity = event.getEntity();
         final EntityType entityType = entity.getType();
-        if (!pluginConfig.hasResolvedEntityLimit(entityType)) {
+        if (!Checks.shouldTrackEntity(entity, pluginConfig)) {
             CSLLogger.debug(() -> "%s entity not in entity limits.".formatted(entityType.name()));
-            return;
-        }
-
-        if (Checks.shouldSkipPlayers(entity)) {
             return;
         }
 
@@ -208,7 +204,7 @@ public class EventListener implements Listener {
         }
 
         final Entity entity = event.getEntity();
-        if (!pluginConfig.hasResolvedEntityLimit(entity.getType())) return;
+        if (!Checks.shouldTrackEntity(entity, pluginConfig)) return;
 
         // Entity is leaving this dimension — decrement its old chunk counter.
         // A new entity will be created in the target world, and its spawn event
@@ -259,12 +255,12 @@ public class EventListener implements Listener {
             if (oldType != newType) {
                 final ChunkCoord coord = ChunkCoord.from(original.getLocation());
 
-                if (pluginConfig.hasResolvedEntityLimit(oldType)) {
+                if (Checks.shouldTrackEntity(original, pluginConfig)) {
                     counterDataManager.getCounterData(coord).decrementEntity(oldType);
                 }
                 chunkTracker.recordExit(original);
 
-                if (pluginConfig.hasResolvedEntityLimit(newType)) {
+                if (Checks.shouldTrackEntity(transformed, pluginConfig)) {
                     counterDataManager.getCounterData(coord).incrementEntity(newType);
                 }
                 chunkTracker.recordEntry(transformed);
@@ -287,7 +283,7 @@ public class EventListener implements Listener {
 
         final Entity vehicle = event.getVehicle();
         final EntityType vehicleType = vehicle.getType();
-        if (!pluginConfig.hasResolvedEntityLimit(vehicleType)) {
+        if (!Checks.shouldTrackEntity(vehicle, pluginConfig)) {
             return;
         }
 
@@ -340,7 +336,7 @@ public class EventListener implements Listener {
                 return;
             }
 
-            if (Checks.shouldSkipPlayers(entity) || !pluginConfig.hasResolvedEntityLimit(entity.getType())) {
+            if (!Checks.shouldTrackEntity(entity, pluginConfig)) {
                 return;
             }
 

@@ -127,7 +127,7 @@ public class RemovalTaskManager {
         Entity[] entities = chunk.getEntities();
         for (Entity entity : entities) {
             EntityType type = entity.getType();
-            if (pluginConfig.hasResolvedEntityLimit(type)) {
+            if (Checks.shouldTrackEntity(entity, pluginConfig)) {
                 data.incrementEntity(type);
             }
         }
@@ -145,7 +145,8 @@ public class RemovalTaskManager {
             // Collect entities of this type (only when we know we need to remove some)
             List<Entity> typedEntities = new ArrayList<>();
             for (Entity entity : entities) {
-                if (entity.getType() == type && !shouldSkipRemoval(entity)) {
+                if (entity.getType() == type && Checks.shouldTrackEntity(entity, pluginConfig)
+                        && !shouldSkipRemoval(entity)) {
                     typedEntities.add(entity);
                 }
             }

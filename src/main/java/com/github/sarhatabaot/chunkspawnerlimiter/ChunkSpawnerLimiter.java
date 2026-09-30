@@ -47,7 +47,7 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         this.entityChunkTracker = new EntityChunkTracker(
                 this,
                 counterDataManager,
-                pluginConfig::hasResolvedEntityLimit,
+                entity -> Checks.shouldTrackEntity(entity, pluginConfig),
                 40L
         );
 

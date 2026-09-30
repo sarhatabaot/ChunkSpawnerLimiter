@@ -12,9 +12,9 @@ public class Checks {
         Checks.pluginConfig = pluginConfig;
     }
 
-    //is player & kill players is disabled
-    public static boolean shouldSkipPlayers(final Entity entity) {
-        return entity instanceof Player && !pluginConfig.isKillPlayers();
+    public static boolean shouldTrackEntity(final Entity entity, final PluginConfig config) {
+        return config.hasResolvedEntityLimit(entity.getType())
+                && (!(entity instanceof Player) || config.isKillPlayers());
     }
 
     public static boolean hasCustomName(final Entity entity) {

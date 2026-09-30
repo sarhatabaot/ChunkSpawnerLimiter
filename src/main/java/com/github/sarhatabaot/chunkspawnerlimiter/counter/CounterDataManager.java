@@ -72,10 +72,10 @@ public class CounterDataManager {
      * Rebuilds entity counters for all loaded chunks in all worlds by scanning
      * the actual entities present. This is a full cache resync operation.
      *
-     * @param isTracked predicate returning {@code true} for entity types the plugin tracks
+     * @param isTracked predicate returning {@code true} for entities the plugin tracks
      * @return number of chunks that were rescanned
      */
-    public int rescanAllLoadedChunks(Predicate<EntityType> isTracked) {
+    public int rescanAllLoadedChunks(Predicate<Entity> isTracked) {
         int chunksScanned = 0;
         int entitiesCounted = 0;
 
@@ -92,7 +92,7 @@ public class CounterDataManager {
                 // Recount from actual chunk state
                 for (Entity entity : chunk.getEntities()) {
                     final EntityType type = entity.getType();
-                    if (isTracked.test(type)) {
+                    if (isTracked.test(entity)) {
                         counterData.incrementEntity(type);
                         entitiesCounted++;
                     }

@@ -77,15 +77,13 @@ public class ChunkListener implements Listener {
     private void addEntityLimits(final @NotNull Chunk chunk, final ChunkCoord chunkCoord) {
         final Entity[] entities = chunk.getEntities();
         for (Entity entity: entities) {
-            if (Checks.shouldSkipPlayers(entity)) {
+            if (!Checks.shouldTrackEntity(entity, pluginConfig)) {
                 continue;
             }
 
-            if (pluginConfig.hasResolvedEntityLimit(entity.getType())) {
-                counterDataManager.getCounterData(chunkCoord).incrementEntity(entity.getType());
-                // Register with the cross-chunk movement tracker
-                chunkTracker.recordEntry(entity);
-            }
+            counterDataManager.getCounterData(chunkCoord).incrementEntity(entity.getType());
+            // Register with the cross-chunk movement tracker
+            chunkTracker.recordEntry(entity);
         }
     }
 

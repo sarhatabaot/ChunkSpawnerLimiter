@@ -7,6 +7,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ class EntityChunkTrackerTest {
     void shouldDecrementStoredTypeWhenEntityDisappears() {
         CounterDataManager manager = new CounterDataManager();
         EntityChunkTracker tracker = new EntityChunkTracker(
-                mock(Plugin.class), manager, type -> type == EntityType.ZOMBIE, 40L, false);
+                mock(Plugin.class), manager, entity -> entity.getType() == EntityType.ZOMBIE, 40L, false);
         World world = mock(World.class);
         Entity entity = entity(world, EntityType.ZOMBIE, 1, 2);
         ChunkCoord coord = ChunkCoord.from(world, 1, 2);
@@ -44,7 +45,7 @@ class EntityChunkTrackerTest {
     void shouldTransferEntityBetweenChunks() {
         CounterDataManager manager = new CounterDataManager();
         EntityChunkTracker tracker = new EntityChunkTracker(
-                mock(Plugin.class), manager, type -> type == EntityType.ZOMBIE, 40L, false);
+                mock(Plugin.class), manager, entity -> entity.getType() == EntityType.ZOMBIE, 40L, false);
         World world = mock(World.class);
         Entity entity = entity(world, EntityType.ZOMBIE, 1, 2);
         ChunkCoord oldCoord = ChunkCoord.from(world, 1, 2);
@@ -69,7 +70,7 @@ class EntityChunkTrackerTest {
     void shouldForgetUnloadedChunk() {
         CounterDataManager manager = new CounterDataManager();
         EntityChunkTracker tracker = new EntityChunkTracker(
-                mock(Plugin.class), manager, type -> type == EntityType.ZOMBIE, 40L, false);
+                mock(Plugin.class), manager, entity -> entity.getType() == EntityType.ZOMBIE, 40L, false);
         World world = mock(World.class);
         Entity entity = entity(world, EntityType.ZOMBIE, 1, 2);
         ChunkCoord coord = ChunkCoord.from(world, 1, 2);
@@ -80,6 +81,19 @@ class EntityChunkTrackerTest {
 
         assertThat(tracker.getTrackedCount()).isZero();
         assertThat(manager.getCounterDataIfPresent(coord)).isNull();
+    }
+
+    @Test
+    @DisplayName("Should not track ineligible players")
+    void shouldNotTrackIneligiblePlayers() {
+        CounterDataManager manager = new CounterDataManager();
+        EntityChunkTracker tracker = new EntityChunkTracker(
+                mock(Plugin.class), manager, entity -> !(entity instanceof Player), 40L, false);
+        Player player = mock(Player.class);
+
+        tracker.recordEntry(player);
+
+        assertThat(tracker.getTrackedCount()).isZero();
     }
 
     private Entity entity(World world, EntityType type, int chunkX, int chunkZ) {

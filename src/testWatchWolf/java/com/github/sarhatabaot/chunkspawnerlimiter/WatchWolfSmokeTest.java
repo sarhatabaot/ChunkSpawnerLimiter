@@ -109,6 +109,18 @@ class WatchWolfSmokeTest extends AbstractTest {
         awaitEntityCount(connector, adjacentCenter, 1);
     }
 
+    @ParameterizedTest
+    @ArgumentsSource(WatchWolfSmokeTest.class)
+    @Timeout(value = 1, unit = TimeUnit.MINUTES)
+    void preservesPlayersWhenPlayerKillingIsDisabled(TesterConnector connector) throws Exception {
+        PlayerContext player = movePlayer(connector, 384, 0);
+
+        connector.server.runCommand("csl resync");
+        Thread.sleep(1_500);
+
+        assertTrue(Arrays.asList(connector.server.getPlayers()).contains(player.username()));
+    }
+
     private static PlayerContext movePlayer(TesterConnector connector, int blockX, int blockZ) throws IOException {
         String username = connector.getClients()[0];
         ExtendedClientPetition client = connector.getClientPetition(username);

@@ -1,17 +1,22 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.counter;
 
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 @DisplayName("CounterDataManager Tests")
@@ -54,5 +59,36 @@ class CounterDataManagerTest {
         manager.decrementEntityIfPresent(coord, EntityType.ZOMBIE);
 
         assertThat(manager.getCounterDataIfPresent(coord)).isNull();
+    }
+
+    @Test
+    @DisplayName("Should apply entity eligibility while rescanning loaded chunks")
+    void shouldApplyEntityEligibilityWhileRescanningLoadedChunks() {
+        CounterDataManager manager = new CounterDataManager();
+        World world = mock(World.class);
+        Chunk chunk = mock(Chunk.class);
+        Player player = mock(Player.class);
+        Entity zombie = mock(Entity.class);
+        UUID worldId = UUID.randomUUID();
+
+        when(world.getUID()).thenReturn(worldId);
+        when(world.getLoadedChunks()).thenReturn(new Chunk[]{chunk});
+        when(chunk.getWorld()).thenReturn(world);
+        when(chunk.getX()).thenReturn(3);
+        when(chunk.getZ()).thenReturn(4);
+        when(chunk.getEntities()).thenReturn(new Entity[]{player, zombie});
+        when(player.getType()).thenReturn(EntityType.PLAYER);
+        when(zombie.getType()).thenReturn(EntityType.ZOMBIE);
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
+            bukkit.when(Bukkit::getWorlds).thenReturn(List.of(world));
+
+            int rescanned = manager.rescanAllLoadedChunks(entity -> !(entity instanceof Player));
+
+            ChunkCoord coord = ChunkCoord.from(chunk);
+            assertThat(rescanned).isOne();
+            assertThat(manager.getCounterData(coord).getEntityCount(EntityType.PLAYER)).isZero();
+            assertThat(manager.getCounterData(coord).getEntityCount(EntityType.ZOMBIE)).isOne();
+        }
     }
 }

@@ -37,6 +37,7 @@ The real-server suite verifies that:
 - Breaking a limited block releases capacity for another placement.
 - A grouped entity limit is enforced independently per chunk.
 - Entity death releases capacity for a replacement entity.
+- Players remain outside entity enforcement when player killing is disabled.
 
 The deterministic plugin configuration used by these tests is copied from `src/testWatchWolf/resources/csl/config.yml` into the server's `plugins/ChunkSpawnerLimiter` directory before startup.
 

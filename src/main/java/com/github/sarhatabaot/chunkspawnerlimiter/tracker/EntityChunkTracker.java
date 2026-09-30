@@ -30,20 +30,20 @@ public class EntityChunkTracker {
 
     private final Map<UUID, TrackedEntity> trackedEntities = new ConcurrentHashMap<>();
     private final CounterDataManager counterDataManager;
-    private final Predicate<EntityType> isTracked;
+    private final Predicate<Entity> isTracked;
     private final Plugin plugin;
     private final long intervalTicks;
 
     public EntityChunkTracker(Plugin plugin,
                               CounterDataManager counterDataManager,
-                              Predicate<EntityType> isTracked,
+                              Predicate<Entity> isTracked,
                               long intervalTicks) {
         this(plugin, counterDataManager, isTracked, intervalTicks, true);
     }
 
     EntityChunkTracker(Plugin plugin,
                        CounterDataManager counterDataManager,
-                       Predicate<EntityType> isTracked,
+                       Predicate<Entity> isTracked,
                        long intervalTicks,
                        boolean startPolling) {
         this.plugin = plugin;
@@ -64,7 +64,7 @@ public class EntityChunkTracker {
      * Record that an entity exists in a specific chunk (call on spawn/world-entry).
      */
     public void recordEntry(@NotNull Entity entity) {
-        if (!isTracked.test(entity.getType())) return;
+        if (!isTracked.test(entity)) return;
         trackedEntities.put(entity.getUniqueId(), TrackedEntity.from(entity));
     }
 
@@ -106,14 +106,17 @@ public class EntityChunkTracker {
             EntityType currentType = entity.getType();
             ChunkCoord currentCoord = ChunkCoord.from(entity);
 
+            if (!isTracked.test(entity)) {
+                counterDataManager.decrementEntityIfPresent(previous.chunkCoord(), previous.type());
+                trackedEntities.remove(uuid, previous);
+                movesDetected++;
+                continue;
+            }
+
             if (previous.type() != currentType || !previous.chunkCoord().equals(currentCoord)) {
                 counterDataManager.decrementEntityIfPresent(previous.chunkCoord(), previous.type());
-                if (isTracked.test(currentType)) {
-                    counterDataManager.getCounterData(currentCoord).incrementEntity(currentType);
-                    trackedEntities.put(uuid, new TrackedEntity(currentCoord, currentType));
-                } else {
-                    trackedEntities.remove(uuid, previous);
-                }
+                counterDataManager.getCounterData(currentCoord).incrementEntity(currentType);
+                trackedEntities.put(uuid, new TrackedEntity(currentCoord, currentType));
                 movesDetected++;
             }
         }

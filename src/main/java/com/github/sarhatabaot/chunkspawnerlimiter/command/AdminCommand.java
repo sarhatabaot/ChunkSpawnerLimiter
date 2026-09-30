@@ -100,7 +100,7 @@ public class AdminCommand {
         sender.sendMessage(ChatColor.YELLOW + "Resyncing entity counters for all loaded chunks...");
 
         int chunks = plugin.getCounterDataManager().rescanAllLoadedChunks(
-                pluginConfig::hasResolvedEntityLimit
+                entity -> Checks.shouldTrackEntity(entity, pluginConfig)
         );
 
         sender.sendMessage(ChatColor.GREEN + "Resync complete. " +
