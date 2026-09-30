@@ -29,6 +29,7 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
     private PluginConfig pluginConfig;
     private NotificationService notificationService;
     private EntityChunkTracker entityChunkTracker;
+    private ChunkListener chunkListener;
 
     @Override
     public void onEnable() {
@@ -64,7 +65,8 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         RemovalMode.setup(removalTaskManager);
 
         PluginManager pluginManager = Bukkit.getPluginManager();
-        pluginManager.registerEvents(new ChunkListener(this, pluginConfig, counterDataManager, removalTaskManager, entityChunkTracker), this);
+        this.chunkListener = new ChunkListener(this, pluginConfig, counterDataManager, removalTaskManager, entityChunkTracker);
+        pluginManager.registerEvents(chunkListener, this);
         pluginManager.registerEvents(new EventListener(this, pluginConfig, counterDataManager, notificationService, entityChunkTracker), this);
         DespawnListener.registerIfSupported(this, pluginConfig, counterDataManager, entityChunkTracker);
 
@@ -80,11 +82,15 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (this.chunkListener != null) {
+            this.chunkListener.shutdown();
+        }
         this.counterDataManager = null;
         this.removalTaskManager = null;
         this.pluginConfig = null;
         this.notificationService = null;
         this.entityChunkTracker = null;
+        this.chunkListener = null;
     }
 
     public void onReload() {

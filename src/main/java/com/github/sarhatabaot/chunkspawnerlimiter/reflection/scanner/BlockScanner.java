@@ -31,6 +31,12 @@ public interface BlockScanner {
      * @param async whether to perform the scan asynchronously
      */
     void scanChunk(Chunk chunk, ChunkCoord coord, boolean async);
+
+    default void cancelScan(ChunkCoord coord) {
+    }
+
+    default void shutdown() {
+    }
     
     /**
      * Check if this scanner implementation is supported on the current server.

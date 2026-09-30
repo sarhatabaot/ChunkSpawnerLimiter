@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Stores and manages block and entity counts for a chunk.
@@ -25,6 +26,7 @@ public class CounterData {
      * Map holding counts for tracked block types.
      */
     private final Map<Material, AtomicInteger> blockCounts = new ConcurrentHashMap<>();
+    private final AtomicLong blockRevision = new AtomicLong();
 
     /**
      * Map holding counts for tracked entity types.
@@ -90,7 +92,10 @@ public class CounterData {
      * @param type the block type to increment
      */
     public void incrementBlock(Material type) {
-        safeIncrement(blockCounts, type);
+        synchronized (blockCounts) {
+            safeIncrement(blockCounts, type);
+            blockRevision.incrementAndGet();
+        }
     }
 
     /**
@@ -101,7 +106,10 @@ public class CounterData {
      * @param type the block type to decrement
      */
     public void decrementBlock(Material type) {
-        safeDecrement(blockCounts, type);
+        synchronized (blockCounts) {
+            safeDecrement(blockCounts, type);
+            blockRevision.incrementAndGet();
+        }
     }
 
     /**
@@ -113,7 +121,27 @@ public class CounterData {
      * @throws IllegalArgumentException if {@code count} is negative
      */
     public void setBlockCount(Material type, int count) {
-        safeSet(blockCounts, type, count);
+        synchronized (blockCounts) {
+            safeSet(blockCounts, type, count);
+            blockRevision.incrementAndGet();
+        }
+    }
+
+    public long getBlockRevision() {
+        return blockRevision.get();
+    }
+
+    public boolean replaceBlockCounts(long expectedRevision, Map<Material, Integer> counts) {
+        synchronized (blockCounts) {
+            if (blockRevision.get() != expectedRevision) {
+                return false;
+            }
+
+            blockCounts.clear();
+            counts.forEach((material, count) -> safeSet(blockCounts, material, count));
+            blockRevision.incrementAndGet();
+            return true;
+        }
     }
 
     /**

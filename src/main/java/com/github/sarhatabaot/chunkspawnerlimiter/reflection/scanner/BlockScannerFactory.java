@@ -6,20 +6,20 @@ import com.github.sarhatabaot.chunkspawnerlimiter.reflection.scanner.impl.Bukkit
 import com.github.sarhatabaot.chunkspawnerlimiter.reflection.scanner.impl.LegacyNmsScanner;
 import com.github.sarhatabaot.chunkspawnerlimiter.reflection.scanner.impl.ModernNmsScanner;
 import com.github.sarhatabaot.chunkspawnerlimiter.reflection.scanner.impl.SpigotNmsScanner;
-import com.github.sarhatabaot.chunkspawnerlimiter.reflection.scanner.util.MinecraftVersion;
+import com.github.sarhatabaot.chunkspawnerlimiter.reflection.scanner.impl.SnapshotBlockScanner;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
 import java.util.logging.Level;
 
 /**
- * Factory for creating the appropriate BlockScanner implementation based on the server version.
- * Attempts version-specific NMS scanners before falling back to the universal Bukkit scanner.
+ * Factory for creating bounded snapshot scanners for runtime use and explicit
+ * version-specific scanners for compatibility tests.
  */
 public class BlockScannerFactory {
 
     /**
-     * Create a BlockScanner instance optimized for the current server version.
+     * Create the thread-safe runtime block scanner.
      * 
      * @param plugin the plugin instance
      * @param config the plugin configuration
@@ -27,48 +27,9 @@ public class BlockScannerFactory {
      * @return the best available BlockScanner implementation
      */
     public static BlockScanner create(Plugin plugin, PluginConfig config, CounterDataManager counterManager) {
-        MinecraftVersion version = MinecraftVersion.detect();
-        
-        Bukkit.getLogger().log(Level.INFO, "[BlockScannerFactory] Detected Minecraft version: " + version);
-
-        // Try version-specific scanners in order of preference
-        
-        // 1. Modern NMS (1.17+)
-        if (version.isModern()) {
-            BlockScanner scanner = new ModernNmsScanner(plugin, config, counterManager);
-            if (scanner.isSupported()) {
-                Bukkit.getLogger().log(Level.INFO, "[BlockScannerFactory] Using " + scanner.getImplementationName());
-                return scanner;
-            }
-            Bukkit.getLogger().log(Level.WARNING, "[BlockScannerFactory] ModernNMS not supported, trying alternatives...");
-        }
-
-        // 2. Spigot NMS (1.13-1.16)
-        if (version.isSpigot()) {
-            BlockScanner scanner = new SpigotNmsScanner(plugin, config, counterManager);
-            if (scanner.isSupported()) {
-                Bukkit.getLogger().log(Level.INFO, "[BlockScannerFactory] Using " + scanner.getImplementationName());
-                return scanner;
-            }
-            Bukkit.getLogger().log(Level.WARNING, "[BlockScannerFactory] SpigotNMS not supported, trying alternatives...");
-        }
-
-        // 3. Legacy NMS (1.8.8-1.12)
-        if (version.isLegacy()) {
-            BlockScanner scanner = new LegacyNmsScanner(plugin, config, counterManager);
-            if (scanner.isSupported()) {
-                Bukkit.getLogger().log(Level.INFO, "[BlockScannerFactory] Using " + scanner.getImplementationName());
-                return scanner;
-            }
-            Bukkit.getLogger().log(Level.WARNING, "[BlockScannerFactory] LegacyNMS not supported, trying alternatives...");
-        }
-
-        // 4. Fallback: Pure Bukkit API (always works)
-        Bukkit.getLogger().log(Level.WARNING, "[BlockScannerFactory] NMS reflection failed for version " + version + 
-                ", falling back to Bukkit API (slower performance)");
-        BlockScanner fallback = new BukkitBlockScanner(plugin, config, counterManager);
-        Bukkit.getLogger().log(Level.INFO, "[BlockScannerFactory] Using " + fallback.getImplementationName());
-        return fallback;
+        BlockScanner scanner = new SnapshotBlockScanner(plugin, config, counterManager);
+        Bukkit.getLogger().log(Level.INFO, "[BlockScannerFactory] Using " + scanner.getImplementationName());
+        return scanner;
     }
 
     /**
