@@ -1,0 +1,51 @@
+enabled: true
+debug-messages: false
+metrics: false
+
+events:
+  spawn:
+    creature: true
+    vehicle: true
+    entity: true
+  inspections:
+    enabled: false
+    frequency: 60
+
+entities:
+  entity-groups:
+    TEST_DECORATIONS:
+      - ARMOR_STAND
+  limits:
+    TEST_DECORATIONS: 2
+  compatibility:
+    defer-count-until-next-tick: false
+    nms-entity-count: false
+  preservation:
+    named-entities: true
+    raid-entities: true
+  removal:
+    mode: "enforce"
+    armor-stand:
+      drop: false
+      log-warnings: false
+    kill-players: false
+  ignore:
+    metadata: []
+    nbt: []
+
+spawn-reasons:
+  - CUSTOM
+
+blocks:
+  block-groups:
+    TEST_BLOCKS:
+      - WHITE_WOOL
+  limits:
+    TEST_BLOCKS: 1
+
+worlds:
+  mode: excluded
+  list: []
+
+notifications:
+  enabled: false

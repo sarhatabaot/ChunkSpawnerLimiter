@@ -95,6 +95,15 @@ tasks {
     }
 }
 
+val prepareWatchWolfPlugin by tasks.registering(Copy::class) {
+    group = "verification"
+    description = "Copies the shaded plugin jar to the stable path used by WatchWolf"
+    dependsOn(tasks.shadowJar)
+    from(tasks.shadowJar.flatMap { it.archiveFile })
+    into(layout.buildDirectory.dir("watchwolf"))
+    rename { "chunkspawnerlimiter.jar" }
+}
+
 testing {
     suites {
         // Unit tests - version agnostic
@@ -187,6 +196,34 @@ testing {
                         useJUnitPlatform()
                         group = "verification"
                         description = "Runs modern integration tests for Minecraft 1.17+"
+                    }
+                }
+            }
+        }
+
+        val testWatchWolf by creating(JvmTestSuite::class) {
+            useJUnitJupiter()
+
+            sources {
+                java {
+                    srcDir("src/testWatchWolf/java")
+                }
+            }
+
+            dependencies {
+                implementation(libs.watchwolf.tester)
+                implementation(libs.junit.api)
+                implementation(libs.junit.params)
+                runtimeOnly(libs.junit.engine)
+            }
+
+            targets {
+                all {
+                    testTask.configure {
+                        useJUnitPlatform()
+                        group = "verification"
+                        description = "Runs real-server integration tests through WatchWolf"
+                        dependsOn(prepareWatchWolfPlugin)
                     }
                 }
             }

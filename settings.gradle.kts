@@ -23,9 +23,11 @@ dependencyResolutionManagement {
 
             library("junit-api", "org.junit.jupiter:junit-jupiter-api:5.14.4")
             library("junit-engine", "org.junit.jupiter:junit-jupiter-engine:5.14.4")
+            library("junit-params", "org.junit.jupiter:junit-jupiter-params:5.14.4")
             library("mockito-core", "org.mockito:mockito-core:5.23.0")
             library("mockito-junit-jupiter", "org.mockito:mockito-junit-jupiter:5.23.0")
             library("assertj-core", "org.assertj:assertj-core:3.27.7")
+            library("watchwolf-tester", "com.github.miranda1000:WatchWolf-Tester:66cebe92b2")
 
             library("adventure-api", "net.kyori:adventure-api:4.26.1")
             library("mockbukkit", "org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.110.0")
