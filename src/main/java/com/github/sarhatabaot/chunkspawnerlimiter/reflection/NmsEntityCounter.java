@@ -4,19 +4,15 @@ import com.github.sarhatabaot.chunkspawnerlimiter.CSLLogger;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterData;
-import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
-import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 
 /**
@@ -249,7 +245,6 @@ public final class NmsEntityCounter {
 
     // ---- Modern entity section counter ----
 
-    @SuppressWarnings("unchecked")
     private void countEntitiesInContainer(Object section, CounterData data,
                                            Iterable<EntityType> tracked) {
         try {

@@ -86,9 +86,7 @@ public class EntityChunkTracker {
     void pollEntityMovements() {
         List<Entity> currentEntities = new ArrayList<>();
         for (World world : Bukkit.getWorlds()) {
-            for (Entity entity : world.getEntities()) {
-                currentEntities.add(entity);
-            }
+            currentEntities.addAll(world.getEntities());
         }
         reconcileEntities(currentEntities);
     }

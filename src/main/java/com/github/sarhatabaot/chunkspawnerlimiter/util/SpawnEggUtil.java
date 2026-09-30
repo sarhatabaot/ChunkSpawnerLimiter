@@ -8,7 +8,7 @@ import org.bukkit.inventory.ItemStack;
 /**
  * Utility class for handling spawn egg operations, specifically for returning eggs to players
  * when entity spawn events are cancelled by removal modes.
- * 
+ * <p>
  * This class is designed to work with Minecraft 1.8.8 and uses the legacy MONSTER_EGG system.
  */
 public class SpawnEggUtil {

@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Integration tests for the full plugin lifecycle using MockBukkit 1.x.
  * Tests plugin loading, configuration, and basic functionality for Minecraft 1.8-1.12.
- *
+ * <p>
  * Note: This test suite uses MockBukkit 1.x which supports Minecraft 1.8-1.12.
  * For modern versions (1.17+), see PluginIntegrationTest in testModern.
  */

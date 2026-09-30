@@ -1,6 +1,5 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.chunk;
 
-import java.lang.ref.WeakReference;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
