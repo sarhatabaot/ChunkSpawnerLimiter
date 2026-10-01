@@ -46,6 +46,10 @@ public sealed interface RemovalMode
      */
     void handleEntity(@NotNull Entity entity, @Nullable Cancellable event);
 
+    default void handleDeferredEntity(@NotNull Entity entity) {
+        getEntityRemovalAction().accept(entity);
+    }
+
     /**
      * Handles a block that violates a configured limit.
      *

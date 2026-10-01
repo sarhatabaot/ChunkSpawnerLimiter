@@ -142,7 +142,7 @@ public class EventListener implements Listener {
         // merged transient spawn entities into stacked entities, so we count
         // the actual stacks (1 per stack, not 1 per individual entity).
         if (pluginConfig.shouldDelayEntityCountForCompatibility()) {
-            scheduleEntityCountFinalization(entity, event);
+            scheduleEntityCountFinalization(entity);
             return;
         }
 
@@ -325,7 +325,7 @@ public class EventListener implements Listener {
 
     // -- Internal helpers ---------------------------------------------------
 
-    private void scheduleEntityCountFinalization(@NotNull Entity entity, @NotNull EntitySpawnEvent originalEvent) {
+    private void scheduleEntityCountFinalization(@NotNull Entity entity) {
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             // --- Stale-event guards -------------------------------------------------
             if (!entity.isValid()) {
@@ -355,7 +355,7 @@ public class EventListener implements Listener {
 
             int actualCount = 0;
             for (Entity e : chunk.getEntities()) {
-                if (e.getType() == entityType) actualCount++;
+                if (e.getType() == entityType && e.isValid() && !e.isDead()) actualCount++;
             }
 
             // Sync counter from actual chunk state (each stack = 1, not N).
@@ -373,24 +373,33 @@ public class EventListener implements Listener {
                     if (e.getType() != entityType) continue;
                     // Prefer to remove the entity that just spawned (the one this
                     // deferred task is for) so existing stacks remain intact.
-                    if (e.equals(entity) && originalEvent != null) {
+                    if (e.equals(entity)) {
                         RemovalMode removalMode = pluginConfig.getRemovalMode();
-                        removalMode.handleEntity(e, originalEvent);
-                        actualCount = Math.max(0, actualCount - 1);
-                        counterData.setEntityCount(entityType, actualCount);
-                        removed++;
+                        removalMode.handleDeferredEntity(e);
+                        if (!e.isValid() || e.isDead()) {
+                            actualCount = Math.max(0, actualCount - 1);
+                            counterData.setEntityCount(entityType, actualCount);
+                            removed++;
+                        }
                     } else if (e.getTicksLived() < 5) {
                         // Recent spawn — likely a transient pre-merge entity. Remove
                         // to enforce the limit without disturbing existing stacks.
                         e.remove();
-                        counterData.decrementEntity(entityType);
-                        actualCount = Math.max(0, actualCount - 1);
-                        removed++;
+                        if (!e.isValid() || e.isDead()) {
+                            counterData.decrementEntity(entityType);
+                            actualCount = Math.max(0, actualCount - 1);
+                            chunkTracker.recordExit(e);
+                            removed++;
+                        }
                     }
                 }
             }
 
-            chunkTracker.recordEntry(entity);
+            if (entity.isValid() && !entity.isDead()) {
+                chunkTracker.recordEntry(entity);
+            } else {
+                chunkTracker.recordExit(entity);
+            }
         });
     }
 

@@ -36,6 +36,11 @@ public final class Prevent implements RemovalMode {
     }
 
     @Override
+    public void handleDeferredEntity(@NotNull Entity entity) {
+        entity.remove();
+    }
+
+    @Override
     public boolean removesExistingEntities() {
         return false;
     }
