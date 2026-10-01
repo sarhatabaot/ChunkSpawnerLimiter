@@ -26,31 +26,12 @@ import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Method;
-
-
 public class EventListener implements Listener {
     private final Plugin plugin;
     private final PluginConfig pluginConfig;
     private final CounterDataManager counterDataManager;
     private final NotificationService notificationService;
     private final EntityChunkTracker chunkTracker;
-
-    // Paper-only EntityTransformEvent support (1.19+)
-    private static final boolean HAS_ENTITY_TRANSFORM_EVENT;
-    private static final Method ENTITY_TRANSFORM_GET_TRANSFORMED_ENTITY;
-
-    static {
-        boolean hasTransform = false;
-        Method getTransformed = null;
-        try {
-            Class<?> transformEvent = Class.forName("com.destroystokyo.paper.event.entity.EntityTransformEvent");
-            getTransformed = transformEvent.getMethod("getTransformedEntity");
-            hasTransform = true;
-        } catch (Throwable ignored) {}
-        HAS_ENTITY_TRANSFORM_EVENT = hasTransform;
-        ENTITY_TRANSFORM_GET_TRANSFORMED_ENTITY = getTransformed;
-    }
 
     public EventListener(Plugin plugin, PluginConfig pluginConfig,
                          CounterDataManager counterDataManager,
@@ -263,42 +244,6 @@ public class EventListener implements Listener {
             counterDataManager.getCounterData(coord).decrementEntity(EntityType.PIG);
             chunkTracker.recordExit(pig);
             CSLLogger.debug(() -> "Pig zapped in %s".formatted(coord));
-        }
-    }
-
-    @EventHandler
-    public void onEntityTransform(Object event) {
-        // Paper 1.19+ EntityTransformEvent — handled via reflection
-        if (!HAS_ENTITY_TRANSFORM_EVENT) return;
-
-        try {
-            Entity original = (Entity) event.getClass().getMethod("getEntity").invoke(event);
-            Entity transformed = (Entity) ENTITY_TRANSFORM_GET_TRANSFORMED_ENTITY.invoke(event);
-
-            if (pluginConfig.isWorldDisabled(original.getWorld().getName())) return;
-
-            EntityType oldType = original.getType();
-            EntityType newType = transformed.getType();
-
-            // If the type changed, decrement old and increment new
-            if (oldType != newType) {
-                final ChunkCoord coord = ChunkCoord.from(original.getLocation());
-
-                if (Checks.shouldTrackEntity(original, pluginConfig)) {
-                    counterDataManager.getCounterData(coord).decrementEntity(oldType);
-                }
-                chunkTracker.recordExit(original);
-
-                if (Checks.shouldTrackEntity(transformed, pluginConfig)) {
-                    counterDataManager.getCounterData(coord).incrementEntity(newType);
-                }
-                chunkTracker.recordEntry(transformed);
-
-                CSLLogger.debug(() -> "Entity transform: %s→%s in %s"
-                        .formatted(oldType.name(), newType.name(), coord));
-            }
-        } catch (Throwable t) {
-            CSLLogger.debug(() -> "Entity transform handler error: " + t.getMessage());
         }
     }
 
