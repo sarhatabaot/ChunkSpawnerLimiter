@@ -197,27 +197,56 @@ public class EventListener implements Listener {
 
     // -- Entity portal (cross-dimension) ------------------------------------
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityPortal(@NotNull EntityPortalEvent event) {
-        if (pluginConfig.isWorldDisabled(event.getFrom().getWorld().getName())) {
+        if (event.isCancelled() || event.getFrom().getWorld() == null) {
             return;
         }
 
         final Entity entity = event.getEntity();
         if (!Checks.shouldTrackEntity(entity, pluginConfig)) return;
 
-        // Entity is leaving this dimension — decrement its old chunk counter.
-        // A new entity will be created in the target world, and its spawn event
-        // will increment the counter there.
-        final ChunkCoord oldCoord = ChunkCoord.from(entity.getLocation());
-        counterDataManager.getCounterData(oldCoord).decrementEntity(entity.getType());
-        chunkTracker.recordExit(entity);
-
-        CSLLogger.debug(() -> "Entity portal: %s leaving %s"
-                .formatted(entity.getType().name(), oldCoord));
+        final ChunkCoord sourceCoord = ChunkCoord.from(event.getFrom());
+        final EntityType sourceType = entity.getType();
+        final boolean sourceTracked = !pluginConfig.isWorldDisabled(event.getFrom().getWorld().getName());
+        plugin.getServer().getScheduler().runTask(plugin,
+                () -> reconcilePortalTransition(entity, sourceCoord, sourceType, sourceTracked));
     }
 
     // -- Entity transformation (pig→zombified piglin, etc.) -----------------
+
+    private void reconcilePortalTransition(@NotNull Entity entity, @NotNull ChunkCoord sourceCoord,
+                                           @NotNull EntityType sourceType, boolean sourceTracked) {
+        if (!entity.isValid()) {
+            if (sourceTracked) {
+                counterDataManager.decrementEntityIfPresent(sourceCoord, sourceType);
+            }
+            chunkTracker.recordExit(entity);
+            return;
+        }
+
+        final ChunkCoord destinationCoord = ChunkCoord.from(entity);
+        final boolean destinationTracked = !pluginConfig.isWorldDisabled(entity.getWorld().getName())
+                && Checks.shouldTrackEntity(entity, pluginConfig);
+
+        if (!sourceCoord.equals(destinationCoord)) {
+            if (sourceTracked) {
+                counterDataManager.decrementEntityIfPresent(sourceCoord, sourceType);
+            }
+            if (destinationTracked) {
+                counterDataManager.getCounterData(destinationCoord).incrementEntity(entity.getType());
+            }
+        }
+
+        if (destinationTracked) {
+            chunkTracker.recordEntry(entity);
+        } else {
+            chunkTracker.recordExit(entity);
+        }
+
+        CSLLogger.debug(() -> "Entity portal: %s moved from %s to %s"
+                .formatted(entity.getType().name(), sourceCoord, destinationCoord));
+    }
 
     @EventHandler
     public void onPigZap(@NotNull PigZapEvent event) {

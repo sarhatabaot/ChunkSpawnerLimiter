@@ -12,11 +12,15 @@ import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -199,5 +203,94 @@ class EventListenerTest {
         verify(event, never()).setCancelled(true);
         verify(chunkTracker).recordExit(spawningEntity);
         verify(chunkTracker, never()).recordEntry(spawningEntity);
+    }
+
+    @Test
+    @DisplayName("Should ignore cancelled portal events")
+    void shouldIgnoreCancelledPortalEvents() throws NoSuchMethodException {
+        Plugin plugin = mock(Plugin.class);
+        PluginConfig pluginConfig = mock(PluginConfig.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        CounterDataManager counterDataManager = new CounterDataManager();
+        EntityChunkTracker chunkTracker = mock(EntityChunkTracker.class);
+        EventListener listener = new EventListener(plugin, pluginConfig, counterDataManager, notificationService, chunkTracker);
+        EntityPortalEvent event = mock(EntityPortalEvent.class);
+
+        when(event.isCancelled()).thenReturn(true);
+
+        listener.onEntityPortal(event);
+
+        EventHandler annotation = EventListener.class
+                .getDeclaredMethod("onEntityPortal", EntityPortalEvent.class)
+                .getAnnotation(EventHandler.class);
+        assertThat(annotation.priority()).isEqualTo(EventPriority.MONITOR);
+        assertThat(annotation.ignoreCancelled()).isTrue();
+        verify(plugin, never()).getServer();
+        verify(chunkTracker, never()).recordExit(any());
+        verify(chunkTracker, never()).recordEntry(any());
+    }
+
+    @Test
+    @DisplayName("Should reconcile successful portal transitions on the next tick")
+    void shouldReconcileSuccessfulPortalTransitionsOnTheNextTick() {
+        Plugin plugin = mock(Plugin.class);
+        Server server = mock(Server.class);
+        BukkitScheduler scheduler = mock(BukkitScheduler.class);
+        PluginConfig pluginConfig = mock(PluginConfig.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        CounterDataManager counterDataManager = new CounterDataManager();
+        EntityChunkTracker chunkTracker = mock(EntityChunkTracker.class);
+        EventListener listener = new EventListener(plugin, pluginConfig, counterDataManager, notificationService, chunkTracker);
+        EntityPortalEvent event = mock(EntityPortalEvent.class);
+        Entity entity = mock(Entity.class);
+        Location sourceLocation = mock(Location.class);
+        Location destinationLocation = mock(Location.class);
+        Chunk sourceChunk = mock(Chunk.class);
+        Chunk destinationChunk = mock(Chunk.class);
+        World sourceWorld = mock(World.class);
+        World destinationWorld = mock(World.class);
+        UUID sourceWorldId = UUID.randomUUID();
+        UUID destinationWorldId = UUID.randomUUID();
+
+        when(plugin.getServer()).thenReturn(server);
+        when(server.getScheduler()).thenReturn(scheduler);
+        when(event.getFrom()).thenReturn(sourceLocation);
+        when(event.getEntity()).thenReturn(entity);
+        when(sourceLocation.getWorld()).thenReturn(sourceWorld);
+        when(sourceLocation.getChunk()).thenReturn(sourceChunk);
+        when(sourceChunk.getWorld()).thenReturn(sourceWorld);
+        when(sourceChunk.getX()).thenReturn(1);
+        when(sourceChunk.getZ()).thenReturn(2);
+        when(sourceWorld.getName()).thenReturn("source");
+        when(sourceWorld.getUID()).thenReturn(sourceWorldId);
+        when(entity.getType()).thenReturn(EntityType.ZOMBIE);
+        when(entity.isValid()).thenReturn(true);
+        when(entity.getWorld()).thenReturn(destinationWorld);
+        when(entity.getLocation()).thenReturn(destinationLocation);
+        when(destinationLocation.getChunk()).thenReturn(destinationChunk);
+        when(destinationChunk.getWorld()).thenReturn(destinationWorld);
+        when(destinationChunk.getX()).thenReturn(3);
+        when(destinationChunk.getZ()).thenReturn(4);
+        when(destinationWorld.getName()).thenReturn("destination");
+        when(destinationWorld.getUID()).thenReturn(destinationWorldId);
+        when(pluginConfig.hasResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(true);
+
+        ChunkCoord sourceCoord = new ChunkCoord(sourceWorldId, 1, 2);
+        ChunkCoord destinationCoord = new ChunkCoord(destinationWorldId, 3, 4);
+        counterDataManager.getCounterData(sourceCoord).setEntityCount(EntityType.ZOMBIE, 1);
+
+        listener.onEntityPortal(event);
+
+        assertThat(counterDataManager.getCounterData(sourceCoord).getEntityCount(EntityType.ZOMBIE)).isEqualTo(1);
+        assertThat(counterDataManager.getCounterData(destinationCoord).getEntityCount(EntityType.ZOMBIE)).isZero();
+
+        ArgumentCaptor<Runnable> task = ArgumentCaptor.forClass(Runnable.class);
+        verify(scheduler).runTask(eq(plugin), task.capture());
+        task.getValue().run();
+
+        assertThat(counterDataManager.getCounterData(sourceCoord).getEntityCount(EntityType.ZOMBIE)).isZero();
+        assertThat(counterDataManager.getCounterData(destinationCoord).getEntityCount(EntityType.ZOMBIE)).isEqualTo(1);
+        verify(chunkTracker).recordEntry(entity);
+        verify(chunkTracker, never()).recordExit(entity);
     }
 }
