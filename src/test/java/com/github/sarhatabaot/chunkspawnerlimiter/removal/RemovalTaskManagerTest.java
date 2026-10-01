@@ -17,6 +17,7 @@ import org.mockito.MockedStatic;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -32,6 +33,51 @@ import static org.mockito.Mockito.when;
 
 @DisplayName("Removal task manager")
 class RemovalTaskManagerTest {
+
+    @Test
+    @DisplayName("Should enforce a newly configured type on its first inspection")
+    void shouldEnforceANewlyConfiguredTypeOnItsFirstInspection() {
+        ChunkSpawnerLimiter plugin = mock(ChunkSpawnerLimiter.class);
+        PluginConfig config = mock(PluginConfig.class);
+        CounterDataManager counterDataManager = new CounterDataManager();
+        World world = mock(World.class);
+        Chunk chunk = mock(Chunk.class);
+        Entity firstEntity = mock(Entity.class);
+        Entity secondEntity = mock(Entity.class);
+        List<Entity> entities = new ArrayList<>(List.of(firstEntity, secondEntity));
+        AtomicInteger removals = new AtomicInteger();
+        UUID worldId = UUID.randomUUID();
+        ChunkCoord coord = new ChunkCoord(worldId, 3, 4);
+
+        when(config.isNmsEntityCount()).thenReturn(false);
+        when(config.getResolvedEntityTypes()).thenReturn(Set.of(EntityType.ZOMBIE));
+        when(config.hasResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(true);
+        when(config.getResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(1);
+        when(config.getIgnoreMetadata()).thenReturn(List.of());
+        when(world.isChunkLoaded(3, 4)).thenReturn(true);
+        when(world.getChunkAt(3, 4)).thenReturn(chunk);
+        when(chunk.isLoaded()).thenReturn(true);
+        when(chunk.getEntities()).thenAnswer(invocation -> entities.toArray(Entity[]::new));
+        for (Entity entity : entities) {
+            when(entity.getType()).thenReturn(EntityType.ZOMBIE);
+            when(entity.isValid()).thenReturn(true);
+        }
+        Checks.setup(config);
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
+            bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
+            RemovalTaskManager manager = new RemovalTaskManager(
+                    plugin, counterDataManager, config, System::currentTimeMillis, false);
+
+            manager.processChunk(coord, entity -> {
+                entities.remove(entity);
+                removals.incrementAndGet();
+            });
+
+            assertThat(removals).hasValue(1);
+            assertThat(counterDataManager.getCounterData(coord).getEntityCount(EntityType.ZOMBIE)).isEqualTo(1);
+        }
+    }
 
     @Test
     @DisplayName("Should preserve queued chunks beyond the per-tick limit")
@@ -142,6 +188,7 @@ class RemovalTaskManagerTest {
 
         when(config.isNmsEntityCount()).thenReturn(false);
         when(config.hasResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(true);
+        when(config.getResolvedEntityTypes()).thenReturn(Set.of(EntityType.ZOMBIE));
         when(config.getResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(1);
         when(config.getIgnoreMetadata()).thenReturn(List.of());
         when(world.isChunkLoaded(3, 4)).thenReturn(true);

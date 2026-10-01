@@ -362,6 +362,10 @@ public class PluginConfig {
         return resolvedEntityLimits.containsKey(type);
     }
 
+    public Set<EntityType> getResolvedEntityTypes() {
+        return Collections.unmodifiableSet(resolvedEntityLimits.keySet());
+    }
+
     /**
      * Loads spawn reasons from the configuration.
      * If no spawn reasons are configured, defaults to all spawn reasons.

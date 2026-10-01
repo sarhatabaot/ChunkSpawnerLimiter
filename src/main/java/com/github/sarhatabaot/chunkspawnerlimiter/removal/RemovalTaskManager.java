@@ -132,9 +132,11 @@ public class RemovalTaskManager {
 
         // --- Phase 1: Rebuild cache from actual entity state ---
         // Reset all tracked entity type counters to zero
-        Set<EntityType> trackedTypes = new HashSet<>(data.getTrackedEntityTypes());
+        Set<EntityType> configuredTypes = new HashSet<>(pluginConfig.getResolvedEntityTypes());
+        Set<EntityType> counterTypes = new HashSet<>(data.getTrackedEntityTypes());
+        counterTypes.addAll(configuredTypes);
         boolean removalAttempted = false;
-        for (EntityType type : trackedTypes) {
+        for (EntityType type : counterTypes) {
             data.setEntityCount(type, 0);
         }
 
@@ -149,7 +151,7 @@ public class RemovalTaskManager {
 
         // --- Phase 2: Remove excess entities ---
         // Only gather entity lists for types that are actually over the limit
-        for (EntityType type : trackedTypes) {
+        for (EntityType type : configuredTypes) {
             Integer allowed = pluginConfig.getResolvedEntityLimit(type);
             if (allowed == null) continue;
 
@@ -175,7 +177,7 @@ public class RemovalTaskManager {
         }
 
         if (removalAttempted) {
-            for (EntityType type : trackedTypes) {
+            for (EntityType type : counterTypes) {
                 data.setEntityCount(type, 0);
             }
 
