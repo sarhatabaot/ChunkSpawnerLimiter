@@ -34,6 +34,54 @@ import static org.mockito.Mockito.when;
 class RemovalTaskManagerTest {
 
     @Test
+    @DisplayName("Should preserve queued chunks beyond the per-tick limit")
+    void shouldPreserveQueuedChunksBeyondThePerTickLimit() {
+        ChunkSpawnerLimiter plugin = mock(ChunkSpawnerLimiter.class);
+        PluginConfig config = mock(PluginConfig.class);
+        CounterDataManager counterDataManager = new CounterDataManager();
+        World world = mock(World.class);
+        Chunk firstChunk = mock(Chunk.class);
+        Chunk secondChunk = mock(Chunk.class);
+        Chunk thirdChunk = mock(Chunk.class);
+        UUID worldId = UUID.randomUUID();
+        ChunkCoord firstCoord = new ChunkCoord(worldId, 1, 0);
+        ChunkCoord secondCoord = new ChunkCoord(worldId, 2, 0);
+        ChunkCoord thirdCoord = new ChunkCoord(worldId, 3, 0);
+
+        when(config.isNmsEntityCount()).thenReturn(false);
+        when(config.getInspectionMaxChunksPerTick()).thenReturn(2);
+        when(world.isChunkLoaded(1, 0)).thenReturn(true);
+        when(world.isChunkLoaded(2, 0)).thenReturn(true);
+        when(world.isChunkLoaded(3, 0)).thenReturn(true);
+        when(world.getChunkAt(1, 0)).thenReturn(firstChunk);
+        when(world.getChunkAt(2, 0)).thenReturn(secondChunk);
+        when(world.getChunkAt(3, 0)).thenReturn(thirdChunk);
+        for (Chunk chunk : List.of(firstChunk, secondChunk, thirdChunk)) {
+            when(chunk.isLoaded()).thenReturn(true);
+            when(chunk.getEntities()).thenReturn(new Entity[0]);
+        }
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
+            bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
+            RemovalTaskManager manager = new RemovalTaskManager(
+                    plugin, counterDataManager, config, System::currentTimeMillis, false);
+            manager.queueChunkCheck(firstCoord, entity -> { });
+            manager.queueChunkCheck(secondCoord, entity -> { });
+            manager.queueChunkCheck(thirdCoord, entity -> { });
+
+            manager.processQueue();
+
+            verify(firstChunk).getEntities();
+            verify(secondChunk).getEntities();
+            verify(thirdChunk, never()).getEntities();
+
+            manager.processQueue();
+
+            verify(thirdChunk).getEntities();
+        }
+    }
+
+    @Test
     @DisplayName("Should continue periodic inspections until removed")
     void shouldContinuePeriodicInspectionsUntilRemoved() {
         ChunkSpawnerLimiter plugin = mock(ChunkSpawnerLimiter.class);

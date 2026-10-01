@@ -187,6 +187,10 @@ public class PluginConfig {
         return config.getInt("events.inspections.frequency", 300);
     }
 
+    public int getInspectionMaxChunksPerTick() {
+        return Math.max(1, config.getInt("events.inspections.max-chunks-per-tick", 8));
+    }
+
 
     /**
      * Loads block groups from the configuration.

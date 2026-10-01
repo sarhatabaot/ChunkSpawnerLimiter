@@ -10,6 +10,7 @@ events:
   inspections:
     enabled: false
     frequency: 60
+    max-chunks-per-tick: 8
 
 entities:
   entity-groups:

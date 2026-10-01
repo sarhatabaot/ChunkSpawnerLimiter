@@ -96,10 +96,18 @@ public class RemovalTaskManager {
             }
         }
 
-        QueuedCheck check;
-        while ((check = pendingChunks.poll()) != null) {
-            processChunk(check.coord, check.action);
-            queuedChunks.remove(check.coord);
+        int maxChunks = Math.max(1, pluginConfig.getInspectionMaxChunksPerTick());
+        for (int processed = 0; processed < maxChunks; processed++) {
+            QueuedCheck check = pendingChunks.poll();
+            if (check == null) {
+                break;
+            }
+
+            try {
+                processChunk(check.coord, check.action);
+            } finally {
+                queuedChunks.remove(check.coord);
+            }
         }
     }
 

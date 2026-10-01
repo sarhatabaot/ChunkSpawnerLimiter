@@ -14,6 +14,8 @@ events:
     # This will recheck loaded chunks every {frequency} seconds
     enabled: true
     frequency: 60
+    # Maximum queued chunks inspected during one scheduler tick
+    max-chunks-per-tick: 8
 
 # Entity management settings
 entities:
