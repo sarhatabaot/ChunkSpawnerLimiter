@@ -19,17 +19,61 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @DisplayName("Removal task manager")
 class RemovalTaskManagerTest {
+
+    @Test
+    @DisplayName("Should continue periodic inspections until removed")
+    void shouldContinuePeriodicInspectionsUntilRemoved() {
+        ChunkSpawnerLimiter plugin = mock(ChunkSpawnerLimiter.class);
+        PluginConfig config = mock(PluginConfig.class);
+        CounterDataManager counterDataManager = new CounterDataManager();
+        World world = mock(World.class);
+        Chunk chunk = mock(Chunk.class);
+        AtomicLong clock = new AtomicLong(1_000L);
+        UUID worldId = UUID.randomUUID();
+        ChunkCoord coord = new ChunkCoord(worldId, 3, 4);
+
+        when(config.isNmsEntityCount()).thenReturn(false);
+        when(world.getName()).thenReturn("world");
+        when(world.isChunkLoaded(3, 4)).thenReturn(true);
+        when(world.getChunkAt(3, 4)).thenReturn(chunk);
+        when(chunk.isLoaded()).thenReturn(true);
+        when(chunk.getEntities()).thenReturn(new Entity[0]);
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
+            bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
+            RemovalTaskManager manager = new RemovalTaskManager(
+                    plugin, counterDataManager, config, clock::get, false);
+
+            manager.scheduleRecheck(coord, entity -> { }, 1L);
+            clock.set(1_999L);
+            manager.processQueue();
+            verify(chunk, never()).getEntities();
+
+            clock.set(2_000L);
+            manager.processQueue();
+            clock.set(3_000L);
+            manager.processQueue();
+            verify(chunk, times(2)).getEntities();
+
+            manager.removeChunkRecheck(coord);
+            clock.set(4_000L);
+            manager.processQueue();
+            verify(chunk, times(2)).getEntities();
+        }
+    }
 
     @Test
     @DisplayName("Should reconcile counters after mixed removal accounting")

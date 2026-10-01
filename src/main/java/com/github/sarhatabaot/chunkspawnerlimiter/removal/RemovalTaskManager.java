@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 
 public class RemovalTaskManager {
     private final static long TICKS_PER_SECOND = 20L;
@@ -25,20 +26,30 @@ public class RemovalTaskManager {
             Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     // Map of chunks that should be rechecked after a delay (timestamp in ms)
-    private final Map<ChunkCoord, List<DelayedQueuedCheck>> scheduledRechecks = new ConcurrentHashMap<>();
+    private final Map<ChunkCoord, ScheduledRecheck> scheduledRechecks = new ConcurrentHashMap<>();
 
     private final CounterDataManager counterDataManager;
     private final ChunkSpawnerLimiter plugin;
     private final PluginConfig pluginConfig;
+    private final LongSupplier currentTimeMillis;
     @Nullable
     private final NmsEntityCounter nmsEntityCounter;
 
     public RemovalTaskManager(ChunkSpawnerLimiter plugin, CounterDataManager counterDataManager, PluginConfig pluginConfig) {
+        this(plugin, counterDataManager, pluginConfig, System::currentTimeMillis, true);
+    }
+
+    RemovalTaskManager(ChunkSpawnerLimiter plugin, CounterDataManager counterDataManager,
+                       PluginConfig pluginConfig, LongSupplier currentTimeMillis,
+                       boolean startProcessing) {
         this.plugin = plugin;
         this.counterDataManager = counterDataManager;
         this.pluginConfig = pluginConfig;
+        this.currentTimeMillis = currentTimeMillis;
         this.nmsEntityCounter = NmsEntityCounter.create(pluginConfig);
-        startProcessingTask();
+        if (startProcessing) {
+            startProcessingTask();
+        }
     }
 
     public CounterDataManager getCounterDataManager() {
@@ -49,8 +60,9 @@ public class RemovalTaskManager {
      * Schedule this chunk to be checked again after X seconds.
      */
     public void scheduleRecheck(ChunkCoord coord, Consumer<Entity> action, long delaySeconds) {
-        long nextCheck = System.currentTimeMillis() + (delaySeconds * 1000L);
-        scheduledRechecks.computeIfAbsent(coord, k -> new ArrayList<>()).add(new DelayedQueuedCheck(action, nextCheck));
+        long intervalMillis = Math.max(1L, delaySeconds) * 1000L;
+        long nextCheck = currentTimeMillis.getAsLong() + intervalMillis;
+        scheduledRechecks.put(coord, new ScheduledRecheck(action, intervalMillis, nextCheck));
         CSLLogger.debug(() -> "Scheduled recheck for chunk %s in %d seconds".formatted(coord, delaySeconds));
     }
 
@@ -69,31 +81,25 @@ public class RemovalTaskManager {
         Bukkit.getScheduler().runTaskTimer(plugin, this::processQueue, TICKS_PER_SECOND, TICKS_PER_SECOND); // every 1 second
     }
 
-    private void processQueue() {
+    void processQueue() {
+        long now = currentTimeMillis.getAsLong();
+        for (Map.Entry<ChunkCoord, ScheduledRecheck> entry : scheduledRechecks.entrySet()) {
+            if (shouldPurgeScheduled(entry.getKey())) {
+                scheduledRechecks.remove(entry.getKey(), entry.getValue());
+                continue;
+            }
+
+            ScheduledRecheck scheduled = entry.getValue();
+            if (scheduled.nextCheckAt <= now) {
+                queueChunkCheck(entry.getKey(), scheduled.action);
+                scheduledRechecks.replace(entry.getKey(), scheduled, scheduled.next(now));
+            }
+        }
+
         QueuedCheck check;
         while ((check = pendingChunks.poll()) != null) {
             processChunk(check.coord, check.action);
             queuedChunks.remove(check.coord);
-        }
-
-        long now = System.currentTimeMillis();
-        for (Iterator<Map.Entry<ChunkCoord, List<DelayedQueuedCheck>>> it = scheduledRechecks.entrySet().iterator(); it.hasNext();) {
-            Map.Entry<ChunkCoord, List<DelayedQueuedCheck>> entry = it.next();
-            if (shouldPurgeScheduled(entry.getKey())) {
-                it.remove();
-                continue;
-            }
-            List<DelayedQueuedCheck> list = entry.getValue();
-            list.removeIf(delayed -> {
-                if (delayed.timestamp <= now) {
-                    queueChunkCheck(entry.getKey(), delayed.action);
-                    return true;
-                }
-                return false;
-            });
-            if (list.isEmpty()) {
-                it.remove();
-            }
         }
     }
 
@@ -185,7 +191,10 @@ public class RemovalTaskManager {
     private record QueuedCheck(ChunkCoord coord, Consumer<Entity> action) {
     }
 
-    private record DelayedQueuedCheck(Consumer<Entity> action, long timestamp) {
+    private record ScheduledRecheck(Consumer<Entity> action, long intervalMillis, long nextCheckAt) {
+        private ScheduledRecheck next(long now) {
+            return new ScheduledRecheck(action, intervalMillis, now + intervalMillis);
+        }
     }
 
 
