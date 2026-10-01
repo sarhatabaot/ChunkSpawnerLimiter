@@ -4,19 +4,18 @@ import com.github.sarhatabaot.chunkspawnerlimiter.CSLLogger;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
 import org.bukkit.Bukkit;
-import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Predicate;
 
 /**
@@ -27,18 +26,22 @@ import java.util.function.Predicate;
  * changes.
  */
 public class EntityChunkTracker {
+    private static final int DEFAULT_MAX_ENTITIES_PER_POLL = 256;
 
     private final Map<UUID, TrackedEntity> trackedEntities = new ConcurrentHashMap<>();
+    private final Queue<UUID> pollingQueue = new ConcurrentLinkedQueue<>();
     private final CounterDataManager counterDataManager;
     private final Predicate<Entity> isTracked;
     private final Plugin plugin;
     private final long intervalTicks;
+    private final int maxEntitiesPerPoll;
 
     public EntityChunkTracker(Plugin plugin,
                               CounterDataManager counterDataManager,
                               Predicate<Entity> isTracked,
                               long intervalTicks) {
-        this(plugin, counterDataManager, isTracked, intervalTicks, true);
+        this(plugin, counterDataManager, isTracked, intervalTicks,
+                DEFAULT_MAX_ENTITIES_PER_POLL, true);
     }
 
     EntityChunkTracker(Plugin plugin,
@@ -46,10 +49,21 @@ public class EntityChunkTracker {
                        Predicate<Entity> isTracked,
                        long intervalTicks,
                        boolean startPolling) {
+        this(plugin, counterDataManager, isTracked, intervalTicks,
+                DEFAULT_MAX_ENTITIES_PER_POLL, startPolling);
+    }
+
+    EntityChunkTracker(Plugin plugin,
+                       CounterDataManager counterDataManager,
+                       Predicate<Entity> isTracked,
+                       long intervalTicks,
+                       int maxEntitiesPerPoll,
+                       boolean startPolling) {
         this.plugin = plugin;
         this.counterDataManager = counterDataManager;
         this.isTracked = isTracked;
         this.intervalTicks = intervalTicks;
+        this.maxEntitiesPerPoll = Math.max(1, maxEntitiesPerPoll);
         if (startPolling) {
             startPolling();
         }
@@ -65,18 +79,30 @@ public class EntityChunkTracker {
      */
     public void recordEntry(@NotNull Entity entity) {
         if (!isTracked.test(entity)) return;
-        trackedEntities.put(entity.getUniqueId(), TrackedEntity.from(entity));
+        UUID uuid = entity.getUniqueId();
+        if (trackedEntities.put(uuid, TrackedEntity.from(entity)) == null) {
+            pollingQueue.offer(uuid);
+        }
     }
 
     /**
      * Remove tracking for an entity (call on death/despawn/world-exit).
      */
     public void recordExit(@NotNull Entity entity) {
-        trackedEntities.remove(entity.getUniqueId());
+        UUID uuid = entity.getUniqueId();
+        trackedEntities.remove(uuid);
+        while (pollingQueue.remove(uuid)) {
+        }
     }
 
     public void forgetChunk(@NotNull ChunkCoord chunkCoord) {
-        trackedEntities.entrySet().removeIf(entry -> entry.getValue().chunkCoord().equals(chunkCoord));
+        for (Map.Entry<UUID, TrackedEntity> entry : trackedEntities.entrySet()) {
+            if (entry.getValue().chunkCoord().equals(chunkCoord)
+                    && trackedEntities.remove(entry.getKey(), entry.getValue())) {
+                while (pollingQueue.remove(entry.getKey())) {
+                }
+            }
+        }
     }
 
     /**
@@ -84,11 +110,44 @@ public class EntityChunkTracker {
      * and update counters accordingly.
      */
     void pollEntityMovements() {
-        List<Entity> currentEntities = new ArrayList<>();
-        for (World world : Bukkit.getWorlds()) {
-            currentEntities.addAll(world.getEntities());
+        int processed = 0;
+        while (processed < maxEntitiesPerPoll) {
+            UUID uuid = pollingQueue.poll();
+            if (uuid == null) {
+                break;
+            }
+
+            TrackedEntity previous = trackedEntities.get(uuid);
+            if (previous != null && reconcileTrackedEntity(uuid, previous)) {
+                pollingQueue.offer(uuid);
+            }
+            processed++;
         }
-        reconcileEntities(currentEntities);
+    }
+
+    private boolean reconcileTrackedEntity(UUID uuid, TrackedEntity previous) {
+        Entity entity = previous.entity();
+        if (!entity.isValid() || entity.isDead()) {
+            if (trackedEntities.remove(uuid, previous)) {
+                counterDataManager.decrementEntityIfPresent(previous.chunkCoord(), previous.type());
+            }
+            return false;
+        }
+
+        if (!isTracked.test(entity)) {
+            counterDataManager.decrementEntityIfPresent(previous.chunkCoord(), previous.type());
+            trackedEntities.remove(uuid, previous);
+            return false;
+        }
+
+        EntityType currentType = entity.getType();
+        ChunkCoord currentCoord = ChunkCoord.from(entity);
+        if (previous.type() != currentType || !previous.chunkCoord().equals(currentCoord)) {
+            counterDataManager.decrementEntityIfPresent(previous.chunkCoord(), previous.type());
+            counterDataManager.getCounterData(currentCoord).incrementEntity(currentType);
+            trackedEntities.put(uuid, new TrackedEntity(currentCoord, currentType, entity));
+        }
+        return true;
     }
 
     void reconcileEntities(Iterable<Entity> currentEntities) {
@@ -116,7 +175,7 @@ public class EntityChunkTracker {
             if (previous.type() != currentType || !previous.chunkCoord().equals(currentCoord)) {
                 counterDataManager.decrementEntityIfPresent(previous.chunkCoord(), previous.type());
                 counterDataManager.getCounterData(currentCoord).incrementEntity(currentType);
-                trackedEntities.put(uuid, new TrackedEntity(currentCoord, currentType));
+                trackedEntities.put(uuid, new TrackedEntity(currentCoord, currentType, entity));
                 movesDetected++;
             }
         }
@@ -149,9 +208,9 @@ public class EntityChunkTracker {
         return trackedEntities.size();
     }
 
-    private record TrackedEntity(ChunkCoord chunkCoord, EntityType type) {
+    private record TrackedEntity(ChunkCoord chunkCoord, EntityType type, Entity entity) {
         private static TrackedEntity from(Entity entity) {
-            return new TrackedEntity(ChunkCoord.from(entity), entity.getType());
+            return new TrackedEntity(ChunkCoord.from(entity), entity.getType(), entity);
         }
     }
 }

@@ -23,6 +23,48 @@ import static org.mockito.Mockito.when;
 class EntityChunkTrackerTest {
 
     @Test
+    @DisplayName("Should bound tracked entity work per poll")
+    void shouldBoundTrackedEntityWorkPerPoll() {
+        CounterDataManager manager = new CounterDataManager();
+        EntityChunkTracker tracker = new EntityChunkTracker(
+                mock(Plugin.class), manager, entity -> true, 40L, 1, false);
+        World world = mock(World.class);
+        Entity firstEntity = entity(world, EntityType.ZOMBIE, 1, 1);
+        Entity secondEntity = entity(world, EntityType.SKELETON, 2, 2);
+        UUID worldId = UUID.randomUUID();
+        when(world.getUID()).thenReturn(worldId);
+        ChunkCoord firstOldCoord = ChunkCoord.from(world, 1, 1);
+        ChunkCoord secondOldCoord = ChunkCoord.from(world, 2, 2);
+        ChunkCoord firstNewCoord = ChunkCoord.from(world, 3, 3);
+        ChunkCoord secondNewCoord = ChunkCoord.from(world, 4, 4);
+        manager.getCounterData(firstOldCoord).setEntityCount(EntityType.ZOMBIE, 1);
+        manager.getCounterData(secondOldCoord).setEntityCount(EntityType.SKELETON, 1);
+        tracker.recordEntry(firstEntity);
+        tracker.recordEntry(secondEntity);
+
+        Location firstMovedLocation = mock(Location.class);
+        Chunk firstMovedChunk = chunk(world, 3, 3);
+        when(firstMovedLocation.getChunk()).thenReturn(firstMovedChunk);
+        when(firstEntity.getLocation()).thenReturn(firstMovedLocation);
+        Location secondMovedLocation = mock(Location.class);
+        Chunk secondMovedChunk = chunk(world, 4, 4);
+        when(secondMovedLocation.getChunk()).thenReturn(secondMovedChunk);
+        when(secondEntity.getLocation()).thenReturn(secondMovedLocation);
+
+        tracker.pollEntityMovements();
+
+        assertThat(manager.getCounterData(firstOldCoord).getEntityCount(EntityType.ZOMBIE)).isZero();
+        assertThat(manager.getCounterData(firstNewCoord).getEntityCount(EntityType.ZOMBIE)).isOne();
+        assertThat(manager.getCounterData(secondOldCoord).getEntityCount(EntityType.SKELETON)).isOne();
+        assertThat(manager.getCounterData(secondNewCoord).getEntityCount(EntityType.SKELETON)).isZero();
+
+        tracker.pollEntityMovements();
+
+        assertThat(manager.getCounterData(secondOldCoord).getEntityCount(EntityType.SKELETON)).isZero();
+        assertThat(manager.getCounterData(secondNewCoord).getEntityCount(EntityType.SKELETON)).isOne();
+    }
+
+    @Test
     @DisplayName("Should decrement the stored type when an entity disappears")
     void shouldDecrementStoredTypeWhenEntityDisappears() {
         CounterDataManager manager = new CounterDataManager();
