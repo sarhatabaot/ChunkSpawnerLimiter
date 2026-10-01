@@ -3,24 +3,89 @@ package com.github.sarhatabaot.chunkspawnerlimiter.counter;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.eq;
 
 @DisplayName("CounterDataManager Tests")
 class CounterDataManagerTest {
+
+    @Test
+    @DisplayName("Should batch loaded chunk rescans across scheduler ticks")
+    void shouldBatchLoadedChunkRescansAcrossSchedulerTicks() {
+        CounterDataManager manager = new CounterDataManager();
+        Plugin plugin = mock(Plugin.class);
+        Server server = mock(Server.class);
+        BukkitScheduler scheduler = mock(BukkitScheduler.class);
+        World world = mock(World.class);
+        Chunk firstChunk = mock(Chunk.class);
+        Chunk secondChunk = mock(Chunk.class);
+        Entity firstEntity = mock(Entity.class);
+        Entity secondEntity = mock(Entity.class);
+        Queue<Runnable> scheduledTasks = new ArrayDeque<>();
+        AtomicInteger completedChunks = new AtomicInteger(-1);
+        UUID worldId = UUID.randomUUID();
+
+        when(plugin.getServer()).thenReturn(server);
+        when(server.getScheduler()).thenReturn(scheduler);
+        doAnswer(invocation -> {
+            scheduledTasks.offer(invocation.getArgument(1));
+            return null;
+        }).when(scheduler).runTask(eq(plugin), any(Runnable.class));
+        when(world.getUID()).thenReturn(worldId);
+        when(world.getLoadedChunks()).thenReturn(new Chunk[]{firstChunk, secondChunk});
+        when(firstChunk.getWorld()).thenReturn(world);
+        when(firstChunk.getX()).thenReturn(1);
+        when(firstChunk.getZ()).thenReturn(1);
+        when(firstChunk.getEntities()).thenReturn(new Entity[]{firstEntity});
+        when(secondChunk.getWorld()).thenReturn(world);
+        when(secondChunk.getX()).thenReturn(2);
+        when(secondChunk.getZ()).thenReturn(2);
+        when(secondChunk.getEntities()).thenReturn(new Entity[]{secondEntity});
+        when(firstEntity.getType()).thenReturn(EntityType.ZOMBIE);
+        when(secondEntity.getType()).thenReturn(EntityType.SKELETON);
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
+            bukkit.when(Bukkit::getWorlds).thenReturn(List.of(world));
+
+            manager.rescanAllLoadedChunksBatched(plugin, entity -> true, 1, completedChunks::set);
+            scheduledTasks.remove().run();
+
+            verify(firstChunk).getEntities();
+            verify(secondChunk, never()).getEntities();
+            assertThat(completedChunks).hasValue(-1);
+
+            while (!scheduledTasks.isEmpty()) {
+                scheduledTasks.remove().run();
+            }
+
+            verify(secondChunk).getEntities();
+            assertThat(completedChunks).hasValue(2);
+        }
+    }
 
     @Test
     @DisplayName("Should synchronize an entity type while excluding the spawning entity")

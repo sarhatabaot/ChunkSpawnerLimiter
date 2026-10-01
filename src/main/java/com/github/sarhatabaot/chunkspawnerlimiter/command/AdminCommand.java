@@ -99,12 +99,13 @@ public class AdminCommand {
         final CommandSender sender = arguments.getSender();
         sender.sendMessage(ChatColor.YELLOW + "Resyncing entity counters for all loaded chunks...");
 
-        int chunks = plugin.getCounterDataManager().rescanAllLoadedChunks(
-                entity -> Checks.shouldTrackEntity(entity, pluginConfig)
+        plugin.getCounterDataManager().rescanAllLoadedChunksBatched(
+                plugin,
+                entity -> Checks.shouldTrackEntity(entity, pluginConfig),
+                pluginConfig.getInspectionMaxChunksPerTick(),
+                chunks -> sender.sendMessage(ChatColor.GREEN + "Resync complete. "
+                        + chunks + " chunks rescanned.")
         );
-
-        sender.sendMessage(ChatColor.GREEN + "Resync complete. " +
-                chunks + " chunks rescanned.");
     }
 
     /*
