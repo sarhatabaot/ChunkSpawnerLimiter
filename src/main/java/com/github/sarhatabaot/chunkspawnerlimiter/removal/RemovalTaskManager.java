@@ -119,6 +119,7 @@ public class RemovalTaskManager {
         // --- Phase 1: Rebuild cache from actual entity state ---
         // Reset all tracked entity type counters to zero
         Set<EntityType> trackedTypes = new HashSet<>(data.getTrackedEntityTypes());
+        boolean removalAttempted = false;
         for (EntityType type : trackedTypes) {
             data.setEntityCount(type, 0);
         }
@@ -127,7 +128,7 @@ public class RemovalTaskManager {
         Entity[] entities = chunk.getEntities();
         for (Entity entity : entities) {
             EntityType type = entity.getType();
-            if (Checks.shouldTrackEntity(entity, pluginConfig)) {
+            if (isCountableEntity(entity)) {
                 data.incrementEntity(type);
             }
         }
@@ -145,7 +146,7 @@ public class RemovalTaskManager {
             // Collect entities of this type (only when we know we need to remove some)
             List<Entity> typedEntities = new ArrayList<>();
             for (Entity entity : entities) {
-                if (entity.getType() == type && Checks.shouldTrackEntity(entity, pluginConfig)
+                if (entity.getType() == type && isCountableEntity(entity)
                         && !shouldSkipRemoval(entity)) {
                     typedEntities.add(entity);
                 }
@@ -155,10 +156,25 @@ public class RemovalTaskManager {
             for (int i = 0; i < toRemove && i < size; i++) {
                 Entity entity = typedEntities.get(i);
                 removalAction.accept(entity);
-                // Decrement the cache after plugin-initiated removal
-                counterDataManager.decrementEntityForRemoval(entity);
+                removalAttempted = true;
             }
         }
+
+        if (removalAttempted) {
+            for (EntityType type : trackedTypes) {
+                data.setEntityCount(type, 0);
+            }
+
+            for (Entity entity : chunk.getEntities()) {
+                if (isCountableEntity(entity)) {
+                    data.incrementEntity(entity.getType());
+                }
+            }
+        }
+    }
+
+    private boolean isCountableEntity(Entity entity) {
+        return entity.isValid() && !entity.isDead() && Checks.shouldTrackEntity(entity, pluginConfig);
     }
 
     private boolean shouldSkipRemoval(final Entity entity) {

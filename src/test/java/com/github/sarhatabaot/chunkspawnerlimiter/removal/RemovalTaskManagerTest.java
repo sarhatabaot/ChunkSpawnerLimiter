@@ -15,7 +15,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +30,58 @@ import static org.mockito.Mockito.when;
 
 @DisplayName("Removal task manager")
 class RemovalTaskManagerTest {
+
+    @Test
+    @DisplayName("Should reconcile counters after mixed removal accounting")
+    void shouldReconcileCountersAfterMixedRemovalAccounting() {
+        ChunkSpawnerLimiter plugin = mock(ChunkSpawnerLimiter.class);
+        PluginConfig config = mock(PluginConfig.class);
+        BukkitScheduler scheduler = mock(BukkitScheduler.class);
+        CounterDataManager counterDataManager = new CounterDataManager();
+        World world = mock(World.class);
+        Chunk chunk = mock(Chunk.class);
+        Entity deathEventEntity = mock(Entity.class);
+        Entity directlyRemovedEntity = mock(Entity.class);
+        Entity remainingEntity = mock(Entity.class);
+        List<Entity> entities = new ArrayList<>(List.of(deathEventEntity, directlyRemovedEntity, remainingEntity));
+        AtomicInteger removals = new AtomicInteger();
+        UUID worldId = UUID.randomUUID();
+        ChunkCoord coord = new ChunkCoord(worldId, 3, 4);
+
+        when(config.isNmsEntityCount()).thenReturn(false);
+        when(config.hasResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(true);
+        when(config.getResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(1);
+        when(config.getIgnoreMetadata()).thenReturn(List.of());
+        when(world.isChunkLoaded(3, 4)).thenReturn(true);
+        when(world.getChunkAt(3, 4)).thenReturn(chunk);
+        when(chunk.isLoaded()).thenReturn(true);
+        when(chunk.getEntities()).thenAnswer(invocation -> entities.toArray(Entity[]::new));
+        for (Entity entity : entities) {
+            when(entity.getType()).thenReturn(EntityType.ZOMBIE);
+            when(entity.isValid()).thenReturn(true);
+        }
+        counterDataManager.getCounterData(coord).setEntityCount(EntityType.ZOMBIE, 3);
+        Checks.setup(config);
+
+        Consumer<Entity> removalAction = entity -> {
+            entities.remove(entity);
+            if (entity == deathEventEntity) {
+                counterDataManager.getCounterData(coord).decrementEntity(EntityType.ZOMBIE);
+            }
+            removals.incrementAndGet();
+        };
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
+            bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
+            bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
+            RemovalTaskManager manager = new RemovalTaskManager(plugin, counterDataManager, config);
+
+            manager.processChunk(coord, removalAction);
+
+            assertThat(removals).hasValue(2);
+            assertThat(counterDataManager.getCounterData(coord).getEntityCount(EntityType.ZOMBIE)).isEqualTo(1);
+        }
+    }
 
     @Test
     @DisplayName("Should not remove players when player killing is disabled")
