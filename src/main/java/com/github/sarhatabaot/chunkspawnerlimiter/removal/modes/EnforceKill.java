@@ -28,19 +28,18 @@ public final class EnforceKill implements RemovalMode {
             event.setCancelled(true);
         }
 
+        final Consumer<Entity> action = getEntityRemovalAction();
         if (entity instanceof LivingEntity) {
             // setHealth(0) triggers EntityDeathEvent → counter decremented by event handler
-            entity.remove(); // The entity is being prevented anyway, just mark it
-            // Actually: want to kill. Use the action.
-            getEntityRemovalAction().accept(entity);
+            action.accept(entity);
         } else {
             // Non-living: entity.remove() does NOT fire EntityDeathEvent
-            entity.remove();
+            action.accept(entity);
             removalTaskManager.getCounterDataManager().decrementEntityForRemoval(entity);
         }
 
         ChunkCoord coord = ChunkCoord.from(entity.getLocation().getChunk());
-        removalTaskManager.queueChunkCheck(coord, getEntityRemovalAction());
+        removalTaskManager.queueChunkCheck(coord, action);
     }
 
     @Contract(pure = true)

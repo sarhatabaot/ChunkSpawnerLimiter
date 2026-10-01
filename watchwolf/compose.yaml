@@ -1,0 +1,34 @@
+name: watchwolf
+
+services:
+  servers-manager:
+    build:
+      context: ${WATCHWOLF_ROOT}/ServersManager/ci/release
+    image: watchwolf/servers-manager:local
+    container_name: ServersManager
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      MACHINE_IP: ${MACHINE_IP}
+      PUBLIC_IP: ${PUBLIC_IP}
+      PARENT_PWD: ${WATCHWOLF_ROOT}/ServersManager/ci/release
+      SERVER_PATH_SHIFT: "."
+    volumes:
+      - ${WATCHWOLF_ROOT}/ServersManager/ci/release/server-types:/servers/server-types
+      - ${WATCHWOLF_ROOT}/ServersManager/ci/release/usual-plugins:/servers/usual-plugins
+      - ${WATCHWOLF_ROOT}/ServersManager/ci/release/logs:/servers/logs
+      - ${WATCHWOLF_ROOT}/ServersManager/ci/release/tmp:/servers/tmp
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  clients-manager:
+    build:
+      context: ${WATCHWOLF_ROOT}/ClientsManager
+    image: watchwolf/clients-manager:local
+    container_name: ClientsManager
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      MACHINE_IP: ${MACHINE_IP}
+      PUBLIC_IP: ${PUBLIC_IP}
+    depends_on:
+      - servers-manager
