@@ -690,15 +690,6 @@ public class PluginConfig {
         return trackedBlockMaterials;
     }
 
-    /**
-     * Checks whether NMS-based entity counting is enabled.
-     *
-     * @return true if NMS entity counting should be used
-     */
-    public boolean isNmsEntityCount() {
-        return config.getBoolean("entities.nms-entity-count", false);
-    }
-
     private boolean hasKnownStackingPlugin() {
         return plugin.getServer().getPluginManager().isPluginEnabled("WildStacker")
                 || plugin.getServer().getPluginManager().isPluginEnabled("RoseStacker")

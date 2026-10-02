@@ -6,13 +6,11 @@ import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterData;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
-import com.github.sarhatabaot.chunkspawnerlimiter.reflection.NmsEntityCounter;
 import com.github.sarhatabaot.chunkspawnerlimiter.reflection.RaidReflection;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,9 +31,6 @@ public class RemovalTaskManager {
     private final ChunkSpawnerLimiter plugin;
     private final PluginConfig pluginConfig;
     private final LongSupplier currentTimeMillis;
-    @Nullable
-    private final NmsEntityCounter nmsEntityCounter;
-
     public RemovalTaskManager(ChunkSpawnerLimiter plugin, CounterDataManager counterDataManager, PluginConfig pluginConfig) {
         this(plugin, counterDataManager, pluginConfig, System::currentTimeMillis, true);
     }
@@ -47,7 +42,6 @@ public class RemovalTaskManager {
         this.counterDataManager = counterDataManager;
         this.pluginConfig = pluginConfig;
         this.currentTimeMillis = currentTimeMillis;
-        this.nmsEntityCounter = NmsEntityCounter.create(pluginConfig);
         if (startProcessing) {
             startProcessingTask();
         }

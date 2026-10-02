@@ -21,7 +21,6 @@ entities:
     PLAYER: 0
   compatibility:
     defer-count-until-next-tick: false
-    nms-entity-count: false
   preservation:
     named-entities: true
     raid-entities: true

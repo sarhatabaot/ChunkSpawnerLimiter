@@ -52,7 +52,6 @@ class RemovalTaskManagerTest {
         @SuppressWarnings("unchecked")
         Consumer<Entity> removalAction = mock(Consumer.class);
 
-        when(config.isNmsEntityCount()).thenReturn(false);
         when(config.getResolvedEntityTypes()).thenReturn(Set.of(EntityType.ZOMBIE));
         when(config.hasResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(true);
         when(config.getResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(0);
@@ -101,7 +100,6 @@ class RemovalTaskManagerTest {
         UUID worldId = UUID.randomUUID();
         ChunkCoord coord = new ChunkCoord(worldId, 3, 4);
 
-        when(config.isNmsEntityCount()).thenReturn(false);
         when(config.getResolvedEntityTypes()).thenReturn(Set.of(EntityType.ZOMBIE));
         when(config.hasResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(true);
         when(config.getResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(1);
@@ -146,7 +144,6 @@ class RemovalTaskManagerTest {
         ChunkCoord secondCoord = new ChunkCoord(worldId, 2, 0);
         ChunkCoord thirdCoord = new ChunkCoord(worldId, 3, 0);
 
-        when(config.isNmsEntityCount()).thenReturn(false);
         when(config.getInspectionMaxChunksPerTick()).thenReturn(2);
         when(world.isChunkLoaded(1, 0)).thenReturn(true);
         when(world.isChunkLoaded(2, 0)).thenReturn(true);
@@ -191,7 +188,6 @@ class RemovalTaskManagerTest {
         UUID worldId = UUID.randomUUID();
         ChunkCoord coord = new ChunkCoord(worldId, 3, 4);
 
-        when(config.isNmsEntityCount()).thenReturn(false);
         when(world.getName()).thenReturn("world");
         when(world.isChunkLoaded(3, 4)).thenReturn(true);
         when(world.getChunkAt(3, 4)).thenReturn(chunk);
@@ -238,7 +234,6 @@ class RemovalTaskManagerTest {
         UUID worldId = UUID.randomUUID();
         ChunkCoord coord = new ChunkCoord(worldId, 3, 4);
 
-        when(config.isNmsEntityCount()).thenReturn(false);
         when(config.hasResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(true);
         when(config.getResolvedEntityTypes()).thenReturn(Set.of(EntityType.ZOMBIE));
         when(config.getResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(1);
@@ -289,7 +284,6 @@ class RemovalTaskManagerTest {
         UUID worldId = UUID.randomUUID();
         ChunkCoord coord = new ChunkCoord(worldId, 3, 4);
 
-        when(config.isNmsEntityCount()).thenReturn(false);
         when(config.hasResolvedEntityLimit(EntityType.PLAYER)).thenReturn(true);
         when(config.getResolvedEntityLimit(EntityType.PLAYER)).thenReturn(0);
         when(config.isKillPlayers()).thenReturn(false);
