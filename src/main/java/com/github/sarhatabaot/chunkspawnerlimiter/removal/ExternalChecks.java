@@ -5,31 +5,30 @@ import de.tr7zw.nbtapi.NBT;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 
+import java.util.Collections;
+import java.util.Set;
+
 public class ExternalChecks {
-    private static PluginConfig pluginConfig;
     private static boolean hasNbtApi = false;
+    private static Set<String> ignoredNbtKeys = Collections.emptySet();
 
     public static void setup(PluginConfig pluginConfig) {
-        ExternalChecks.pluginConfig = pluginConfig;
-
-        if (Bukkit.getPluginManager().getPlugin("NBT-API") != null) {
-            ExternalChecks.hasNbtApi = true;
-        }
-
+        ignoredNbtKeys = Set.copyOf(pluginConfig.getIgnoreNbt());
+        hasNbtApi = Bukkit.getPluginManager().getPlugin("NBT-API") != null;
     }
 
     public static boolean hasNbtData(final Entity entity) {
-        if (!hasNbtApi || pluginConfig.getIgnoreNbt().isEmpty())
+        if (!hasNbtApi || ignoredNbtKeys.isEmpty()) {
             return false;
-
-        for (String ignore: pluginConfig.getIgnoreNbt()) {
-            boolean hasNbt = NBT.get(entity, nbt -> {
-                return nbt.hasTag(ignore);
-            });
-            if (hasNbt) {
-                return true;
-            }
         }
-        return false;
+
+        return NBT.get(entity, nbt -> {
+            for (String ignoredKey : ignoredNbtKeys) {
+                if (nbt.hasTag(ignoredKey)) {
+                    return true;
+                }
+            }
+            return false;
+        });
     }
 }
