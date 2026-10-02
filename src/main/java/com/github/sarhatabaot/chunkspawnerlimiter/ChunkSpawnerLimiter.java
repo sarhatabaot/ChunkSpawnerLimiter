@@ -17,6 +17,7 @@ import me.despical.commandframework.CommandFramework;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SimplePie;
 import org.bukkit.Bukkit;
+import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -40,11 +41,26 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         Checks.setup(pluginConfig);
         ExternalChecks.setup(this.pluginConfig);
 
+        registerCommands();
+
         if (!pluginConfig.isEnabled()) {
             getLogger().info("ChunkSpawnerLimiter logic is disabled in config.yml.");
             return;
         }
 
+        startRuntime(false);
+
+        if (pluginConfig.isMetrics()) {
+            try {
+                Metrics metrics = new Metrics(this, 4195);
+                metrics.addCustomChart(new SimplePie("removal_mode", () -> pluginConfig.getRemovalMode().getKey()));
+            } catch (Exception e) {
+                getLogger().fine("bStats metrics initialization skipped: " + e.getMessage());
+            }
+        }
+    }
+
+    private void startRuntime(boolean rebuildLoadedChunks) {
         this.counterDataManager = new CounterDataManager();
         this.removalTaskManager = new RemovalTaskManager(this, counterDataManager, pluginConfig);
         this.notificationService = new NotificationService(pluginConfig);
@@ -57,17 +73,6 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
                 40L
         );
 
-        try {
-            CommandFramework commandFramework = new CommandFramework(this);
-            commandFramework.registerCommands(new AdminCommand(this, removalTaskManager, pluginConfig));
-        } catch (IllegalStateException e) {
-            if (e.getMessage().contains("Command Framework has not been relocated")) {
-                getLogger().fine("Command Framework initialization skipped during testing: " + e.getMessage());
-            } else {
-                throw e;
-            }
-        }
-
         RemovalMode.setup(removalTaskManager);
 
         PluginManager pluginManager = Bukkit.getPluginManager();
@@ -77,31 +82,63 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         DespawnListener.registerIfSupported(this, pluginConfig, counterDataManager, entityChunkTracker);
         EntityTransformListener.registerIfSupported(this, pluginConfig, counterDataManager, entityChunkTracker);
 
-        if (pluginConfig.isMetrics()) {
-            try {
-                Metrics metrics = new Metrics(this, 4195);
-                metrics.addCustomChart(new SimplePie("removal_mode", () -> pluginConfig.getRemovalMode().getKey()));
-            } catch (Exception e) {
-                getLogger().fine("bStats metrics initialization skipped: " + e.getMessage());
+        if (rebuildLoadedChunks) {
+            chunkListener.rebuildLoadedChunks();
+        }
+    }
+
+    private void registerCommands() {
+        try {
+            CommandFramework commandFramework = new CommandFramework(this);
+            commandFramework.registerCommands(new AdminCommand(this, pluginConfig));
+        } catch (IllegalStateException e) {
+            if (e.getMessage().contains("Command Framework has not been relocated")) {
+                getLogger().fine("Command Framework initialization skipped during testing: " + e.getMessage());
+            } else {
+                throw e;
             }
         }
     }
 
     @Override
     public void onDisable() {
+        stopRuntime();
+        this.pluginConfig = null;
+    }
+
+    private void stopRuntime() {
         if (this.chunkListener != null) {
             this.chunkListener.shutdown();
         }
+        try {
+            Bukkit.getScheduler().cancelTasks(this);
+        } catch (RuntimeException exception) {
+            if (!exception.getClass().getName()
+                    .equals("be.seeseemelk.mockbukkit.UnimplementedOperationException")) {
+                throw exception;
+            }
+        }
+        HandlerList.unregisterAll(this);
         this.counterDataManager = null;
         this.removalTaskManager = null;
-        this.pluginConfig = null;
         this.notificationService = null;
         this.entityChunkTracker = null;
         this.chunkListener = null;
     }
 
     public void onReload() {
+        stopRuntime();
         this.pluginConfig.reload();
+        CSLLogger.setup(this.pluginConfig);
+        Checks.setup(pluginConfig);
+        ExternalChecks.setup(this.pluginConfig);
+
+        if (!pluginConfig.isEnabled()) {
+            getLogger().info("ChunkSpawnerLimiter logic is disabled in config.yml.");
+            return;
+        }
+
+        startRuntime(true);
     }
 
     public CounterDataManager getCounterDataManager() {

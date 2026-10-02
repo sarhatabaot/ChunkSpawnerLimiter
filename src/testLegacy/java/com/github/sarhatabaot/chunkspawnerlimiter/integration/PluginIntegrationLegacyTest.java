@@ -4,6 +4,7 @@ import be.seeseemelk.mockbukkit.MockBukkit;
 import be.seeseemelk.mockbukkit.ServerMock;
 import com.github.sarhatabaot.chunkspawnerlimiter.ChunkSpawnerLimiter;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
+import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -96,6 +97,7 @@ class PluginIntegrationLegacyTest {
     void shouldHandleConfigurationReload() {
         // Given
         PluginConfig config = plugin.getPluginConfig();
+        CounterDataManager counters = plugin.getCounterDataManager();
 
         // When - Reload configuration
         plugin.onReload();
@@ -103,6 +105,10 @@ class PluginIntegrationLegacyTest {
         // Then - Config should still be available and functional
         assertThat(config).isNotNull();
         assertThat(config.isEnabled()).isTrue();
+        assertThat(plugin.getPluginConfig()).isSameAs(config);
+        assertThat(plugin.getCounterDataManager()).isNotSameAs(counters);
+        assertThat(plugin.getRemovalTaskManager()).isNotNull();
+        assertThat(plugin.getEntityChunkTracker()).isNotNull();
     }
 
     @Test

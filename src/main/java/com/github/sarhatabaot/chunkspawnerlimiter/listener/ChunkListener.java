@@ -10,6 +10,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import com.github.sarhatabaot.chunkspawnerlimiter.tracker.EntityChunkTracker;
 import org.bukkit.Chunk;
+import org.bukkit.World;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -20,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 
 
 public class ChunkListener implements Listener {
+    private final Plugin plugin;
     private final PluginConfig pluginConfig;
     private final CounterDataManager counterDataManager;
     private final RemovalTaskManager removalTaskManager;
@@ -30,6 +32,7 @@ public class ChunkListener implements Listener {
                          CounterDataManager counterDataManager,
                          RemovalTaskManager removalTaskManager,
                          EntityChunkTracker chunkTracker) {
+        this.plugin = plugin;
         this.pluginConfig = pluginConfig;
         this.counterDataManager = counterDataManager;
         this.removalTaskManager = removalTaskManager;
@@ -43,7 +46,10 @@ public class ChunkListener implements Listener {
             return;
         }
 
-        final Chunk chunk = event.getChunk();
+        initializeChunk(event.getChunk());
+    }
+
+    private void initializeChunk(@NotNull Chunk chunk) {
         final ChunkCoord chunkCoord = ChunkCoord.from(chunk);
 
         addEntityLimits(chunk, chunkCoord);
@@ -84,6 +90,17 @@ public class ChunkListener implements Listener {
             counterDataManager.getCounterData(chunkCoord).incrementEntity(entity.getType());
             // Register with the cross-chunk movement tracker
             chunkTracker.recordEntry(entity);
+        }
+    }
+
+    public void rebuildLoadedChunks() {
+        for (World world : plugin.getServer().getWorlds()) {
+            if (pluginConfig.isWorldDisabled(world.getName())) {
+                continue;
+            }
+            for (Chunk chunk : world.getLoadedChunks()) {
+                initializeChunk(chunk);
+            }
         }
     }
 
