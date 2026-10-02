@@ -15,7 +15,9 @@ import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.EnumMap;
 import java.util.Iterator;
@@ -27,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class SnapshotBlockScanner implements BlockScanner {
     static final int DEFAULT_MAX_PENDING_SCANS = 1024;
     private static final int CHUNK_SIZE = 16;
-    private static final Map<Class<?>, SnapshotMaterialAccessor> SNAPSHOT_ACCESSORS = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, SnapshotAccessor> SNAPSHOT_ACCESSORS = new ConcurrentHashMap<>();
 
     private final Plugin plugin;
     private final PluginConfig config;
@@ -279,14 +281,23 @@ public final class SnapshotBlockScanner implements BlockScanner {
     static Map<Material, Integer> countTrackedBlocks(ChunkSnapshot snapshot, int minY, int maxY,
                                                      Set<Material> trackedMaterials) {
         Map<Material, Integer> counts = new EnumMap<>(Material.class);
-        SnapshotMaterialAccessor accessor = SNAPSHOT_ACCESSORS.computeIfAbsent(
+        SnapshotAccessor accessor = SNAPSHOT_ACCESSORS.computeIfAbsent(
                 snapshot.getClass(), SnapshotBlockScanner::createSnapshotAccessor);
-        for (int x = 0; x < CHUNK_SIZE; x++) {
-            for (int z = 0; z < CHUNK_SIZE; z++) {
-                for (int y = minY; y < maxY; y++) {
-                    Material material = accessor.get(snapshot, x, y, z);
-                    if (trackedMaterials.contains(material)) {
-                        counts.merge(material, 1, Integer::sum);
+        int firstSection = Math.floorDiv(minY, CHUNK_SIZE);
+        int lastSection = Math.floorDiv(maxY - 1, CHUNK_SIZE);
+        for (int sectionY = firstSection; sectionY <= lastSection; sectionY++) {
+            if (accessor.isSectionEmpty(snapshot, sectionY)) {
+                continue;
+            }
+            int sectionMinY = Math.max(minY, sectionY * CHUNK_SIZE);
+            int sectionMaxY = Math.min(maxY, sectionMinY + CHUNK_SIZE);
+            for (int x = 0; x < CHUNK_SIZE; x++) {
+                for (int z = 0; z < CHUNK_SIZE; z++) {
+                    for (int y = sectionMinY; y < sectionMaxY; y++) {
+                        Material material = accessor.getMaterial(snapshot, x, y, z);
+                        if (trackedMaterials.contains(material)) {
+                            counts.merge(material, 1, Integer::sum);
+                        }
                     }
                 }
             }
@@ -294,43 +305,96 @@ public final class SnapshotBlockScanner implements BlockScanner {
         return counts;
     }
 
-    private static SnapshotMaterialAccessor createSnapshotAccessor(Class<?> snapshotClass) {
+    private static SnapshotAccessor createSnapshotAccessor(Class<?> snapshotClass) {
+        SnapshotSectionAccessor sectionAccessor = createSectionAccessor(snapshotClass);
         try {
             Method getBlockType = snapshotClass.getMethod(
                     "getBlockType", int.class, int.class, int.class);
-            return (snapshot, x, y, z) -> invokeMaterial(getBlockType, snapshot, x, y, z);
+            MethodHandle handle = MethodHandles.publicLookup().unreflect(getBlockType).asType(
+                    MethodType.methodType(Material.class, ChunkSnapshot.class,
+                            int.class, int.class, int.class));
+            return new SnapshotAccessor(
+                    (snapshot, x, y, z) -> invokeMaterial(handle, snapshot, x, y, z),
+                    sectionAccessor);
         } catch (NoSuchMethodException ignored) {
+        } catch (IllegalAccessException exception) {
+            throw new IllegalStateException("Unable to access chunk snapshot", exception);
         }
 
         try {
             Method getBlockTypeId = snapshotClass.getMethod(
                     "getBlockTypeId", int.class, int.class, int.class);
-            Method getMaterial = Material.class.getMethod("getMaterial", int.class);
-            return (snapshot, x, y, z) -> {
-                Object blockTypeId = invoke(getBlockTypeId, snapshot, x, y, z);
-                return (Material) invoke(getMaterial, null, blockTypeId);
-            };
+            MethodHandle handle = MethodHandles.publicLookup().unreflect(getBlockTypeId).asType(
+                    MethodType.methodType(int.class, ChunkSnapshot.class,
+                            int.class, int.class, int.class));
+            return new SnapshotAccessor(
+                    (snapshot, x, y, z) -> Material.getMaterial(
+                            invokeMaterialId(handle, snapshot, x, y, z)),
+                    sectionAccessor);
         } catch (NoSuchMethodException exception) {
             throw new IllegalStateException("Unsupported ChunkSnapshot implementation: "
                     + snapshotClass.getName(), exception);
+        } catch (IllegalAccessException exception) {
+            throw new IllegalStateException("Unable to access chunk snapshot", exception);
         }
     }
 
-    private static Material invokeMaterial(Method method, Object target, int x, int y, int z) {
-        return (Material) invoke(method, target, x, y, z);
+    private static SnapshotSectionAccessor createSectionAccessor(Class<?> snapshotClass) {
+        try {
+            Method method = snapshotClass.getMethod("isSectionEmpty", int.class);
+            MethodHandle handle = MethodHandles.publicLookup().unreflect(method).asType(
+                    MethodType.methodType(boolean.class, ChunkSnapshot.class, int.class));
+            return (snapshot, sectionY) -> invokeSectionEmpty(handle, snapshot, sectionY);
+        } catch (NoSuchMethodException ignored) {
+            return (snapshot, sectionY) -> false;
+        } catch (IllegalAccessException exception) {
+            throw new IllegalStateException("Unable to access chunk snapshot sections", exception);
+        }
     }
 
-    private static Object invoke(Method method, @Nullable Object target, Object... arguments) {
+    private static Material invokeMaterial(MethodHandle handle, ChunkSnapshot snapshot, int x, int y, int z) {
         try {
-            return method.invoke(target, arguments);
-        } catch (IllegalAccessException | InvocationTargetException exception) {
+            return (Material) handle.invokeExact(snapshot, x, y, z);
+        } catch (Throwable exception) {
             throw new IllegalStateException("Unable to read chunk snapshot", exception);
+        }
+    }
+
+    private static int invokeMaterialId(MethodHandle handle, ChunkSnapshot snapshot, int x, int y, int z) {
+        try {
+            return (int) handle.invokeExact(snapshot, x, y, z);
+        } catch (Throwable exception) {
+            throw new IllegalStateException("Unable to read chunk snapshot", exception);
+        }
+    }
+
+    private static boolean invokeSectionEmpty(MethodHandle handle, ChunkSnapshot snapshot, int sectionY) {
+        try {
+            return (boolean) handle.invokeExact(snapshot, sectionY);
+        } catch (Throwable exception) {
+            throw new IllegalStateException("Unable to read chunk snapshot section", exception);
         }
     }
 
     @FunctionalInterface
     private interface SnapshotMaterialAccessor {
         Material get(ChunkSnapshot snapshot, int x, int y, int z);
+    }
+
+    @FunctionalInterface
+    private interface SnapshotSectionAccessor {
+        boolean isEmpty(ChunkSnapshot snapshot, int sectionY);
+    }
+
+    private record SnapshotAccessor(SnapshotMaterialAccessor materialAccessor,
+                                    SnapshotSectionAccessor sectionAccessor) {
+        private Material getMaterial(ChunkSnapshot snapshot, int x, int y, int z) {
+            return materialAccessor.get(snapshot, x, y, z);
+        }
+
+        private boolean isSectionEmpty(ChunkSnapshot snapshot, int sectionY) {
+            return sectionAccessor.isEmpty(snapshot, sectionY);
+        }
     }
 
     private record ScanRequest(Chunk chunk, ChunkCoord coord, long generation) {

@@ -27,12 +27,28 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @DisplayName("SnapshotBlockScanner Tests")
 class SnapshotBlockScannerTest {
+
+    @Test
+    @DisplayName("Should skip empty snapshot sections")
+    void shouldSkipEmptySnapshotSections() {
+        ChunkSnapshot snapshot = mock(ChunkSnapshot.class);
+        when(snapshot.isSectionEmpty(0)).thenReturn(true);
+        when(snapshot.getBlockTypeId(anyInt(), anyInt(), anyInt())).thenReturn(Material.AIR.getId());
+        when(snapshot.getBlockTypeId(1, 16, 2)).thenReturn(Material.DIAMOND_BLOCK.getId());
+
+        Map<Material, Integer> counts = SnapshotBlockScanner.countTrackedBlocks(
+                snapshot, 0, 17, Set.of(Material.DIAMOND_BLOCK));
+
+        assertThat(counts).containsEntry(Material.DIAMOND_BLOCK, 1).hasSize(1);
+        verify(snapshot, never()).getBlockTypeId(0, 0, 0);
+    }
 
     @Test
     @DisplayName("Should count tracked materials from a legacy chunk snapshot")
