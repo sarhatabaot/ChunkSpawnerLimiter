@@ -6,18 +6,20 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 
 public final class RaidReflection {
 
-    private static final boolean SUPPORTED;
     private static final Class<?> RAIDER_CLASS;
-    private static final Class<?> RAID_CLASS;
-    private static final Method GET_WORLD;
     private static final Method GET_RAIDS;
     private static final Method GET_RAIDERS;
+    private static final AtomicBoolean FAILURE_LOGGED = new AtomicBoolean();
+    private static volatile boolean available;
 
     static {
         Class<?> raider = null;
@@ -44,11 +46,9 @@ public final class RaidReflection {
         }
 
         RAIDER_CLASS = raider;
-        RAID_CLASS = raid;
-        GET_WORLD = getWorld;
         GET_RAIDS = getRaids;
         GET_RAIDERS = getRaiders;
-        SUPPORTED = supported;
+        available = supported;
     }
 
     private RaidReflection() {}
@@ -57,14 +57,14 @@ public final class RaidReflection {
      * @return true if this server version supports raids.
      */
     public static boolean isSupported() {
-        return SUPPORTED;
+        return available;
     }
 
     /**
      * Checks if a given entity is part of an active raid.
      */
     public static boolean isEntityInRaid(Object entity) {
-        if (!SUPPORTED || !RAIDER_CLASS.isInstance(entity)) {
+        if (!available || !RAIDER_CLASS.isInstance(entity)) {
             return false;
         }
 
@@ -73,7 +73,7 @@ public final class RaidReflection {
     }
 
     public static Set<UUID> getActiveRaiderUuids(World world) {
-        if (!SUPPORTED) {
+        if (!available) {
             return Collections.emptySet();
         }
 
@@ -90,8 +90,13 @@ public final class RaidReflection {
                 }
             }
             return raiderUuids;
-        } catch (ReflectiveOperationException e) {
-            e.printStackTrace();
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            available = false;
+            if (FAILURE_LOGGED.compareAndSet(false, true)) {
+                Bukkit.getLogger().log(Level.WARNING,
+                        "[RaidReflection] Unable to inspect active raids; disabling raid reflection: "
+                                + exception.getClass().getSimpleName() + ": " + exception.getMessage());
+            }
         }
 
         return Collections.emptySet();
