@@ -7,6 +7,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterData;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.reflection.NmsEntityCounter;
+import com.github.sarhatabaot.chunkspawnerlimiter.reflection.RaidReflection;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.entity.Entity;
@@ -142,6 +143,7 @@ public class RemovalTaskManager {
 
         // Recount tracked entities from the actual chunk
         Entity[] entities = chunk.getEntities();
+        Set<UUID> activeRaiderUuids = null;
         for (Entity entity : entities) {
             EntityType type = entity.getType();
             if (isCountableEntity(entity)) {
@@ -159,11 +161,17 @@ public class RemovalTaskManager {
             int toRemove = actualCount - allowed;
             if (toRemove <= 0) continue;
 
+            if (activeRaiderUuids == null) {
+                activeRaiderUuids = pluginConfig.shouldPreserveRaidEntities()
+                        ? RaidReflection.getActiveRaiderUuids(chunk.getWorld())
+                        : Collections.emptySet();
+            }
+
             // Collect entities of this type (only when we know we need to remove some)
             List<Entity> typedEntities = new ArrayList<>();
             for (Entity entity : entities) {
                 if (entity.getType() == type && isCountableEntity(entity)
-                        && !shouldSkipRemoval(entity)) {
+                        && !shouldSkipRemoval(entity, activeRaiderUuids)) {
                     typedEntities.add(entity);
                 }
             }
@@ -193,8 +201,9 @@ public class RemovalTaskManager {
         return entity.isValid() && !entity.isDead() && Checks.shouldTrackEntity(entity, pluginConfig);
     }
 
-    private boolean shouldSkipRemoval(final Entity entity) {
-        return Checks.hasCustomName(entity) || Checks.hasMetaData(entity) || ExternalChecks.hasNbtData(entity) || Checks.isPartOfRaid(entity);
+    private boolean shouldSkipRemoval(final Entity entity, Set<UUID> activeRaiderUuids) {
+        return Checks.hasCustomName(entity) || Checks.hasMetaData(entity)
+                || ExternalChecks.hasNbtData(entity) || activeRaiderUuids.contains(entity.getUniqueId());
     }
 
 

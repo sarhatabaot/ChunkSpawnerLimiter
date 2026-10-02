@@ -4,6 +4,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.ChunkSpawnerLimiter;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
+import com.github.sarhatabaot.chunkspawnerlimiter.reflection.RaidReflection;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
@@ -33,6 +34,57 @@ import static org.mockito.Mockito.when;
 
 @DisplayName("Removal task manager")
 class RemovalTaskManagerTest {
+
+    @Test
+    @DisplayName("Should collect raid membership once per chunk inspection")
+    void shouldCollectRaidMembershipOncePerChunkInspection() {
+        ChunkSpawnerLimiter plugin = mock(ChunkSpawnerLimiter.class);
+        PluginConfig config = mock(PluginConfig.class);
+        CounterDataManager counterDataManager = new CounterDataManager();
+        World world = mock(World.class);
+        Chunk chunk = mock(Chunk.class);
+        Entity raider = mock(Entity.class);
+        Entity removable = mock(Entity.class);
+        UUID raiderId = UUID.randomUUID();
+        UUID removableId = UUID.randomUUID();
+        UUID worldId = UUID.randomUUID();
+        ChunkCoord coord = new ChunkCoord(worldId, 3, 4);
+        @SuppressWarnings("unchecked")
+        Consumer<Entity> removalAction = mock(Consumer.class);
+
+        when(config.isNmsEntityCount()).thenReturn(false);
+        when(config.getResolvedEntityTypes()).thenReturn(Set.of(EntityType.ZOMBIE));
+        when(config.hasResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(true);
+        when(config.getResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(0);
+        when(config.shouldPreserveRaidEntities()).thenReturn(true);
+        when(config.getIgnoreMetadata()).thenReturn(List.of());
+        when(world.isChunkLoaded(3, 4)).thenReturn(true);
+        when(world.getChunkAt(3, 4)).thenReturn(chunk);
+        when(chunk.getWorld()).thenReturn(world);
+        when(chunk.isLoaded()).thenReturn(true);
+        when(chunk.getEntities()).thenReturn(new Entity[]{raider, removable});
+        when(raider.getType()).thenReturn(EntityType.ZOMBIE);
+        when(raider.getUniqueId()).thenReturn(raiderId);
+        when(raider.isValid()).thenReturn(true);
+        when(removable.getType()).thenReturn(EntityType.ZOMBIE);
+        when(removable.getUniqueId()).thenReturn(removableId);
+        when(removable.isValid()).thenReturn(true);
+        Checks.setup(config);
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class);
+             MockedStatic<RaidReflection> raids = mockStatic(RaidReflection.class)) {
+            bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
+            raids.when(() -> RaidReflection.getActiveRaiderUuids(world)).thenReturn(Set.of(raiderId));
+            RemovalTaskManager manager = new RemovalTaskManager(
+                    plugin, counterDataManager, config, System::currentTimeMillis, false);
+
+            manager.processChunk(coord, removalAction);
+
+            raids.verify(() -> RaidReflection.getActiveRaiderUuids(world), times(1));
+            verify(removalAction, never()).accept(raider);
+            verify(removalAction).accept(removable);
+        }
+    }
 
     @Test
     @DisplayName("Should enforce a newly configured type on its first inspection")

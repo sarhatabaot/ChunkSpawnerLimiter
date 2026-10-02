@@ -2,6 +2,13 @@ package com.github.sarhatabaot.chunkspawnerlimiter.reflection;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
 
 public final class RaidReflection {
 
@@ -61,21 +68,33 @@ public final class RaidReflection {
             return false;
         }
 
+        return entity instanceof Entity bukkitEntity
+                && getActiveRaiderUuids(bukkitEntity.getWorld()).contains(bukkitEntity.getUniqueId());
+    }
+
+    public static Set<UUID> getActiveRaiderUuids(World world) {
+        if (!SUPPORTED) {
+            return Collections.emptySet();
+        }
+
         try {
-            Object world = GET_WORLD.invoke(entity);
             Collection<?> raids = (Collection<?>) GET_RAIDS.invoke(world);
+            Set<UUID> raiderUuids = new HashSet<>();
 
             for (Object raid : raids) {
                 Collection<?> raiders = (Collection<?>) GET_RAIDERS.invoke(raid);
-                if (raiders.contains(entity)) {
-                    return true;
+                for (Object raider : raiders) {
+                    if (raider instanceof Entity entity) {
+                        raiderUuids.add(entity.getUniqueId());
+                    }
                 }
             }
+            return raiderUuids;
         } catch (ReflectiveOperationException e) {
             e.printStackTrace();
         }
 
-        return false;
+        return Collections.emptySet();
     }
 }
 
