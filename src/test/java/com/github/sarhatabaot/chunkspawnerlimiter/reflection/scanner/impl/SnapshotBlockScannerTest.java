@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Logger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,6 +35,34 @@ import static org.mockito.Mockito.when;
 
 @DisplayName("SnapshotBlockScanner Tests")
 class SnapshotBlockScannerTest {
+
+    @Test
+    @DisplayName("Should release failed captures for a deferred retry")
+    void shouldReleaseFailedCapturesForADeferredRetry() {
+        Plugin plugin = mock(Plugin.class);
+        PluginConfig config = mock(PluginConfig.class);
+        CounterDataManager manager = new CounterDataManager();
+        BukkitScheduler scheduler = mock(BukkitScheduler.class);
+        BukkitTask task = mock(BukkitTask.class);
+        World world = world();
+        Chunk chunk = chunk(world, 0, 0);
+        ChunkCoord coord = ChunkCoord.from(world, 0, 0);
+        when(plugin.getLogger()).thenReturn(Logger.getAnonymousLogger());
+        when(config.getTrackedBlockMaterials()).thenReturn(Set.of(Material.DIAMOND_BLOCK));
+        when(chunk.getChunkSnapshot(false, false, false)).thenThrow(new IllegalStateException("capture failed"));
+        when(scheduler.runTask(eq(plugin), any(Runnable.class))).thenReturn(task);
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
+            bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
+            SnapshotBlockScanner scanner = new SnapshotBlockScanner(plugin, config, manager, 2);
+
+            scanner.scanChunk(chunk, coord, true);
+
+            assertThat(scanner.hasGeneration(coord)).isFalse();
+            assertThat(scanner.isWorkerRunning()).isFalse();
+            verify(scheduler).runTask(eq(plugin), any(Runnable.class));
+        }
+    }
 
     @Test
     @DisplayName("Should skip empty snapshot sections")

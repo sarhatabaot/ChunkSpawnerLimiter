@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.EnumMap;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -28,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class SnapshotBlockScanner implements BlockScanner {
     static final int DEFAULT_MAX_PENDING_SCANS = 1024;
+    static final int MAX_BACKFILL_CHUNKS_PER_PASS = 32;
     private static final int CHUNK_SIZE = 16;
     private static final Map<Class<?>, SnapshotAccessor> SNAPSHOT_ACCESSORS = new ConcurrentHashMap<>();
 
@@ -41,6 +43,9 @@ public final class SnapshotBlockScanner implements BlockScanner {
     private long nextGeneration;
     private volatile boolean workerRunning;
     private boolean needsBackfill;
+    private Iterator<World> backfillWorlds;
+    private Chunk[] backfillChunks = new Chunk[0];
+    private int backfillChunkIndex;
     private volatile boolean stopped;
 
     public SnapshotBlockScanner(Plugin plugin, PluginConfig config, CounterDataManager counterManager) {
@@ -91,6 +96,7 @@ public final class SnapshotBlockScanner implements BlockScanner {
         pendingScans.clear();
         generations.clear();
         needsBackfill = false;
+        resetBackfillCursor();
     }
 
     @Override
@@ -109,6 +115,10 @@ public final class SnapshotBlockScanner implements BlockScanner {
 
     boolean isWorkerRunning() {
         return workerRunning;
+    }
+
+    boolean hasGeneration(ChunkCoord coord) {
+        return generations.containsKey(coord);
     }
 
     private void scanImmediately(Chunk chunk, ChunkCoord coord, Set<Material> trackedMaterials) {
@@ -170,9 +180,10 @@ public final class SnapshotBlockScanner implements BlockScanner {
             minY = WorldReflection.getWorldMinHeightSafe(request.chunk().getWorld());
             maxY = request.chunk().getWorld().getMaxHeight();
         } catch (RuntimeException exception) {
+            releaseForRetry(request);
             plugin.getLogger().warning("Unable to capture chunk snapshot for " + request.coord() + ": "
                     + exception.getMessage());
-            startNextScan();
+            scheduleRetry();
             return;
         }
 
@@ -191,8 +202,9 @@ public final class SnapshotBlockScanner implements BlockScanner {
             });
         } catch (RuntimeException exception) {
             workerRunning = false;
+            releaseForRetry(request);
             plugin.getLogger().warning("Unable to schedule chunk snapshot scan: " + exception.getMessage());
-            startNextScan();
+            scheduleRetry();
         }
     }
 
@@ -208,6 +220,7 @@ public final class SnapshotBlockScanner implements BlockScanner {
                     () -> completeScan(request, blockRevision, counts, failure));
         } catch (RuntimeException exception) {
             workerRunning = false;
+            releaseForRetry(request);
             if (!stopped) {
                 plugin.getLogger().warning("Unable to apply chunk snapshot scan: " + exception.getMessage());
             }
@@ -225,14 +238,16 @@ public final class SnapshotBlockScanner implements BlockScanner {
         Long currentGeneration = generations.get(request.coord());
         if (currentGeneration == null || currentGeneration != request.generation()
                 || !request.chunk().isLoaded()) {
+            generations.remove(request.coord(), request.generation());
             startNextScan();
             return;
         }
 
         if (failure != null || counts == null) {
+            releaseForRetry(request);
             plugin.getLogger().warning("Unable to scan chunk snapshot for " + request.coord() + ": "
                     + (failure == null ? "unknown error" : failure.getMessage()));
-            startNextScan();
+            scheduleRetry();
             return;
         }
 
@@ -258,24 +273,66 @@ public final class SnapshotBlockScanner implements BlockScanner {
         return request;
     }
 
+    private void releaseForRetry(ScanRequest request) {
+        if (generations.remove(request.coord(), request.generation())) {
+            needsBackfill = true;
+        }
+    }
+
+    private void scheduleRetry() {
+        if (stopped) {
+            return;
+        }
+        try {
+            Bukkit.getScheduler().runTask(plugin, this::startNextScan);
+        } catch (RuntimeException exception) {
+            plugin.getLogger().warning("Unable to schedule chunk snapshot retry: " + exception.getMessage());
+        }
+    }
+
     private void backfillLoadedChunks() {
-        needsBackfill = false;
-        for (World world : Bukkit.getWorlds()) {
-            if (config.isWorldDisabled(world.getName())) {
-                continue;
-            }
-            for (Chunk chunk : world.getLoadedChunks()) {
-                ChunkCoord coord = ChunkCoord.from(chunk);
-                if (generations.containsKey(coord)) {
-                    continue;
-                }
-                if (pendingScans.size() >= maxPendingScans) {
-                    needsBackfill = true;
+        if (backfillWorlds == null) {
+            backfillWorlds = new ArrayList<>(Bukkit.getWorlds()).iterator();
+        }
+
+        int visited = 0;
+        while (visited < MAX_BACKFILL_CHUNKS_PER_PASS && pendingScans.size() < maxPendingScans) {
+            if (backfillChunkIndex >= backfillChunks.length) {
+                if (!loadNextBackfillWorld()) {
+                    needsBackfill = false;
+                    resetBackfillCursor();
                     return;
                 }
+            }
+
+            Chunk chunk = backfillChunks[backfillChunkIndex++];
+            visited++;
+            ChunkCoord coord = ChunkCoord.from(chunk);
+            if (!generations.containsKey(coord)) {
                 enqueue(chunk, coord);
             }
         }
+        needsBackfill = true;
+    }
+
+    private boolean loadNextBackfillWorld() {
+        while (backfillWorlds.hasNext()) {
+            World world = backfillWorlds.next();
+            if (!config.isWorldDisabled(world.getName())) {
+                backfillChunks = world.getLoadedChunks();
+                backfillChunkIndex = 0;
+                if (backfillChunks.length > 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void resetBackfillCursor() {
+        backfillWorlds = null;
+        backfillChunks = new Chunk[0];
+        backfillChunkIndex = 0;
     }
 
     static Map<Material, Integer> countTrackedBlocks(ChunkSnapshot snapshot, int minY, int maxY,
