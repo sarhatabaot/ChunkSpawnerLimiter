@@ -204,8 +204,13 @@ public class PluginConfig {
 
         for (String group: section.getKeys(false)){
             for (String member : section.getStringList(group)) {
-                Material type = Material.valueOf(member.toUpperCase());
-                blockToGroup.put(type, group.toUpperCase());
+                try {
+                    Material type = Material.valueOf(member.toUpperCase(Locale.ROOT));
+                    blockToGroup.put(type, group.toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException exception) {
+                    plugin.getLogger().warning("Unknown material '" + member
+                            + "' at blocks.block-groups." + group + "; skipping it.");
+                }
             }
         }
     }
@@ -278,8 +283,13 @@ public class PluginConfig {
 
         for (String group : section.getKeys(false)) {
             for (String member : section.getStringList(group)) {
-                EntityType type = EntityType.valueOf(member.toUpperCase());
-                entityToGroup.put(type, group.toUpperCase());
+                try {
+                    EntityType type = EntityType.valueOf(member.toUpperCase(Locale.ROOT));
+                    entityToGroup.put(type, group.toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException exception) {
+                    plugin.getLogger().warning("Unknown entity type '" + member
+                            + "' at entities.entity-groups." + group + "; skipping it.");
+                }
             }
         }
     }
