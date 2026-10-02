@@ -21,6 +21,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.plugin.Plugin;
@@ -42,6 +43,13 @@ public class EventListener implements Listener {
         this.counterDataManager = counterDataManager;
         this.notificationService = notificationService;
         this.chunkTracker = chunkTracker;
+    }
+
+    // -- Player lifecycle ----------------------------------------------------
+
+    @EventHandler
+    public void onPlayerQuit(@NotNull PlayerQuitEvent event) {
+        notificationService.cleanup(event.getPlayer());
     }
 
     // -- Block events --------------------------------------------------------

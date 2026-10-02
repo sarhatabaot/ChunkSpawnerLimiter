@@ -12,10 +12,12 @@ import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.junit.jupiter.api.DisplayName;
@@ -37,6 +39,24 @@ import static org.mockito.Mockito.when;
 
 @DisplayName("EventListener Tests")
 class EventListenerTest {
+
+    @Test
+    @DisplayName("Should clean notification cooldowns when players quit")
+    void shouldCleanNotificationCooldownsWhenPlayersQuit() {
+        Plugin plugin = mock(Plugin.class);
+        PluginConfig pluginConfig = mock(PluginConfig.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        EntityChunkTracker chunkTracker = mock(EntityChunkTracker.class);
+        EventListener listener = new EventListener(
+                plugin, pluginConfig, new CounterDataManager(), notificationService, chunkTracker);
+        PlayerQuitEvent event = mock(PlayerQuitEvent.class);
+        Player player = mock(Player.class);
+        when(event.getPlayer()).thenReturn(player);
+
+        listener.onPlayerQuit(event);
+
+        verify(notificationService).cleanup(player);
+    }
 
     @Test
     @DisplayName("Should replace a stale count before enforcing the spawn limit")
