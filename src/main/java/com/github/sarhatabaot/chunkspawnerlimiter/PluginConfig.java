@@ -308,8 +308,9 @@ public class PluginConfig {
 
             this.entityLimits = limitsSection.getKeys(false).stream()
                     .collect(Collectors.toMap(
-                            key -> key,
-                            limitsSection::getInt
+                            key -> key.toUpperCase(Locale.ROOT),
+                            limitsSection::getInt,
+                            (first, replacement) -> replacement
                     ));
         }
 
@@ -386,7 +387,17 @@ public class PluginConfig {
         if (reasonsList == null || reasonsList.isEmpty()) {
             spawnReasons = getDefaultSpawnReasons();
         } else {
-            spawnReasons = new HashSet<>(reasonsList);
+            Set<String> validReasons = getDefaultSpawnReasons();
+            spawnReasons = new HashSet<>();
+            for (String reason : reasonsList) {
+                String normalizedReason = reason.toUpperCase(Locale.ROOT);
+                if (validReasons.contains(normalizedReason)) {
+                    spawnReasons.add(normalizedReason);
+                } else {
+                    plugin.getLogger().warning("Unknown spawn reason '" + reason
+                            + "' at spawn-reasons; skipping it.");
+                }
+            }
         }
     }
 
@@ -527,8 +538,9 @@ public class PluginConfig {
 
             this.blockLimits = blocksSection.getKeys(false).stream()
                     .collect(Collectors.toMap(
-                            key -> key,
-                            blocksSection::getInt
+                            key -> key.toUpperCase(Locale.ROOT),
+                            blocksSection::getInt,
+                            (first, replacement) -> replacement
                     ));
         }
 

@@ -109,4 +109,35 @@ class PluginConfigCompatibilityTest {
 
         assertThat(pluginConfig.getResolvedEntityLimit(EntityType.ZOMBIE)).isEqualTo(6);
     }
+
+    @Test
+    @DisplayName("Should normalize configured names regardless of case")
+    void shouldNormalizeConfiguredNamesRegardlessOfCase() {
+        when(config.getConfigurationSection("blocks.block-groups"))
+                .thenReturn(new MemoryConfiguration().createSection("blocks.block-groups", Map.of(
+                        "Storage", List.of("diamond_block")
+                )));
+        when(config.getConfigurationSection("blocks.limits"))
+                .thenReturn(new MemoryConfiguration().createSection("blocks.limits", Map.of(
+                        "storage", 4
+                )));
+        when(config.getConfigurationSection("entities.entity-groups"))
+                .thenReturn(new MemoryConfiguration().createSection("entities.entity-groups", Map.of(
+                        "Hostile", List.of("zombie")
+                )));
+        when(config.getConfigurationSection("entities.limits"))
+                .thenReturn(new MemoryConfiguration().createSection("entities.limits", Map.of(
+                        "hostile", 6,
+                        "skeleton", 2
+                )));
+        when(config.getStringList("spawn-reasons"))
+                .thenReturn(List.of("natural", "not_a_reason"));
+
+        pluginConfig.reload();
+
+        assertThat(pluginConfig.getResolvedBlockLimit(Material.DIAMOND_BLOCK)).isEqualTo(4);
+        assertThat(pluginConfig.getResolvedEntityLimit(EntityType.ZOMBIE)).isEqualTo(6);
+        assertThat(pluginConfig.getResolvedEntityLimit(EntityType.SKELETON)).isEqualTo(2);
+        assertThat(pluginConfig.getSpawnReasons()).containsExactly("NATURAL");
+    }
 }
