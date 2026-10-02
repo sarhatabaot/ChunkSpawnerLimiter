@@ -62,7 +62,8 @@ public class ChunkListener implements Listener {
             removalTaskManager.queueChunkCheck(chunkCoord, removalMode.getEntityRemovalAction());
 
             if (pluginConfig.isActiveInspections()) {
-                removalTaskManager.scheduleRecheck(chunkCoord, removalMode.getEntityRemovalAction(), pluginConfig.getInspectionFrequency());
+                removalTaskManager.scheduleRecheck(chunkCoord, removalMode.getEntityRemovalAction(),
+                        pluginConfig.getInspectionFrequencySeconds());
             }
         }
     }

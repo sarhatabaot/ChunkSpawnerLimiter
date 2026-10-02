@@ -179,12 +179,12 @@ public class PluginConfig {
     }
 
     /**
-     * Gets the frequency (in ticks) at which chunk inspections should occur.
+     * Gets the interval in seconds between chunk inspections.
      *
-     * @return the inspection frequency in ticks
+     * @return the inspection interval in seconds
      */
-    public int getInspectionFrequency() {
-        return config.getInt("events.inspections.frequency", 300);
+    public int getInspectionFrequencySeconds() {
+        return config.getInt("events.inspections.frequency", 60);
     }
 
     public int getInspectionMaxChunksPerTick() {
