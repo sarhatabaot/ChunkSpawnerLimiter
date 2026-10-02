@@ -100,6 +100,14 @@ public class EventListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntitySpawn(@NotNull EntitySpawnEvent event) {
+        if (event instanceof CreatureSpawnEvent) {
+            if (!pluginConfig.isCreatureSpawnWatch()) {
+                return;
+            }
+        } else if (!pluginConfig.isEntitySpawnWatch()) {
+            return;
+        }
+
         if (pluginConfig.isWorldDisabled(event.getLocation().getWorld().getName())) {
             CSLLogger.debug(() -> "%s world is disabled.".formatted(event.getLocation().getWorld().getName()));
             return;
@@ -259,6 +267,10 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void onVehicleCreate(@NotNull VehicleCreateEvent event) {
+        if (!pluginConfig.isVehicleSpawnWatch()) {
+            return;
+        }
+
         if (pluginConfig.isWorldDisabled(event.getVehicle().getWorld().getName())) {
             return;
         }

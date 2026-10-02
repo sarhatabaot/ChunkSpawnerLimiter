@@ -40,6 +40,11 @@ public class ChunkSpawnerLimiter extends JavaPlugin {
         Checks.setup(pluginConfig);
         ExternalChecks.setup(this.pluginConfig);
 
+        if (!pluginConfig.isEnabled()) {
+            getLogger().info("ChunkSpawnerLimiter logic is disabled in config.yml.");
+            return;
+        }
+
         this.counterDataManager = new CounterDataManager();
         this.removalTaskManager = new RemovalTaskManager(this, counterDataManager, pluginConfig);
         this.notificationService = new NotificationService(pluginConfig);

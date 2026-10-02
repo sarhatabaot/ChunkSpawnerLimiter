@@ -15,9 +15,11 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +41,50 @@ import static org.mockito.Mockito.when;
 
 @DisplayName("EventListener Tests")
 class EventListenerTest {
+
+    @Test
+    @DisplayName("Should ignore creature spawns when creature watching is disabled")
+    void shouldIgnoreCreatureSpawnsWhenCreatureWatchingIsDisabled() {
+        PluginConfig pluginConfig = mock(PluginConfig.class);
+        EventListener listener = new EventListener(
+                mock(Plugin.class), pluginConfig, new CounterDataManager(),
+                mock(NotificationService.class), mock(EntityChunkTracker.class));
+        CreatureSpawnEvent event = mock(CreatureSpawnEvent.class);
+
+        listener.onEntitySpawn(event);
+
+        verify(event, never()).getLocation();
+        verify(event, never()).getEntity();
+    }
+
+    @Test
+    @DisplayName("Should ignore generic entity spawns when entity watching is disabled")
+    void shouldIgnoreGenericEntitySpawnsWhenEntityWatchingIsDisabled() {
+        PluginConfig pluginConfig = mock(PluginConfig.class);
+        EventListener listener = new EventListener(
+                mock(Plugin.class), pluginConfig, new CounterDataManager(),
+                mock(NotificationService.class), mock(EntityChunkTracker.class));
+        EntitySpawnEvent event = mock(EntitySpawnEvent.class);
+
+        listener.onEntitySpawn(event);
+
+        verify(event, never()).getLocation();
+        verify(event, never()).getEntity();
+    }
+
+    @Test
+    @DisplayName("Should ignore vehicle creation when vehicle watching is disabled")
+    void shouldIgnoreVehicleCreationWhenVehicleWatchingIsDisabled() {
+        PluginConfig pluginConfig = mock(PluginConfig.class);
+        EventListener listener = new EventListener(
+                mock(Plugin.class), pluginConfig, new CounterDataManager(),
+                mock(NotificationService.class), mock(EntityChunkTracker.class));
+        VehicleCreateEvent event = mock(VehicleCreateEvent.class);
+
+        listener.onVehicleCreate(event);
+
+        verify(event, never()).getVehicle();
+    }
 
     @Test
     @DisplayName("Should clean notification cooldowns when players quit")
@@ -91,6 +137,7 @@ class EventListenerTest {
         when(chunk.getEntities()).thenReturn(new Entity[]{existingEntity, spawningEntity});
 
         when(pluginConfig.isWorldDisabled("world")).thenReturn(false);
+        when(pluginConfig.isEntitySpawnWatch()).thenReturn(true);
         when(pluginConfig.hasResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(true);
         when(pluginConfig.getResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(150);
         when(pluginConfig.shouldDelayEntityCountForCompatibility()).thenReturn(false);
@@ -147,6 +194,7 @@ class EventListenerTest {
 
         when(pluginConfig.isWorldDisabled("world")).thenReturn(false);
         when(pluginConfig.hasResolvedEntityLimit(EntityType.COW)).thenReturn(true);
+        when(pluginConfig.isEntitySpawnWatch()).thenReturn(true);
         when(pluginConfig.getResolvedEntityLimit(EntityType.COW)).thenReturn(5);
         when(pluginConfig.shouldDelayEntityCountForCompatibility()).thenReturn(true);
 
@@ -211,6 +259,7 @@ class EventListenerTest {
 
         when(pluginConfig.isWorldDisabled("world")).thenReturn(false);
         when(pluginConfig.hasResolvedEntityLimit(EntityType.COW)).thenReturn(true);
+        when(pluginConfig.isEntitySpawnWatch()).thenReturn(true);
         when(pluginConfig.getResolvedEntityLimit(EntityType.COW)).thenReturn(1);
         when(pluginConfig.shouldDelayEntityCountForCompatibility()).thenReturn(true);
         when(pluginConfig.getRemovalMode()).thenReturn(new Prevent(null));
