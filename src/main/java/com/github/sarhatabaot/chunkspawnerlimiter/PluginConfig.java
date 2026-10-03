@@ -179,12 +179,16 @@ public class PluginConfig {
     }
 
     /**
-     * Gets the frequency (in ticks) at which chunk inspections should occur.
+     * Gets the interval in seconds between chunk inspections.
      *
-     * @return the inspection frequency in ticks
+     * @return the inspection interval in seconds
      */
-    public int getInspectionFrequency() {
-        return config.getInt("events.inspections.frequency", 300);
+    public int getInspectionFrequencySeconds() {
+        return config.getInt("events.inspections.frequency", 60);
+    }
+
+    public int getInspectionMaxChunksPerTick() {
+        return Math.max(1, config.getInt("events.inspections.max-chunks-per-tick", 8));
     }
 
 
@@ -200,8 +204,13 @@ public class PluginConfig {
 
         for (String group: section.getKeys(false)){
             for (String member : section.getStringList(group)) {
-                Material type = Material.valueOf(member.toUpperCase());
-                blockToGroup.put(type, group.toUpperCase());
+                try {
+                    Material type = Material.valueOf(member.toUpperCase(Locale.ROOT));
+                    blockToGroup.put(type, group.toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException exception) {
+                    plugin.getLogger().warning("Unknown material '" + member
+                            + "' at blocks.block-groups." + group + "; skipping it.");
+                }
             }
         }
     }
@@ -274,8 +283,13 @@ public class PluginConfig {
 
         for (String group : section.getKeys(false)) {
             for (String member : section.getStringList(group)) {
-                EntityType type = EntityType.valueOf(member.toUpperCase());
-                entityToGroup.put(type, group.toUpperCase());
+                try {
+                    EntityType type = EntityType.valueOf(member.toUpperCase(Locale.ROOT));
+                    entityToGroup.put(type, group.toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException exception) {
+                    plugin.getLogger().warning("Unknown entity type '" + member
+                            + "' at entities.entity-groups." + group + "; skipping it.");
+                }
             }
         }
     }
@@ -294,8 +308,9 @@ public class PluginConfig {
 
             this.entityLimits = limitsSection.getKeys(false).stream()
                     .collect(Collectors.toMap(
-                            key -> key,
-                            limitsSection::getInt
+                            key -> key.toUpperCase(Locale.ROOT),
+                            limitsSection::getInt,
+                            (first, replacement) -> replacement
                     ));
         }
 
@@ -358,6 +373,10 @@ public class PluginConfig {
         return resolvedEntityLimits.containsKey(type);
     }
 
+    public Set<EntityType> getResolvedEntityTypes() {
+        return Collections.unmodifiableSet(resolvedEntityLimits.keySet());
+    }
+
     /**
      * Loads spawn reasons from the configuration.
      * If no spawn reasons are configured, defaults to all spawn reasons.
@@ -368,7 +387,17 @@ public class PluginConfig {
         if (reasonsList == null || reasonsList.isEmpty()) {
             spawnReasons = getDefaultSpawnReasons();
         } else {
-            spawnReasons = new HashSet<>(reasonsList);
+            Set<String> validReasons = getDefaultSpawnReasons();
+            spawnReasons = new HashSet<>();
+            for (String reason : reasonsList) {
+                String normalizedReason = reason.toUpperCase(Locale.ROOT);
+                if (validReasons.contains(normalizedReason)) {
+                    spawnReasons.add(normalizedReason);
+                } else {
+                    plugin.getLogger().warning("Unknown spawn reason '" + reason
+                            + "' at spawn-reasons; skipping it.");
+                }
+            }
         }
     }
 
@@ -509,8 +538,9 @@ public class PluginConfig {
 
             this.blockLimits = blocksSection.getKeys(false).stream()
                     .collect(Collectors.toMap(
-                            key -> key,
-                            blocksSection::getInt
+                            key -> key.toUpperCase(Locale.ROOT),
+                            blocksSection::getInt,
+                            (first, replacement) -> replacement
                     ));
         }
 
@@ -658,15 +688,6 @@ public class PluginConfig {
      */
     public Set<Material> getTrackedBlockMaterials() {
         return trackedBlockMaterials;
-    }
-
-    /**
-     * Checks whether NMS-based entity counting is enabled.
-     *
-     * @return true if NMS entity counting should be used
-     */
-    public boolean isNmsEntityCount() {
-        return config.getBoolean("entities.nms-entity-count", false);
     }
 
     private boolean hasKnownStackingPlugin() {

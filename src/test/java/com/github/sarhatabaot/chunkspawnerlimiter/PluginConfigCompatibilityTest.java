@@ -1,7 +1,10 @@
 package com.github.sarhatabaot.chunkspawnerlimiter;
 
+import org.bukkit.Material;
 import org.bukkit.Server;
+import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.EntityType;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +15,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doNothing;
@@ -40,6 +47,7 @@ class PluginConfigCompatibilityTest {
     void setUp() {
         when(plugin.getConfig()).thenReturn(config);
         when(plugin.getServer()).thenReturn(server);
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("PluginConfigCompatibilityTest"));
         when(server.getPluginManager()).thenReturn(pluginManager);
         doNothing().when(plugin).saveDefaultConfig();
 
@@ -66,5 +74,70 @@ class PluginConfigCompatibilityTest {
         pluginConfig.reload();
 
         assertThat(pluginConfig.shouldDelayEntityCountForCompatibility()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Should skip invalid block group members")
+    void shouldSkipInvalidBlockGroupMembers() {
+        when(config.getConfigurationSection("blocks.block-groups"))
+                .thenReturn(new MemoryConfiguration().createSection("blocks.block-groups", Map.of(
+                        "STORAGE", List.of("DIAMOND_BLOCK", "NOT_A_BLOCK")
+                )));
+        when(config.getConfigurationSection("blocks.limits"))
+                .thenReturn(new MemoryConfiguration().createSection("blocks.limits", Map.of(
+                        "STORAGE", 4
+                )));
+
+        pluginConfig.reload();
+
+        assertThat(pluginConfig.getResolvedBlockLimit(Material.DIAMOND_BLOCK)).isEqualTo(4);
+    }
+
+    @Test
+    @DisplayName("Should skip invalid entity group members")
+    void shouldSkipInvalidEntityGroupMembers() {
+        when(config.getConfigurationSection("entities.entity-groups"))
+                .thenReturn(new MemoryConfiguration().createSection("entities.entity-groups", Map.of(
+                        "HOSTILE", List.of("ZOMBIE", "NOT_AN_ENTITY")
+                )));
+        when(config.getConfigurationSection("entities.limits"))
+                .thenReturn(new MemoryConfiguration().createSection("entities.limits", Map.of(
+                        "HOSTILE", 6
+                )));
+
+        pluginConfig.reload();
+
+        assertThat(pluginConfig.getResolvedEntityLimit(EntityType.ZOMBIE)).isEqualTo(6);
+    }
+
+    @Test
+    @DisplayName("Should normalize configured names regardless of case")
+    void shouldNormalizeConfiguredNamesRegardlessOfCase() {
+        when(config.getConfigurationSection("blocks.block-groups"))
+                .thenReturn(new MemoryConfiguration().createSection("blocks.block-groups", Map.of(
+                        "Storage", List.of("diamond_block")
+                )));
+        when(config.getConfigurationSection("blocks.limits"))
+                .thenReturn(new MemoryConfiguration().createSection("blocks.limits", Map.of(
+                        "storage", 4
+                )));
+        when(config.getConfigurationSection("entities.entity-groups"))
+                .thenReturn(new MemoryConfiguration().createSection("entities.entity-groups", Map.of(
+                        "Hostile", List.of("zombie")
+                )));
+        when(config.getConfigurationSection("entities.limits"))
+                .thenReturn(new MemoryConfiguration().createSection("entities.limits", Map.of(
+                        "hostile", 6,
+                        "skeleton", 2
+                )));
+        when(config.getStringList("spawn-reasons"))
+                .thenReturn(List.of("natural", "not_a_reason"));
+
+        pluginConfig.reload();
+
+        assertThat(pluginConfig.getResolvedBlockLimit(Material.DIAMOND_BLOCK)).isEqualTo(4);
+        assertThat(pluginConfig.getResolvedEntityLimit(EntityType.ZOMBIE)).isEqualTo(6);
+        assertThat(pluginConfig.getResolvedEntityLimit(EntityType.SKELETON)).isEqualTo(2);
+        assertThat(pluginConfig.getSpawnReasons()).containsExactly("NATURAL");
     }
 }

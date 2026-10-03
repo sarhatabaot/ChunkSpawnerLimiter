@@ -1,6 +1,5 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.listener;
 
-import com.github.sarhatabaot.chunkspawnerlimiter.CSLLogger;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
@@ -11,6 +10,7 @@ import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import com.github.sarhatabaot.chunkspawnerlimiter.tracker.EntityChunkTracker;
 import org.bukkit.Chunk;
+import org.bukkit.World;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 
 
 public class ChunkListener implements Listener {
+    private final Plugin plugin;
     private final PluginConfig pluginConfig;
     private final CounterDataManager counterDataManager;
     private final RemovalTaskManager removalTaskManager;
@@ -31,6 +32,7 @@ public class ChunkListener implements Listener {
                          CounterDataManager counterDataManager,
                          RemovalTaskManager removalTaskManager,
                          EntityChunkTracker chunkTracker) {
+        this.plugin = plugin;
         this.pluginConfig = pluginConfig;
         this.counterDataManager = counterDataManager;
         this.removalTaskManager = removalTaskManager;
@@ -44,7 +46,10 @@ public class ChunkListener implements Listener {
             return;
         }
 
-        final Chunk chunk = event.getChunk();
+        initializeChunk(event.getChunk());
+    }
+
+    private void initializeChunk(@NotNull Chunk chunk) {
         final ChunkCoord chunkCoord = ChunkCoord.from(chunk);
 
         addEntityLimits(chunk, chunkCoord);
@@ -53,10 +58,13 @@ public class ChunkListener implements Listener {
         blockScanner.scanChunk(chunk, chunkCoord, true);
 
         RemovalMode removalMode = pluginConfig.getRemovalMode();
-        removalTaskManager.queueChunkCheck(chunkCoord, removalMode.getEntityRemovalAction());
+        if (removalMode.removesExistingEntities()) {
+            removalTaskManager.queueChunkCheck(chunkCoord, removalMode.getEntityRemovalAction());
 
-        if (pluginConfig.isActiveInspections()) {
-            removalTaskManager.scheduleRecheck(chunkCoord, removalMode.getEntityRemovalAction(), pluginConfig.getInspectionFrequency());
+            if (pluginConfig.isActiveInspections()) {
+                removalTaskManager.scheduleRecheck(chunkCoord, removalMode.getEntityRemovalAction(),
+                        pluginConfig.getInspectionFrequencySeconds());
+            }
         }
     }
 
@@ -67,6 +75,8 @@ public class ChunkListener implements Listener {
         }
 
         final ChunkCoord chunkCoord = ChunkCoord.from(event.getChunk());
+        blockScanner.cancelScan(chunkCoord);
+        chunkTracker.forgetChunk(chunkCoord);
         counterDataManager.removeCounterData(chunkCoord);
         removalTaskManager.removeChunkRecheck(chunkCoord);
     }
@@ -74,15 +84,28 @@ public class ChunkListener implements Listener {
     private void addEntityLimits(final @NotNull Chunk chunk, final ChunkCoord chunkCoord) {
         final Entity[] entities = chunk.getEntities();
         for (Entity entity: entities) {
-            if (Checks.shouldSkipPlayers(entity)) {
+            if (!Checks.shouldTrackEntity(entity, pluginConfig)) {
                 continue;
             }
 
-            if (pluginConfig.hasResolvedEntityLimit(entity.getType())) {
-                counterDataManager.getCounterData(chunkCoord).incrementEntity(entity.getType());
-                // Register with the cross-chunk movement tracker
-                chunkTracker.recordEntry(entity);
+            counterDataManager.getCounterData(chunkCoord).incrementEntity(entity.getType());
+            // Register with the cross-chunk movement tracker
+            chunkTracker.recordEntry(entity);
+        }
+    }
+
+    public void rebuildLoadedChunks() {
+        for (World world : plugin.getServer().getWorlds()) {
+            if (pluginConfig.isWorldDisabled(world.getName())) {
+                continue;
+            }
+            for (Chunk chunk : world.getLoadedChunks()) {
+                initializeChunk(chunk);
             }
         }
+    }
+
+    public void shutdown() {
+        blockScanner.shutdown();
     }
 }

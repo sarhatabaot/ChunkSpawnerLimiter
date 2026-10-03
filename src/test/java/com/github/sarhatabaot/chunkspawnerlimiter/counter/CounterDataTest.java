@@ -10,6 +10,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -112,6 +113,33 @@ class CounterDataTest {
 
         // Then
         assertThat(counterData.getBlockCount(Material.STONE)).isEqualTo(10);
+    }
+
+    @Test
+    @DisplayName("Should reject a stale block scan replacement")
+    void shouldRejectStaleBlockScanReplacement() {
+        counterData.setBlockCount(Material.STONE, 2);
+        long scanRevision = counterData.getBlockRevision();
+        counterData.incrementBlock(Material.STONE);
+
+        boolean replaced = counterData.replaceBlockCounts(scanRevision, Map.of(Material.DIAMOND_BLOCK, 4));
+
+        assertThat(replaced).isFalse();
+        assertThat(counterData.getBlockCount(Material.STONE)).isEqualTo(3);
+        assertThat(counterData.getBlockCount(Material.DIAMOND_BLOCK)).isZero();
+    }
+
+    @Test
+    @DisplayName("Should atomically replace block counts for a current scan")
+    void shouldReplaceBlockCountsForCurrentScan() {
+        counterData.setBlockCount(Material.STONE, 2);
+        long scanRevision = counterData.getBlockRevision();
+
+        boolean replaced = counterData.replaceBlockCounts(scanRevision, Map.of(Material.DIAMOND_BLOCK, 4));
+
+        assertThat(replaced).isTrue();
+        assertThat(counterData.getBlockCount(Material.STONE)).isZero();
+        assertThat(counterData.getBlockCount(Material.DIAMOND_BLOCK)).isEqualTo(4);
     }
 
     @Test

@@ -3,9 +3,6 @@ package com.github.sarhatabaot.chunkspawnerlimiter.command;
 import com.github.sarhatabaot.chunkspawnerlimiter.ChunkSpawnerLimiter;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.removal.Checks;
-import com.github.sarhatabaot.chunkspawnerlimiter.removal.ExternalChecks;
-import com.github.sarhatabaot.chunkspawnerlimiter.removal.RemovalTaskManager;
-import com.github.sarhatabaot.chunkspawnerlimiter.removal.modes.RemovalMode;
 import me.despical.commandframework.CommandArguments;
 import me.despical.commandframework.annotations.Command;
 import me.despical.commandframework.annotations.Completer;
@@ -23,12 +20,10 @@ public class AdminCommand {
 
 
     private final ChunkSpawnerLimiter plugin;
-    private final RemovalTaskManager removalTaskManager;
     private final PluginConfig pluginConfig;
 
-    public AdminCommand(ChunkSpawnerLimiter plugin, RemovalTaskManager removalTaskManager, PluginConfig pluginConfig) {
+    public AdminCommand(ChunkSpawnerLimiter plugin, PluginConfig pluginConfig) {
         this.plugin = plugin;
-        this.removalTaskManager = removalTaskManager;
         this.pluginConfig = pluginConfig;
     }
 
@@ -84,10 +79,6 @@ public class AdminCommand {
     public void onReload(@NotNull CommandArguments arguments) {
         this.plugin.onReload();
 
-        RemovalMode.reload(removalTaskManager);
-        Checks.setup(pluginConfig);
-        ExternalChecks.setup(pluginConfig);
-
         arguments.getSender().sendMessage("Reloaded config and updated all systems.");
     }
 
@@ -97,14 +88,19 @@ public class AdminCommand {
     )
     public void onResync(@NotNull CommandArguments arguments) {
         final CommandSender sender = arguments.getSender();
+        if (plugin.getCounterDataManager() == null) {
+            sender.sendMessage(ChatColor.RED + "ChunkSpawnerLimiter logic is disabled.");
+            return;
+        }
         sender.sendMessage(ChatColor.YELLOW + "Resyncing entity counters for all loaded chunks...");
 
-        int chunks = plugin.getCounterDataManager().rescanAllLoadedChunks(
-                pluginConfig::hasResolvedEntityLimit
+        plugin.getCounterDataManager().rescanAllLoadedChunksBatched(
+                plugin,
+                entity -> Checks.shouldTrackEntity(entity, pluginConfig),
+                pluginConfig.getInspectionMaxChunksPerTick(),
+                chunks -> sender.sendMessage(ChatColor.GREEN + "Resync complete. "
+                        + chunks + " chunks rescanned.")
         );
-
-        sender.sendMessage(ChatColor.GREEN + "Resync complete. " +
-                chunks + " chunks rescanned.");
     }
 
     /*

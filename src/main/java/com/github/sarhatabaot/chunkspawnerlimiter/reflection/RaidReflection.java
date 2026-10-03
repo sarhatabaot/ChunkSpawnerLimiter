@@ -2,15 +2,24 @@ package com.github.sarhatabaot.chunkspawnerlimiter.reflection;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+
+import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
 
 public final class RaidReflection {
 
-    private static final boolean SUPPORTED;
     private static final Class<?> RAIDER_CLASS;
-    private static final Class<?> RAID_CLASS;
-    private static final Method GET_WORLD;
     private static final Method GET_RAIDS;
     private static final Method GET_RAIDERS;
+    private static final AtomicBoolean FAILURE_LOGGED = new AtomicBoolean();
+    private static volatile boolean available;
 
     static {
         Class<?> raider = null;
@@ -37,11 +46,9 @@ public final class RaidReflection {
         }
 
         RAIDER_CLASS = raider;
-        RAID_CLASS = raid;
-        GET_WORLD = getWorld;
         GET_RAIDS = getRaids;
         GET_RAIDERS = getRaiders;
-        SUPPORTED = supported;
+        available = supported;
     }
 
     private RaidReflection() {}
@@ -50,34 +57,49 @@ public final class RaidReflection {
      * @return true if this server version supports raids.
      */
     public static boolean isSupported() {
-        return SUPPORTED;
+        return available;
     }
 
     /**
      * Checks if a given entity is part of an active raid.
      */
     public static boolean isEntityInRaid(Object entity) {
-        if (!SUPPORTED || entity == null || !RAIDER_CLASS.isInstance(entity)) {
+        if (!available || !RAIDER_CLASS.isInstance(entity)) {
             return false;
         }
 
-        try {
-            Object world = GET_WORLD.invoke(entity);
-            @SuppressWarnings("unchecked")
-            Collection<?> raids = (Collection<?>) GET_RAIDS.invoke(world);
+        return entity instanceof Entity bukkitEntity
+                && getActiveRaiderUuids(bukkitEntity.getWorld()).contains(bukkitEntity.getUniqueId());
+    }
 
-            for (Object raid : raids) {
-                @SuppressWarnings("unchecked")
-                Collection<?> raiders = (Collection<?>) GET_RAIDERS.invoke(raid);
-                if (raiders.contains(entity)) {
-                    return true;
-                }
-            }
-        } catch (ReflectiveOperationException e) {
-            e.printStackTrace();
+    public static Set<UUID> getActiveRaiderUuids(World world) {
+        if (!available) {
+            return Collections.emptySet();
         }
 
-        return false;
+        try {
+            Collection<?> raids = (Collection<?>) GET_RAIDS.invoke(world);
+            Set<UUID> raiderUuids = new HashSet<>();
+
+            for (Object raid : raids) {
+                Collection<?> raiders = (Collection<?>) GET_RAIDERS.invoke(raid);
+                for (Object raider : raiders) {
+                    if (raider instanceof Entity entity) {
+                        raiderUuids.add(entity.getUniqueId());
+                    }
+                }
+            }
+            return raiderUuids;
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            available = false;
+            if (FAILURE_LOGGED.compareAndSet(false, true)) {
+                Bukkit.getLogger().log(Level.WARNING,
+                        "[RaidReflection] Unable to inspect active raids; disabling raid reflection: "
+                                + exception.getClass().getSimpleName() + ": " + exception.getMessage());
+            }
+        }
+
+        return Collections.emptySet();
     }
 }
 

@@ -1,11 +1,15 @@
 package com.github.sarhatabaot.chunkspawnerlimiter.reflection;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 
 public final class WorldReflection {
 
-    private static final boolean SUPPORTED;
     private static final Method GET_MIN_HEIGHT;
+    private static final AtomicBoolean FAILURE_LOGGED = new AtomicBoolean();
+    private static volatile boolean available;
 
     static {
         Method getMinHeight = null;
@@ -21,7 +25,7 @@ public final class WorldReflection {
         }
 
         GET_MIN_HEIGHT = getMinHeight;
-        SUPPORTED = supported;
+        available = supported;
     }
 
     private WorldReflection() {}
@@ -30,23 +34,28 @@ public final class WorldReflection {
      * @return true if this server version supports getMinHeight().
      */
     public static boolean isSupported() {
-        return SUPPORTED;
+        return available;
     }
 
     /**
      * Returns the world's minimum height safely across all versions.
      */
     public static int getWorldMinHeightSafe(World world) {
-        if (!SUPPORTED) {
+        if (!available) {
             // Old versions (pre-1.18) start at Y = 0
             return 0;
         }
 
         try {
             return (int) GET_MIN_HEIGHT.invoke(world);
-        } catch (ReflectiveOperationException e) {
-            // Fallback if reflection fails for any reason
-            e.printStackTrace();
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            available = false;
+            if (FAILURE_LOGGED.compareAndSet(false, true)) {
+                Bukkit.getLogger().log(Level.WARNING,
+                        "[WorldReflection] Unable to read minimum world height; "
+                                + "disabling reflection and falling back to Y=0: "
+                                + exception.getClass().getSimpleName() + ": " + exception.getMessage());
+            }
             return 0;
         }
     }

@@ -4,6 +4,7 @@ import be.seeseemelk.mockbukkit.MockBukkit;
 import be.seeseemelk.mockbukkit.ServerMock;
 import com.github.sarhatabaot.chunkspawnerlimiter.ChunkSpawnerLimiter;
 import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
+import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Integration tests for the full plugin lifecycle using MockBukkit 1.x.
  * Tests plugin loading, configuration, and basic functionality for Minecraft 1.8-1.12.
- *
+ * <p>
  * Note: This test suite uses MockBukkit 1.x which supports Minecraft 1.8-1.12.
  * For modern versions (1.17+), see PluginIntegrationTest in testModern.
  */
@@ -96,6 +97,7 @@ class PluginIntegrationLegacyTest {
     void shouldHandleConfigurationReload() {
         // Given
         PluginConfig config = plugin.getPluginConfig();
+        CounterDataManager counters = plugin.getCounterDataManager();
 
         // When - Reload configuration
         plugin.onReload();
@@ -103,6 +105,10 @@ class PluginIntegrationLegacyTest {
         // Then - Config should still be available and functional
         assertThat(config).isNotNull();
         assertThat(config.isEnabled()).isTrue();
+        assertThat(plugin.getPluginConfig()).isSameAs(config);
+        assertThat(plugin.getCounterDataManager()).isNotSameAs(counters);
+        assertThat(plugin.getRemovalTaskManager()).isNotNull();
+        assertThat(plugin.getEntityChunkTracker()).isNotNull();
     }
 
     @Test

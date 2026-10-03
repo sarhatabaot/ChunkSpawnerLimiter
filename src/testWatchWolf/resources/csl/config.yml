@@ -1,0 +1,54 @@
+enabled: true
+debug-messages: false
+metrics: false
+
+events:
+  spawn:
+    creature: true
+    vehicle: true
+    entity: true
+  inspections:
+    enabled: false
+    frequency: 60
+    max-chunks-per-tick: 256
+
+entities:
+  entity-groups:
+    TEST_DECORATIONS:
+      - ARMOR_STAND
+  limits:
+    TEST_DECORATIONS: 2
+    MINECART: 1
+    ZOMBIE: 1
+    PLAYER: 0
+  compatibility:
+    defer-count-until-next-tick: false
+  preservation:
+    named-entities: true
+    raid-entities: true
+  removal:
+    mode: "enforce"
+    armor-stand:
+      drop: false
+      log-warnings: false
+    kill-players: false
+  ignore:
+    metadata: []
+    nbt: []
+
+spawn-reasons:
+  - CUSTOM
+
+blocks:
+  block-groups:
+    TEST_BLOCKS:
+      - WHITE_WOOL
+  limits:
+    TEST_BLOCKS: 1
+
+worlds:
+  mode: excluded
+  list: []
+
+notifications:
+  enabled: false

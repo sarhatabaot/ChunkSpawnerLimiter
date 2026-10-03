@@ -46,6 +46,10 @@ public sealed interface RemovalMode
      */
     void handleEntity(@NotNull Entity entity, @Nullable Cancellable event);
 
+    default void handleDeferredEntity(@NotNull Entity entity) {
+        getEntityRemovalAction().accept(entity);
+    }
+
     /**
      * Handles a block that violates a configured limit.
      *
@@ -54,11 +58,16 @@ public sealed interface RemovalMode
      */
     void handleBlock(@NotNull Block block, @NotNull Cancellable event);
 
+    default boolean removesExistingEntities() {
+        return true;
+    }
+
     /**
      * Returns the action used to remove or otherwise process entities for this mode.
      *
      * @return a consumer that performs the entity removal action
      */
+    @NotNull
     Consumer<Entity> getEntityRemovalAction();
 
     /**

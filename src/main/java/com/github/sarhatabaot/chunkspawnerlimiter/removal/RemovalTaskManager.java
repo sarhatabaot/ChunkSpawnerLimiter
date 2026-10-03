@@ -6,17 +6,17 @@ import com.github.sarhatabaot.chunkspawnerlimiter.PluginConfig;
 import com.github.sarhatabaot.chunkspawnerlimiter.chunk.ChunkCoord;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterData;
 import com.github.sarhatabaot.chunkspawnerlimiter.counter.CounterDataManager;
-import com.github.sarhatabaot.chunkspawnerlimiter.reflection.NmsEntityCounter;
+import com.github.sarhatabaot.chunkspawnerlimiter.reflection.RaidReflection;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 
 public class RemovalTaskManager {
     private final static long TICKS_PER_SECOND = 20L;
@@ -25,20 +25,26 @@ public class RemovalTaskManager {
             Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     // Map of chunks that should be rechecked after a delay (timestamp in ms)
-    private final Map<ChunkCoord, List<DelayedQueuedCheck>> scheduledRechecks = new ConcurrentHashMap<>();
+    private final Map<ChunkCoord, ScheduledRecheck> scheduledRechecks = new ConcurrentHashMap<>();
 
     private final CounterDataManager counterDataManager;
     private final ChunkSpawnerLimiter plugin;
     private final PluginConfig pluginConfig;
-    @Nullable
-    private final NmsEntityCounter nmsEntityCounter;
-
+    private final LongSupplier currentTimeMillis;
     public RemovalTaskManager(ChunkSpawnerLimiter plugin, CounterDataManager counterDataManager, PluginConfig pluginConfig) {
+        this(plugin, counterDataManager, pluginConfig, System::currentTimeMillis, true);
+    }
+
+    RemovalTaskManager(ChunkSpawnerLimiter plugin, CounterDataManager counterDataManager,
+                       PluginConfig pluginConfig, LongSupplier currentTimeMillis,
+                       boolean startProcessing) {
         this.plugin = plugin;
         this.counterDataManager = counterDataManager;
         this.pluginConfig = pluginConfig;
-        this.nmsEntityCounter = NmsEntityCounter.create(pluginConfig);
-        startProcessingTask();
+        this.currentTimeMillis = currentTimeMillis;
+        if (startProcessing) {
+            startProcessingTask();
+        }
     }
 
     public CounterDataManager getCounterDataManager() {
@@ -49,8 +55,9 @@ public class RemovalTaskManager {
      * Schedule this chunk to be checked again after X seconds.
      */
     public void scheduleRecheck(ChunkCoord coord, Consumer<Entity> action, long delaySeconds) {
-        long nextCheck = System.currentTimeMillis() + (delaySeconds * 1000L);
-        scheduledRechecks.computeIfAbsent(coord, k -> new ArrayList<>()).add(new DelayedQueuedCheck(action, nextCheck));
+        long intervalMillis = Math.max(1L, delaySeconds) * 1000L;
+        long nextCheck = currentTimeMillis.getAsLong() + intervalMillis;
+        scheduledRechecks.put(coord, new ScheduledRecheck(action, intervalMillis, nextCheck));
         CSLLogger.debug(() -> "Scheduled recheck for chunk %s in %d seconds".formatted(coord, delaySeconds));
     }
 
@@ -69,30 +76,32 @@ public class RemovalTaskManager {
         Bukkit.getScheduler().runTaskTimer(plugin, this::processQueue, TICKS_PER_SECOND, TICKS_PER_SECOND); // every 1 second
     }
 
-    private void processQueue() {
-        QueuedCheck check;
-        while ((check = pendingChunks.poll()) != null) {
-            processChunk(check.coord, check.action);
-            queuedChunks.remove(check.coord);
-        }
-
-        long now = System.currentTimeMillis();
-        for (Iterator<Map.Entry<ChunkCoord, List<DelayedQueuedCheck>>> it = scheduledRechecks.entrySet().iterator(); it.hasNext();) {
-            Map.Entry<ChunkCoord, List<DelayedQueuedCheck>> entry = it.next();
+    void processQueue() {
+        long now = currentTimeMillis.getAsLong();
+        for (Map.Entry<ChunkCoord, ScheduledRecheck> entry : scheduledRechecks.entrySet()) {
             if (shouldPurgeScheduled(entry.getKey())) {
-                it.remove();
+                scheduledRechecks.remove(entry.getKey(), entry.getValue());
                 continue;
             }
-            List<DelayedQueuedCheck> list = entry.getValue();
-            list.removeIf(delayed -> {
-                if (delayed.timestamp <= now) {
-                    queueChunkCheck(entry.getKey(), delayed.action);
-                    return true;
-                }
-                return false;
-            });
-            if (list.isEmpty()) {
-                it.remove();
+
+            ScheduledRecheck scheduled = entry.getValue();
+            if (scheduled.nextCheckAt <= now) {
+                queueChunkCheck(entry.getKey(), scheduled.action);
+                scheduledRechecks.replace(entry.getKey(), scheduled, scheduled.next(now));
+            }
+        }
+
+        int maxChunks = Math.max(1, pluginConfig.getInspectionMaxChunksPerTick());
+        for (int processed = 0; processed < maxChunks; processed++) {
+            QueuedCheck check = pendingChunks.poll();
+            if (check == null) {
+                break;
+            }
+
+            try {
+                processChunk(check.coord, check.action);
+            } finally {
+                queuedChunks.remove(check.coord);
             }
         }
     }
@@ -118,23 +127,27 @@ public class RemovalTaskManager {
 
         // --- Phase 1: Rebuild cache from actual entity state ---
         // Reset all tracked entity type counters to zero
-        Set<EntityType> trackedTypes = new HashSet<>(data.getTrackedEntityTypes());
-        for (EntityType type : trackedTypes) {
+        Set<EntityType> configuredTypes = new HashSet<>(pluginConfig.getResolvedEntityTypes());
+        Set<EntityType> counterTypes = new HashSet<>(data.getTrackedEntityTypes());
+        counterTypes.addAll(configuredTypes);
+        boolean removalAttempted = false;
+        for (EntityType type : counterTypes) {
             data.setEntityCount(type, 0);
         }
 
         // Recount tracked entities from the actual chunk
         Entity[] entities = chunk.getEntities();
+        Set<UUID> activeRaiderUuids = null;
         for (Entity entity : entities) {
             EntityType type = entity.getType();
-            if (pluginConfig.hasResolvedEntityLimit(type)) {
+            if (isCountableEntity(entity)) {
                 data.incrementEntity(type);
             }
         }
 
         // --- Phase 2: Remove excess entities ---
         // Only gather entity lists for types that are actually over the limit
-        for (EntityType type : trackedTypes) {
+        for (EntityType type : configuredTypes) {
             Integer allowed = pluginConfig.getResolvedEntityLimit(type);
             if (allowed == null) continue;
 
@@ -142,10 +155,17 @@ public class RemovalTaskManager {
             int toRemove = actualCount - allowed;
             if (toRemove <= 0) continue;
 
+            if (activeRaiderUuids == null) {
+                activeRaiderUuids = pluginConfig.shouldPreserveRaidEntities()
+                        ? RaidReflection.getActiveRaiderUuids(chunk.getWorld())
+                        : Collections.emptySet();
+            }
+
             // Collect entities of this type (only when we know we need to remove some)
             List<Entity> typedEntities = new ArrayList<>();
             for (Entity entity : entities) {
-                if (entity.getType() == type && !shouldSkipRemoval(entity)) {
+                if (entity.getType() == type && isCountableEntity(entity)
+                        && !shouldSkipRemoval(entity, activeRaiderUuids)) {
                     typedEntities.add(entity);
                 }
             }
@@ -154,21 +174,40 @@ public class RemovalTaskManager {
             for (int i = 0; i < toRemove && i < size; i++) {
                 Entity entity = typedEntities.get(i);
                 removalAction.accept(entity);
-                // Decrement the cache after plugin-initiated removal
-                counterDataManager.decrementEntityForRemoval(entity);
+                removalAttempted = true;
+            }
+        }
+
+        if (removalAttempted) {
+            for (EntityType type : counterTypes) {
+                data.setEntityCount(type, 0);
+            }
+
+            for (Entity entity : chunk.getEntities()) {
+                if (isCountableEntity(entity)) {
+                    data.incrementEntity(entity.getType());
+                }
             }
         }
     }
 
-    private boolean shouldSkipRemoval(final Entity entity) {
-        return Checks.hasCustomName(entity) || Checks.hasMetaData(entity) || ExternalChecks.hasNbtData(entity) || Checks.isPartOfRaid(entity);
+    private boolean isCountableEntity(Entity entity) {
+        return entity.isValid() && !entity.isDead() && Checks.shouldTrackEntity(entity, pluginConfig);
+    }
+
+    private boolean shouldSkipRemoval(final Entity entity, Set<UUID> activeRaiderUuids) {
+        return Checks.hasCustomName(entity) || Checks.hasMetaData(entity)
+                || ExternalChecks.hasNbtData(entity) || activeRaiderUuids.contains(entity.getUniqueId());
     }
 
 
     private record QueuedCheck(ChunkCoord coord, Consumer<Entity> action) {
     }
 
-    private record DelayedQueuedCheck(Consumer<Entity> action, long timestamp) {
+    private record ScheduledRecheck(Consumer<Entity> action, long intervalMillis, long nextCheckAt) {
+        private ScheduledRecheck next(long now) {
+            return new ScheduledRecheck(action, intervalMillis, now + intervalMillis);
+        }
     }
 
 

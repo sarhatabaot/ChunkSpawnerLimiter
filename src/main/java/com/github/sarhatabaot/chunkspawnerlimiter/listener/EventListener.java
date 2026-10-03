@@ -21,13 +21,11 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
-
-import java.lang.reflect.Method;
-
 
 public class EventListener implements Listener {
     private final Plugin plugin;
@@ -35,22 +33,6 @@ public class EventListener implements Listener {
     private final CounterDataManager counterDataManager;
     private final NotificationService notificationService;
     private final EntityChunkTracker chunkTracker;
-
-    // Paper-only EntityTransformEvent support (1.19+)
-    private static final boolean HAS_ENTITY_TRANSFORM_EVENT;
-    private static final Method ENTITY_TRANSFORM_GET_TRANSFORMED_ENTITY;
-
-    static {
-        boolean hasTransform = false;
-        Method getTransformed = null;
-        try {
-            Class<?> transformEvent = Class.forName("com.destroystokyo.paper.event.entity.EntityTransformEvent");
-            getTransformed = transformEvent.getMethod("getTransformedEntity");
-            hasTransform = true;
-        } catch (Throwable ignored) {}
-        HAS_ENTITY_TRANSFORM_EVENT = hasTransform;
-        ENTITY_TRANSFORM_GET_TRANSFORMED_ENTITY = getTransformed;
-    }
 
     public EventListener(Plugin plugin, PluginConfig pluginConfig,
                          CounterDataManager counterDataManager,
@@ -61,6 +43,13 @@ public class EventListener implements Listener {
         this.counterDataManager = counterDataManager;
         this.notificationService = notificationService;
         this.chunkTracker = chunkTracker;
+    }
+
+    // -- Player lifecycle ----------------------------------------------------
+
+    @EventHandler
+    public void onPlayerQuit(@NotNull PlayerQuitEvent event) {
+        notificationService.cleanup(event.getPlayer());
     }
 
     // -- Block events --------------------------------------------------------
@@ -109,8 +98,16 @@ public class EventListener implements Listener {
 
     // -- Entity spawn events -------------------------------------------------
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntitySpawn(@NotNull EntitySpawnEvent event) {
+        if (event instanceof CreatureSpawnEvent) {
+            if (!pluginConfig.isCreatureSpawnWatch()) {
+                return;
+            }
+        } else if (!pluginConfig.isEntitySpawnWatch()) {
+            return;
+        }
+
         if (pluginConfig.isWorldDisabled(event.getLocation().getWorld().getName())) {
             CSLLogger.debug(() -> "%s world is disabled.".formatted(event.getLocation().getWorld().getName()));
             return;
@@ -126,12 +123,8 @@ public class EventListener implements Listener {
 
         final Entity entity = event.getEntity();
         final EntityType entityType = entity.getType();
-        if (!pluginConfig.hasResolvedEntityLimit(entityType)) {
+        if (!Checks.shouldTrackEntity(entity, pluginConfig)) {
             CSLLogger.debug(() -> "%s entity not in entity limits.".formatted(entityType.name()));
-            return;
-        }
-
-        if (Checks.shouldSkipPlayers(entity)) {
             return;
         }
 
@@ -146,22 +139,23 @@ public class EventListener implements Listener {
         // merged transient spawn entities into stacked entities, so we count
         // the actual stacks (1 per stack, not 1 per individual entity).
         if (pluginConfig.shouldDelayEntityCountForCompatibility()) {
-            scheduleEntityCountFinalization(entity, event);
+            scheduleEntityCountFinalization(entity);
             return;
         }
 
         final ChunkCoord chunkCoord = ChunkCoord.from(chunk);
         final CounterData counterData = counterDataManager.getCounterData(chunkCoord);
+        final int existingEntityCount = counterDataManager.synchronizeEntityCount(chunk, entityType, entity);
 
         final Integer entityTypeLimit = pluginConfig.getResolvedEntityLimit(entityType);
 
         boolean withinTypeLimit = entityTypeLimit == null ||
-            Checks.isUnderOrEqualToLimit(counterData.getEntityCount(entityType), entityTypeLimit);
+            Checks.isUnderOrEqualToLimit(existingEntityCount, entityTypeLimit);
 
         if (withinTypeLimit) {
             CSLLogger.debug(() -> "%s entity under entity limits (type: %d/%s)".formatted(
                 entityType.name(),
-                counterData.getEntityCount(entityType),
+                existingEntityCount,
                 entityTypeLimit != null ? String.valueOf(entityTypeLimit) : "unlimited"
             ));
 
@@ -200,27 +194,56 @@ public class EventListener implements Listener {
 
     // -- Entity portal (cross-dimension) ------------------------------------
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityPortal(@NotNull EntityPortalEvent event) {
-        if (pluginConfig.isWorldDisabled(event.getFrom().getWorld().getName())) {
+        if (event.isCancelled() || event.getFrom().getWorld() == null) {
             return;
         }
 
         final Entity entity = event.getEntity();
-        if (!pluginConfig.hasResolvedEntityLimit(entity.getType())) return;
+        if (!Checks.shouldTrackEntity(entity, pluginConfig)) return;
 
-        // Entity is leaving this dimension — decrement its old chunk counter.
-        // A new entity will be created in the target world, and its spawn event
-        // will increment the counter there.
-        final ChunkCoord oldCoord = ChunkCoord.from(entity.getLocation());
-        counterDataManager.getCounterData(oldCoord).decrementEntity(entity.getType());
-        chunkTracker.recordExit(entity);
-
-        CSLLogger.debug(() -> "Entity portal: %s leaving %s"
-                .formatted(entity.getType().name(), oldCoord));
+        final ChunkCoord sourceCoord = ChunkCoord.from(event.getFrom());
+        final EntityType sourceType = entity.getType();
+        final boolean sourceTracked = !pluginConfig.isWorldDisabled(event.getFrom().getWorld().getName());
+        plugin.getServer().getScheduler().runTask(plugin,
+                () -> reconcilePortalTransition(entity, sourceCoord, sourceType, sourceTracked));
     }
 
     // -- Entity transformation (pig→zombified piglin, etc.) -----------------
+
+    private void reconcilePortalTransition(@NotNull Entity entity, @NotNull ChunkCoord sourceCoord,
+                                           @NotNull EntityType sourceType, boolean sourceTracked) {
+        if (!entity.isValid()) {
+            if (sourceTracked) {
+                counterDataManager.decrementEntityIfPresent(sourceCoord, sourceType);
+            }
+            chunkTracker.recordExit(entity);
+            return;
+        }
+
+        final ChunkCoord destinationCoord = ChunkCoord.from(entity);
+        final boolean destinationTracked = !pluginConfig.isWorldDisabled(entity.getWorld().getName())
+                && Checks.shouldTrackEntity(entity, pluginConfig);
+
+        if (!sourceCoord.equals(destinationCoord)) {
+            if (sourceTracked) {
+                counterDataManager.decrementEntityIfPresent(sourceCoord, sourceType);
+            }
+            if (destinationTracked) {
+                counterDataManager.getCounterData(destinationCoord).incrementEntity(entity.getType());
+            }
+        }
+
+        if (destinationTracked) {
+            chunkTracker.recordEntry(entity);
+        } else {
+            chunkTracker.recordExit(entity);
+        }
+
+        CSLLogger.debug(() -> "Entity portal: %s moved from %s to %s"
+                .formatted(entity.getType().name(), sourceCoord, destinationCoord));
+    }
 
     @EventHandler
     public void onPigZap(@NotNull PigZapEvent event) {
@@ -240,53 +263,21 @@ public class EventListener implements Listener {
         }
     }
 
-    @EventHandler
-    public void onEntityTransform(Object event) {
-        // Paper 1.19+ EntityTransformEvent — handled via reflection
-        if (!HAS_ENTITY_TRANSFORM_EVENT) return;
-
-        try {
-            Entity original = (Entity) event.getClass().getMethod("getEntity").invoke(event);
-            Entity transformed = (Entity) ENTITY_TRANSFORM_GET_TRANSFORMED_ENTITY.invoke(event);
-
-            if (pluginConfig.isWorldDisabled(original.getWorld().getName())) return;
-
-            EntityType oldType = original.getType();
-            EntityType newType = transformed.getType();
-
-            // If the type changed, decrement old and increment new
-            if (oldType != newType) {
-                final ChunkCoord coord = ChunkCoord.from(original.getLocation());
-
-                if (pluginConfig.hasResolvedEntityLimit(oldType)) {
-                    counterDataManager.getCounterData(coord).decrementEntity(oldType);
-                }
-                chunkTracker.recordExit(original);
-
-                if (pluginConfig.hasResolvedEntityLimit(newType)) {
-                    counterDataManager.getCounterData(coord).incrementEntity(newType);
-                }
-                chunkTracker.recordEntry(transformed);
-
-                CSLLogger.debug(() -> "Entity transform: %s→%s in %s"
-                        .formatted(oldType.name(), newType.name(), coord));
-            }
-        } catch (Throwable t) {
-            CSLLogger.debug(() -> "Entity transform handler error: " + t.getMessage());
-        }
-    }
-
     // -- Vehicle events -----------------------------------------------------
 
     @EventHandler
     public void onVehicleCreate(@NotNull VehicleCreateEvent event) {
+        if (!pluginConfig.isVehicleSpawnWatch()) {
+            return;
+        }
+
         if (pluginConfig.isWorldDisabled(event.getVehicle().getWorld().getName())) {
             return;
         }
 
         final Entity vehicle = event.getVehicle();
         final EntityType vehicleType = vehicle.getType();
-        if (!pluginConfig.hasResolvedEntityLimit(vehicleType)) {
+        if (!Checks.shouldTrackEntity(vehicle, pluginConfig)) {
             return;
         }
 
@@ -328,7 +319,7 @@ public class EventListener implements Listener {
 
     // -- Internal helpers ---------------------------------------------------
 
-    private void scheduleEntityCountFinalization(@NotNull Entity entity, @NotNull EntitySpawnEvent originalEvent) {
+    private void scheduleEntityCountFinalization(@NotNull Entity entity) {
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             // --- Stale-event guards -------------------------------------------------
             if (!entity.isValid()) {
@@ -339,7 +330,7 @@ public class EventListener implements Listener {
                 return;
             }
 
-            if (Checks.shouldSkipPlayers(entity) || !pluginConfig.hasResolvedEntityLimit(entity.getType())) {
+            if (!Checks.shouldTrackEntity(entity, pluginConfig)) {
                 return;
             }
 
@@ -358,7 +349,7 @@ public class EventListener implements Listener {
 
             int actualCount = 0;
             for (Entity e : chunk.getEntities()) {
-                if (e.getType() == entityType) actualCount++;
+                if (e.getType() == entityType && e.isValid() && !e.isDead()) actualCount++;
             }
 
             // Sync counter from actual chunk state (each stack = 1, not N).
@@ -376,24 +367,33 @@ public class EventListener implements Listener {
                     if (e.getType() != entityType) continue;
                     // Prefer to remove the entity that just spawned (the one this
                     // deferred task is for) so existing stacks remain intact.
-                    if (e.equals(entity) && originalEvent != null) {
+                    if (e.equals(entity)) {
                         RemovalMode removalMode = pluginConfig.getRemovalMode();
-                        removalMode.handleEntity(e, originalEvent);
-                        actualCount = Math.max(0, actualCount - 1);
-                        counterData.setEntityCount(entityType, actualCount);
-                        removed++;
+                        removalMode.handleDeferredEntity(e);
+                        if (!e.isValid() || e.isDead()) {
+                            actualCount = Math.max(0, actualCount - 1);
+                            counterData.setEntityCount(entityType, actualCount);
+                            removed++;
+                        }
                     } else if (e.getTicksLived() < 5) {
                         // Recent spawn — likely a transient pre-merge entity. Remove
                         // to enforce the limit without disturbing existing stacks.
                         e.remove();
-                        counterData.decrementEntity(entityType);
-                        actualCount = Math.max(0, actualCount - 1);
-                        removed++;
+                        if (!e.isValid() || e.isDead()) {
+                            counterData.decrementEntity(entityType);
+                            actualCount = Math.max(0, actualCount - 1);
+                            chunkTracker.recordExit(e);
+                            removed++;
+                        }
                     }
                 }
             }
 
-            chunkTracker.recordEntry(entity);
+            if (entity.isValid() && !entity.isDead()) {
+                chunkTracker.recordEntry(entity);
+            } else {
+                chunkTracker.recordExit(entity);
+            }
         });
     }
 

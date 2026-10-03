@@ -286,13 +286,13 @@ class PluginConfigTest {
     void shouldHandleInspectionSettingsCorrectly() {
         // Given
         when(mockConfig.getBoolean("events.inspections.enabled", true)).thenReturn(true);
-        when(mockConfig.getInt("events.inspections.frequency", 300)).thenReturn(600);
+        when(mockConfig.getInt("events.inspections.frequency", 60)).thenReturn(600);
 
         // When
         pluginConfig.reload();
 
         // Then
         assertThat(pluginConfig.isActiveInspections()).isTrue();
-        assertThat(pluginConfig.getInspectionFrequency()).isEqualTo(600);
+        assertThat(pluginConfig.getInspectionFrequencySeconds()).isEqualTo(600);
     }
 }

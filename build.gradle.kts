@@ -95,6 +95,30 @@ tasks {
     }
 }
 
+val testWatchWolfHelper = sourceSets.create("testWatchWolfHelper")
+
+dependencies {
+    add(testWatchWolfHelper.compileOnlyConfigurationName, libs.spigot.api)
+}
+
+val watchWolfHelperJar by tasks.registering(Jar::class) {
+    group = "verification"
+    description = "Builds the test-only WatchWolf control plugin"
+    from(testWatchWolfHelper.output)
+    archiveFileName.set("csl-watchwolf-helper.jar")
+}
+
+val prepareWatchWolfPlugin by tasks.registering(Copy::class) {
+    group = "verification"
+    description = "Copies the shaded plugin jar to the stable path used by WatchWolf"
+    dependsOn(tasks.shadowJar, watchWolfHelperJar)
+    from(tasks.shadowJar.flatMap { it.archiveFile }) {
+        rename { "chunkspawnerlimiter.jar" }
+    }
+    from(watchWolfHelperJar.flatMap { it.archiveFile })
+    into(layout.buildDirectory.dir("watchwolf"))
+}
+
 testing {
     suites {
         // Unit tests - version agnostic
@@ -187,6 +211,36 @@ testing {
                         useJUnitPlatform()
                         group = "verification"
                         description = "Runs modern integration tests for Minecraft 1.17+"
+                    }
+                }
+            }
+        }
+
+        val testWatchWolf by creating(JvmTestSuite::class) {
+            useJUnitJupiter()
+
+            sources {
+                java {
+                    srcDir("src/testWatchWolf/java")
+                }
+            }
+
+            dependencies {
+                implementation(libs.watchwolf.tester)
+                implementation(libs.snakeyaml)
+                implementation(libs.junit.api)
+                implementation(libs.junit.params)
+                runtimeOnly(libs.junit.engine)
+                runtimeOnly(libs.junit.launcher)
+            }
+
+            targets {
+                all {
+                    testTask.configure {
+                        useJUnitPlatform()
+                        group = "verification"
+                        description = "Runs real-server integration tests through WatchWolf"
+                        dependsOn(prepareWatchWolfPlugin)
                     }
                 }
             }

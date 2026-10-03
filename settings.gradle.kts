@@ -9,6 +9,18 @@ dependencyResolutionManagement {
         maven("https://repo.loohpjames.com/repository/")
         maven("https://repo.codemc.io/repository/maven-public/")
         maven("https://repo.papermc.io/repository/maven-public/")
+        ivy {
+            url = uri("https://github.com/sarhatabaot/WatchWolf-Tester/releases/download/")
+            patternLayout {
+                artifact("v[revision]/[artifact]-[revision].[ext]")
+            }
+            metadataSources {
+                artifact()
+            }
+            content {
+                includeModule("dev.watchwolf", "watchwolf-tester")
+            }
+        }
     }
 
     versionCatalogs {
@@ -23,9 +35,13 @@ dependencyResolutionManagement {
 
             library("junit-api", "org.junit.jupiter:junit-jupiter-api:5.14.4")
             library("junit-engine", "org.junit.jupiter:junit-jupiter-engine:5.14.4")
+            library("junit-params", "org.junit.jupiter:junit-jupiter-params:5.14.4")
             library("mockito-core", "org.mockito:mockito-core:5.23.0")
             library("mockito-junit-jupiter", "org.mockito:mockito-junit-jupiter:5.23.0")
             library("assertj-core", "org.assertj:assertj-core:3.27.7")
+            library("watchwolf-tester", "dev.watchwolf:watchwolf-tester:0.4.1")
+            library("snakeyaml", "org.yaml:snakeyaml:1.21")
+            library("junit-launcher", "org.junit.platform:junit-platform-launcher:1.14.4")
 
             library("adventure-api", "net.kyori:adventure-api:4.26.1")
             library("mockbukkit", "org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.110.0")
