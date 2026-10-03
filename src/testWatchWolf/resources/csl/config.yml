@@ -10,7 +10,7 @@ events:
   inspections:
     enabled: false
     frequency: 60
-    max-chunks-per-tick: 8
+    max-chunks-per-tick: 256
 
 entities:
   entity-groups:
@@ -18,6 +18,8 @@ entities:
       - ARMOR_STAND
   limits:
     TEST_DECORATIONS: 2
+    MINECART: 1
+    ZOMBIE: 1
     PLAYER: 0
   compatibility:
     defer-count-until-next-tick: false

@@ -343,7 +343,7 @@ public final class SnapshotBlockScanner implements BlockScanner {
         int firstSection = Math.floorDiv(minY, CHUNK_SIZE);
         int lastSection = Math.floorDiv(maxY - 1, CHUNK_SIZE);
         for (int sectionY = firstSection; sectionY <= lastSection; sectionY++) {
-            if (accessor.isSectionEmpty(snapshot, sectionY)) {
+            if (accessor.isSectionEmpty(snapshot, sectionY - firstSection)) {
                 continue;
             }
             int sectionMinY = Math.max(minY, sectionY * CHUNK_SIZE);

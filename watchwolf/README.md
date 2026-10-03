@@ -1,43 +1,51 @@
-# WatchWolf with Docker Compose
+# WatchWolf real-server tests
 
-This Compose setup replaces WatchWolf's upstream `--install` and `--run` lifecycle with `docker compose`.
-It intentionally preserves the upstream build/bootstrap process because the current ServersManager dynamically
-creates Minecraft child containers and expects its `server-types` JAR cache.
+This project runs its integration tests against published WatchWolf `v0.4.1` manager images.
+ServersManager starts only the Paper server requested by `src/testWatchWolf/resources/watchwolf.yaml`
+through `itzg/minecraft-server`; no WatchWolf source checkout or resource-catalog bootstrap is needed.
 
 ## Start
 
+Docker Engine must be running with Linux containers. From the repository root:
+
 ```bash
-./bootstrap.sh
-docker compose up -d --build
-docker compose logs -f
+docker compose -f watchwolf/compose.yaml up --wait -d
 ```
+
+Compose waits until both manager processes are listening without consuming their single-client
+sockets. The first test run downloads the requested
+Paper version and may take several minutes; later runs reuse Docker's image cache. Manager logs are
+stored in the Compose-managed `chunk-spawner-limiter-watchwolf_watchwolf_logs` volume.
+
+## Test
+
+From the repository root:
+
+```bash
+./gradlew testWatchWolf
+```
+
+On Windows:
+
+```powershell
+.\gradlew.bat testWatchWolf
+```
+
+Gradle builds the shaded plugin at `build/watchwolf/chunkspawnerlimiter.jar`. WatchWolf requests
+Paper 1.20.6, uploads the plugin and a test-only configuration control plugin, runs the real-server
+behavior tests, and stops the temporary Minecraft instance afterward. The suite covers plugin
+loading, snapshot recounts, block and inventory enforcement, grouped entity and vehicle limits,
+cross-chunk movement, spawn-reason filtering, named-entity preservation, runtime reloads, player
+preservation, and every removal mode's new-spawn behavior.
 
 ## Stop
 
 ```bash
-docker compose down
+docker compose -f watchwolf/compose.yaml down
 ```
 
-Minecraft child containers created by ServersManager are separate Docker containers and are not Compose services;
-that matches WatchWolf's current architecture.
+To remove the persisted manager logs as well:
 
-## Why host networking?
-
-The current upstream `run.sh` uses `--network host` for both managers. Port mappings are therefore intentionally
-not declared in this Compose file.
-
-## itzg/minecraft-server integration
-
-`itzg/minecraft-server` can replace WatchWolf's pre-downloaded Paper/Spigot JAR cache only after changing the
-ServersManager child-container launch implementation. The desired mapping is conceptually:
-
-- child image: `itzg/minecraft-server:stable` (or a pinned release tag)
-- `EULA=TRUE`
-- Paper: `TYPE=PAPER`
-- requested Minecraft version: `VERSION=<WatchWolf requested version>`
-- per-instance persistent directory mounted at `/data`
-- WatchWolf and usual plugin JARs made available under `/data/plugins` (or `/plugins`)
-- WatchWolf's CPU/memory limits translated to Docker resource limits and/or `MEMORY`/`MAX_MEMORY`
-- published Minecraft port kept identical to the port allocated by WatchWolf
-
-Once ServersManager does that, the expensive Spigot BuildTools/Paper pre-download loop can be removed from bootstrap.
+```bash
+docker compose -f watchwolf/compose.yaml down -v
+```

@@ -2,13 +2,14 @@ provider: "127.0.0.1"
 
 server-type:
   - Paper:
-      - "1.21.10"
+      - "1.20.6"
 
 users:
   - "CSLWatchWolf"
 
 plugin: "build/watchwolf/chunkspawnerlimiter.jar"
+extra-plugins:
+  - "build/watchwolf/csl-watchwolf-helper.jar"
 config-files:
-  - "plugins/ChunkSpawnerLimiter": "src/testWatchWolf/resources/csl/config.yml"
+  - "ChunkSpawnerLimiter/": "src/testWatchWolf/resources/csl/config.yml"
 world-type: "FLAT"
-startup-timeout: 300

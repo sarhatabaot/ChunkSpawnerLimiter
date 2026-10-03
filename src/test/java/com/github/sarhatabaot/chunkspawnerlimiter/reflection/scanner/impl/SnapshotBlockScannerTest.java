@@ -94,6 +94,22 @@ class SnapshotBlockScannerTest {
     }
 
     @Test
+    @DisplayName("Should use snapshot-relative section indexes below Y zero")
+    void shouldUseSnapshotRelativeSectionIndexesBelowZero() {
+        ChunkSnapshot snapshot = mock(ChunkSnapshot.class);
+        when(snapshot.isSectionEmpty(0)).thenReturn(true);
+        when(snapshot.getBlockTypeId(anyInt(), anyInt(), anyInt())).thenReturn(Material.AIR.getId());
+        when(snapshot.getBlockTypeId(1, -48, 2)).thenReturn(Material.DIAMOND_BLOCK.getId());
+
+        Map<Material, Integer> counts = SnapshotBlockScanner.countTrackedBlocks(
+                snapshot, -64, -47, Set.of(Material.DIAMOND_BLOCK));
+
+        assertThat(counts).containsEntry(Material.DIAMOND_BLOCK, 1).hasSize(1);
+        verify(snapshot).isSectionEmpty(0);
+        verify(snapshot).isSectionEmpty(1);
+    }
+
+    @Test
     @DisplayName("Should bound pending scans and run only one worker")
     void shouldBoundPendingScansAndWorkers() {
         Plugin plugin = mock(Plugin.class);

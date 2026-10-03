@@ -1,0 +1,12 @@
+name: CSLWatchWolfHelper
+version: 1.0.0
+main: com.github.sarhatabaot.chunkspawnerlimiter.watchwolf.WatchWolfControlPlugin
+api-version: '1.13'
+depend: [ChunkSpawnerLimiter]
+commands:
+  csltest:
+    description: Controls ChunkSpawnerLimiter during WatchWolf tests
+    permission: csltest.control
+permissions:
+  csltest.control:
+    default: op
