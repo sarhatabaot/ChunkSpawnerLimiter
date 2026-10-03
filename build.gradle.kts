@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.github.sarhatabaot"
-version = providers.gradleProperty("versionOverride").orElse("5.0.2").get()
+version = providers.gradleProperty("versionOverride").orElse("5.1.1").get()
 description = "Limit blocks & entities in chunks."
 
 dependencies {

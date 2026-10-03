@@ -22,6 +22,9 @@ import java.util.logging.Logger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.contains;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,13 +44,16 @@ class PluginConfigCompatibilityTest {
     @Mock
     private PluginManager pluginManager;
 
+    @Mock
+    private Logger logger;
+
     private PluginConfig pluginConfig;
 
     @BeforeEach
     void setUp() {
         when(plugin.getConfig()).thenReturn(config);
         when(plugin.getServer()).thenReturn(server);
-        when(plugin.getLogger()).thenReturn(Logger.getLogger("PluginConfigCompatibilityTest"));
+        when(plugin.getLogger()).thenReturn(logger);
         when(server.getPluginManager()).thenReturn(pluginManager);
         doNothing().when(plugin).saveDefaultConfig();
 
@@ -139,5 +145,53 @@ class PluginConfigCompatibilityTest {
         assertThat(pluginConfig.getResolvedEntityLimit(EntityType.ZOMBIE)).isEqualTo(6);
         assertThat(pluginConfig.getResolvedEntityLimit(EntityType.SKELETON)).isEqualTo(2);
         assertThat(pluginConfig.getSpawnReasons()).containsExactly("NATURAL");
+    }
+
+    @Test
+    @DisplayName("Should warn about misspelled entity limit keys")
+    void shouldWarnAboutMisspelledEntityLimitKeys() {
+        when(config.getConfigurationSection("entities.limits"))
+                .thenReturn(new MemoryConfiguration().createSection("entities.limits", Map.of(
+                        "CHIKEN", 5
+                )));
+
+        pluginConfig.reload();
+
+        assertThat(pluginConfig.getResolvedEntityLimit(EntityType.CHICKEN)).isNull();
+        verify(logger).warning(contains(
+                "Unknown entity type or group 'CHIKEN' at entities.limits.CHIKEN; skipping it. Did you mean 'CHICKEN'?"));
+    }
+
+    @Test
+    @DisplayName("Should warn about misspelled block limit keys")
+    void shouldWarnAboutMisspelledBlockLimitKeys() {
+        when(config.getConfigurationSection("blocks.limits"))
+                .thenReturn(new MemoryConfiguration().createSection("blocks.limits", Map.of(
+                        "DIAMON_BLOCK", 3
+                )));
+
+        pluginConfig.reload();
+
+        assertThat(pluginConfig.getResolvedBlockLimit(Material.DIAMOND_BLOCK)).isNull();
+        verify(logger).warning(contains(
+                "Unknown block material or group 'DIAMON_BLOCK' at blocks.limits.DIAMON_BLOCK; skipping it. Did you mean 'DIAMOND_BLOCK'?"));
+    }
+
+    @Test
+    @DisplayName("Should accept configured group limit keys")
+    void shouldAcceptConfiguredGroupLimitKeys() {
+        when(config.getConfigurationSection("entities.entity-groups"))
+                .thenReturn(new MemoryConfiguration().createSection("entities.entity-groups", Map.of(
+                        "BIRDS", List.of("CHICKEN")
+                )));
+        when(config.getConfigurationSection("entities.limits"))
+                .thenReturn(new MemoryConfiguration().createSection("entities.limits", Map.of(
+                        "BIRDS", 5
+                )));
+
+        pluginConfig.reload();
+
+        assertThat(pluginConfig.getResolvedEntityLimit(EntityType.CHICKEN)).isEqualTo(5);
+        verify(logger, never()).warning(contains("entities.limits.BIRDS"));
     }
 }

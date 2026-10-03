@@ -33,11 +33,13 @@ public class PluginConfig {
     private Map<EntityType, Integer> directEntityLimits;
     private Map<EntityType, Integer> resolvedEntityLimits;
     private Map<EntityType, String> entityToGroup;
+    private Set<String> entityGroups;
 
     // Block limit mappings
     private Map<Material, Integer> directBlockLimits;
     private Map<Material, Integer> resolvedBlockLimits;
     private Map<Material, String> blockToGroup;
+    private Set<String> blockGroups;
     private Set<Material> trackedBlockMaterials;
 
     // Raw configuration data
@@ -198,15 +200,18 @@ public class PluginConfig {
      */
     private void loadBlockGroups() {
         blockToGroup = new EnumMap<>(Material.class);
+        blockGroups = new HashSet<>();
 
         ConfigurationSection section = config.getConfigurationSection("blocks.block-groups");
         if (section == null) return;
 
         for (String group: section.getKeys(false)){
+            String normalizedGroup = group.toUpperCase(Locale.ROOT);
+            blockGroups.add(normalizedGroup);
             for (String member : section.getStringList(group)) {
                 try {
                     Material type = Material.valueOf(member.toUpperCase(Locale.ROOT));
-                    blockToGroup.put(type, group.toUpperCase(Locale.ROOT));
+                    blockToGroup.put(type, normalizedGroup);
                 } catch (IllegalArgumentException exception) {
                     plugin.getLogger().warning("Unknown material '" + member
                             + "' at blocks.block-groups." + group + "; skipping it.");
@@ -224,6 +229,8 @@ public class PluginConfig {
         resolvedBlockLimits = new EnumMap<>(Material.class);
 
         Map<String, Integer> rawLimits = getBlockLimits();
+        validateLimitKeys("block material or group", "blocks.limits", rawLimits.keySet(),
+                Arrays.stream(Material.values()).map(Material::name).collect(Collectors.toSet()), blockGroups);
 
         // 1️⃣ Direct type limits
         for (Material type : Material.values()) {
@@ -277,15 +284,18 @@ public class PluginConfig {
      */
     private void loadEntityGroups() {
         entityToGroup = new EnumMap<>(EntityType.class);
+        entityGroups = new HashSet<>();
 
         ConfigurationSection section = config.getConfigurationSection("entities.entity-groups");
         if (section == null) return;
 
         for (String group : section.getKeys(false)) {
+            String normalizedGroup = group.toUpperCase(Locale.ROOT);
+            entityGroups.add(normalizedGroup);
             for (String member : section.getStringList(group)) {
                 try {
                     EntityType type = EntityType.valueOf(member.toUpperCase(Locale.ROOT));
-                    entityToGroup.put(type, group.toUpperCase(Locale.ROOT));
+                    entityToGroup.put(type, normalizedGroup);
                 } catch (IllegalArgumentException exception) {
                     plugin.getLogger().warning("Unknown entity type '" + member
                             + "' at entities.entity-groups." + group + "; skipping it.");
@@ -326,6 +336,8 @@ public class PluginConfig {
         resolvedEntityLimits = new EnumMap<>(EntityType.class);
 
         Map<String, Integer> rawLimits = getEntityLimits();
+        validateLimitKeys("entity type or group", "entities.limits", rawLimits.keySet(),
+                Arrays.stream(EntityType.values()).map(EntityType::name).collect(Collectors.toSet()), entityGroups);
 
         // 1️⃣ Direct type limits
         for (EntityType type : EntityType.values()) {
@@ -375,6 +387,59 @@ public class PluginConfig {
 
     public Set<EntityType> getResolvedEntityTypes() {
         return Collections.unmodifiableSet(resolvedEntityLimits.keySet());
+    }
+
+    private void validateLimitKeys(String description, String path, Set<String> configuredKeys,
+                                   Set<String> typeNames, Set<String> groupNames) {
+        Set<String> validKeys = new HashSet<>(typeNames);
+        validKeys.addAll(groupNames);
+
+        for (String configuredKey : configuredKeys) {
+            if (validKeys.contains(configuredKey)) {
+                continue;
+            }
+
+            String suggestion = findClosestKey(configuredKey, validKeys);
+            String suffix = suggestion == null ? "" : " Did you mean '" + suggestion + "'?";
+            plugin.getLogger().warning("Unknown " + description + " '" + configuredKey
+                    + "' at " + path + "." + configuredKey + "; skipping it." + suffix);
+        }
+    }
+
+    private static String findClosestKey(String configuredKey, Set<String> validKeys) {
+        String closest = null;
+        int closestDistance = Integer.MAX_VALUE;
+        for (String validKey : validKeys) {
+            int distance = editDistance(configuredKey, validKey);
+            if (distance < closestDistance) {
+                closest = validKey;
+                closestDistance = distance;
+            }
+        }
+        return closestDistance <= Math.max(2, configuredKey.length() / 3) ? closest : null;
+    }
+
+    private static int editDistance(String first, String second) {
+        int[] previous = new int[second.length() + 1];
+        int[] current = new int[second.length() + 1];
+        for (int index = 0; index <= second.length(); index++) {
+            previous[index] = index;
+        }
+
+        for (int firstIndex = 1; firstIndex <= first.length(); firstIndex++) {
+            current[0] = firstIndex;
+            for (int secondIndex = 1; secondIndex <= second.length(); secondIndex++) {
+                int substitutionCost = first.charAt(firstIndex - 1) == second.charAt(secondIndex - 1) ? 0 : 1;
+                current[secondIndex] = Math.min(
+                        Math.min(current[secondIndex - 1] + 1, previous[secondIndex] + 1),
+                        previous[secondIndex - 1] + substitutionCost
+                );
+            }
+            int[] swap = previous;
+            previous = current;
+            current = swap;
+        }
+        return previous[second.length()];
     }
 
     /**
