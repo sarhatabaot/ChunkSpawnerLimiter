@@ -6,6 +6,7 @@ depend: [ChunkSpawnerLimiter]
 commands:
   csltest:
     description: Controls ChunkSpawnerLimiter during WatchWolf tests
+    usage: /csltest <reload|set|set-list|stress|extreme|extreme-status>
     permission: csltest.control
 permissions:
   csltest.control:

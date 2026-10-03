@@ -8,6 +8,7 @@ users:
   - "CSLWatchWolf"
 
 plugin: "build/watchwolf/chunkspawnerlimiter.jar"
+timings-directory: "build/reports/watchwolf-timings"
 extra-plugins:
   - "build/watchwolf/csl-watchwolf-helper.jar"
 config-files:

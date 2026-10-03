@@ -241,6 +241,10 @@ testing {
                         group = "verification"
                         description = "Runs real-server integration tests through WatchWolf"
                         dependsOn(prepareWatchWolfPlugin)
+                        doFirst {
+                            layout.buildDirectory.dir("reports/watchwolf-timings").get().asFile.mkdirs()
+                        }
+                        testLogging.showStandardStreams = true
                     }
                 }
             }
