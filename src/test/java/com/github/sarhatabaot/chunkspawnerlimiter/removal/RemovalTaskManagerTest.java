@@ -130,6 +130,63 @@ class RemovalTaskManagerTest {
     }
 
     @Test
+    @DisplayName("Should remove only the current excess after duplicate reload checks")
+    void shouldRemoveOnlyCurrentExcessAfterDuplicateReloadChecks() {
+        ChunkSpawnerLimiter plugin = mock(ChunkSpawnerLimiter.class);
+        PluginConfig config = mock(PluginConfig.class);
+        World world = mock(World.class);
+        Chunk chunk = mock(Chunk.class);
+        Entity firstEntity = mock(Entity.class);
+        Entity secondEntity = mock(Entity.class);
+        List<Entity> entities = new ArrayList<>(List.of(firstEntity, secondEntity));
+        AtomicInteger limit = new AtomicInteger(10);
+        AtomicInteger removals = new AtomicInteger();
+        UUID worldId = UUID.randomUUID();
+        ChunkCoord coord = new ChunkCoord(worldId, 3, 4);
+        Consumer<Entity> removalAction = entity -> {
+            entities.remove(entity);
+            removals.incrementAndGet();
+        };
+
+        when(config.getResolvedEntityTypes()).thenReturn(Set.of(EntityType.ZOMBIE));
+        when(config.hasResolvedEntityLimit(EntityType.ZOMBIE)).thenReturn(true);
+        when(config.getResolvedEntityLimit(EntityType.ZOMBIE)).thenAnswer(invocation -> limit.get());
+        when(config.getIgnoreMetadata()).thenReturn(List.of());
+        when(world.isChunkLoaded(3, 4)).thenReturn(true);
+        when(world.getChunkAt(3, 4)).thenReturn(chunk);
+        when(chunk.isLoaded()).thenReturn(true);
+        when(chunk.getEntities()).thenAnswer(invocation -> entities.toArray(Entity[]::new));
+        for (Entity entity : entities) {
+            when(entity.getType()).thenReturn(EntityType.ZOMBIE);
+            when(entity.isValid()).thenReturn(true);
+        }
+        Checks.setup(config);
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
+            bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
+            RemovalTaskManager beforeReload = new RemovalTaskManager(
+                    plugin, new CounterDataManager(), config, System::currentTimeMillis, false);
+            beforeReload.queueChunkCheck(coord, removalAction);
+            beforeReload.processQueue();
+            assertThat(entities).hasSize(2);
+
+            limit.set(1);
+            CounterDataManager rebuiltCounters = new CounterDataManager();
+            RemovalTaskManager afterReload = new RemovalTaskManager(
+                    plugin, rebuiltCounters, config, System::currentTimeMillis, false);
+            afterReload.queueChunkCheck(coord, removalAction);
+            afterReload.queueChunkCheck(coord, removalAction);
+            afterReload.processQueue();
+            afterReload.queueChunkCheck(coord, removalAction);
+            afterReload.processQueue();
+
+            assertThat(removals).hasValue(1);
+            assertThat(entities).hasSize(1);
+            assertThat(rebuiltCounters.getCounterData(coord).getEntityCount(EntityType.ZOMBIE)).isEqualTo(1);
+        }
+    }
+
+    @Test
     @DisplayName("Should preserve queued chunks beyond the per-tick limit")
     void shouldPreserveQueuedChunksBeyondThePerTickLimit() {
         ChunkSpawnerLimiter plugin = mock(ChunkSpawnerLimiter.class);

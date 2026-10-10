@@ -119,13 +119,21 @@ class WatchWolfSmokeTest extends AbstractTest {
     @ArgumentsSource(WatchWolfSmokeTest.class)
     @Order(12)
     @Timeout(value = 3, unit = TimeUnit.MINUTES)
+    void appliesEveryRemovalModeToExistingEntitiesAfterReload(TesterConnector connector) throws Exception {
+        WatchWolfRemovalModeScenarios.appliesEveryModeToExistingEntitiesAfterReload(connector);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(WatchWolfSmokeTest.class)
+    @Order(13)
+    @Timeout(value = 3, unit = TimeUnit.MINUTES)
     void stressTestsCustomConfigurationAndLoadedChunks(TesterConnector connector) throws Exception {
         WatchWolfPerformanceScenarios.reloadsHighCardinalityConfigurationAndPopulatedChunksWithinBudget(connector);
     }
 
     @ParameterizedTest
     @ArgumentsSource(WatchWolfSmokeTest.class)
-    @Order(13)
+    @Order(14)
     @Timeout(value = 15, unit = TimeUnit.MINUTES)
     void keepsOneThousandChunksLoaded(TesterConnector connector) throws Exception {
         WatchWolfPerformanceScenarios.keepsOneThousandChunksLoadedWithoutCrashing(connector);
@@ -133,7 +141,7 @@ class WatchWolfSmokeTest extends AbstractTest {
 
     @ParameterizedTest
     @ArgumentsSource(WatchWolfSmokeTest.class)
-    @Order(14)
+    @Order(15)
     @Timeout(value = 15, unit = TimeUnit.MINUTES)
     void handlesTenThousandEntities(TesterConnector connector) throws Exception {
         WatchWolfPerformanceScenarios.handlesTenThousandEntitiesAcrossLoadedChunks(connector);

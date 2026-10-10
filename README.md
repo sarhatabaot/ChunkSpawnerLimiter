@@ -15,19 +15,24 @@
 
 Maintained fork of the [ChunkSpawnerLimiter](https://dev.bukkit.org/projects/chunkspawnerlimiter) plugin.
 
-A plugin for enforcing spawner limits per chunk in Minecraft,
-designed to improve server performance by controlling mob spawns.
-This plugin is especially useful for large servers or resource-constrained environments.
+A Minecraft plugin for limiting configured entity types and block materials per chunk.
+It checks new spawns and placements, and can clean up excess existing entities when chunks load or the configuration reloads.
 
 ## Features
 
-* Spawner Limits: Enforce per-chunk spawner limits.
-* Customizable: Adjust limits via configuration files.
-* Lightweight: Minimal performance impact on your server.
-* Support for Multiple Versions: Works with Minecraft 1.8.8-1.21.10.
+* Configure per-chunk limits for entity types, block materials, or groups of either.
+* Choose whether to prevent new violations, remove excess entities, or kill them.
+* Recheck loaded chunks periodically when inspections are enabled.
+* Target Minecraft versions from 1.8.8 through 1.21.10; the build requires Java 21.
 
-## Release Notes (5.0.0)
+## Configuration
 
-### Known Limitations
+Edit `plugins/ChunkSpawnerLimiter/config.yml` and run `/csl reload` to apply changes.
+The default configuration documents the available limits and removal modes.
 
-- **Async chunk scanning**: chunk block scans currently run asynchronously for performance. Some server implementations may treat Bukkit world access off the main thread as unsafe. If you encounter instability, consider disabling async scans or switching to synchronous scanning until a thread-safe scan path is introduced.
+Block scans capture a chunk snapshot on the server thread and count its blocks asynchronously.
+There is no configuration switch for synchronous scanning.
+
+## Testing
+
+Run `./gradlew check` for the unit and legacy test suites. Real Paper integration tests use WatchWolf; see [WATCHWOLF.md](WATCHWOLF.md) for setup and commands.

@@ -38,6 +38,7 @@ The real-server suite verifies that:
 - A grouped entity limit is enforced independently per chunk.
 - Entity death releases capacity for a replacement entity.
 - Players remain outside entity enforcement when player killing is disabled.
+- Reload cleanup reduces existing entities to the new limit in removal modes and leaves them intact in prevent mode.
 
 The deterministic plugin configuration used by these tests is copied from `src/testWatchWolf/resources/csl/config.yml` into the server's `plugins/ChunkSpawnerLimiter` directory before startup.
 
