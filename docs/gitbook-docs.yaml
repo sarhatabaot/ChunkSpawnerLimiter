@@ -1,0 +1,41 @@
+$schema: https://api.gitbook.com/gitbook-docs.yaml
+site:
+  title: ChunkSpawnerLimiter
+  structure:
+    - type: space
+      key: space-1
+      title: 4.3.3
+      path: 4.3.3
+      content:
+        directory: ./4.3.3
+    - type: space
+      key: space-2
+      title: 4.3.8
+      path: 4.3.8
+      content:
+        directory: ./4.3.8
+    - type: space
+      key: space-3
+      title: 4.3.9
+      path: 4.3.9
+      content:
+        directory: ./4.3.9
+    - type: space
+      key: space-4
+      title: 4.3.12
+      path: 4.3.12
+      content:
+        directory: ./4.3.12
+    - type: space
+      key: space-5
+      title: 4.4.0
+      path: 4.4.0
+      content:
+        directory: ./4.4.0
+    - type: space
+      key: space-6
+      title: 5.0.0
+      path: 5.0.0
+      default: true
+      content:
+        directory: ./5.0.0
