@@ -2,7 +2,7 @@ name: chunk-spawner-limiter-watchwolf
 
 services:
   servers-manager:
-    image: ghcr.io/sarhatabaot/watchwolf-servers-manager:v0.4.1
+    image: ghcr.io/sarhatabaot/watchwolf-servers-manager:v0.4.3
     ports:
       - "8000:8000"
     environment:
@@ -22,7 +22,7 @@ services:
       retries: 24
 
   clients-manager:
-    image: ghcr.io/sarhatabaot/watchwolf-clients-manager:v0.4.1
+    image: ghcr.io/sarhatabaot/watchwolf-clients-manager:v0.4.3
     ports:
       - "7000-7199:7000-7199"
     environment:
